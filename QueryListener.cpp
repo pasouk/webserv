@@ -151,7 +151,10 @@ void CQueryListener::closeFds()
 	for (int i = 0; i <= MAX_CLIENTS; i++)
 		if (m_fds[i].fd != -1)
 		{
-            std::cout << "Deconnected client N°" << i << std::endl;
+			if (i == 0)
+            	std::cout << "Deconnected server\n";
+			else
+            	std::cout << "Deconnected client N°" << i << std::endl;
 			close(m_fds[i].fd);
 			m_fds[i].fd = -1;
 		}
