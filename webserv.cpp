@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/16 10:46:39 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/17 10:12:46 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,9 +31,9 @@ int main(int argc, char *argv[])
 
 	struct sigaction sa;
     sa.sa_handler = handle_sigint;
-    sa.sa_flags = 0;
+    sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
-    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGINT, &sa, NULL);
 	
 	try
 	{

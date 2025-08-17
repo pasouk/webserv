@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/16 10:46:37 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/17 10:03:09 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@
 # include <poll.h>
 
 # define BUFFER_SIZE 4096
-# define MAX_CLIENTS 2
+# define MAX_CLIENTS 10
 
 extern bool g_listening;
 

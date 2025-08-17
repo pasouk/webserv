@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/16 10:56:48 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/17 10:32:45 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,22 +86,17 @@ void CQueryListener::queriesListen()
 	
 	while (g_listening)
 	{
-		ret = poll(m_fds, MAX_CLIENTS + 1, 0); //no delay
+		ret = poll(m_fds, MAX_CLIENTS + 1, 0/*no delay*/); 
         if (ret < 0)
 		{
-			if (errno == EINTR) //use my own ctrl c handler
-				continue;
-			closeFds();
- 			throw std::runtime_error(std::strerror(errno));	
+			g_listening = false;
+			break;
 		}
        	if (m_fds[0].revents & POLLIN)
 	   	{
         	client_fd = accept(m_fds[0].fd, (struct sockaddr*)&m_serverAddress, &serverlen);
         	if (client_fd < 0) 
-			{ 
-				strerror(errno);
 				continue;
-			}
 
             // Add to m_fds array
             for (int i = 1; i <= MAX_CLIENTS; i++)
