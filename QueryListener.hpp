@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/17 10:03:09 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/17 11:40:34 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@
 
 # define BUFFER_SIZE 4096
 # define MAX_CLIENTS 10
+# define PORT 8080
 
 extern bool g_listening;
 

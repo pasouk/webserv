@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/17 10:32:45 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/17 12:14:39 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,6 @@ void CQueryListener::stopListening()
 void CQueryListener::initListener()
 {
 	int opt = 1;
-	int flags;
 	
 	//1. build a socket TCP IPv4 and sets the non bloquing mode and
 	// initialize pollfd struct array.
@@ -44,8 +43,9 @@ void CQueryListener::initListener()
 	if (m_fds[0].fd == -1)
 		throw std::runtime_error(std::strerror(errno));
 	m_fds[0].events = POLLIN | POLLOUT;
-	flags = fcntl(m_fds[0].fd, F_GETFL, 0);	
-	if (fcntl(m_fds[0].fd, F_SETFL, flags | O_NONBLOCK) == -1)
+
+	// only F_SETFL, O_NONBLOCK and FD_CLOEXEC can be used (macOS).
+	if (fcntl(m_fds[0].fd, F_SETFL, O_NONBLOCK) == -1)
 	{
 		close(m_fds[0].fd);
 		throw std::runtime_error(std::strerror(errno));
@@ -61,7 +61,7 @@ void CQueryListener::initListener()
 	//3. port address definition
 	memset(&m_serverAddress, 0, sizeof(m_serverAddress));
  	m_serverAddress.sin_family = AF_INET;
-	m_serverAddress.sin_port = htons(8080);
+	m_serverAddress.sin_port = htons(PORT);
 	m_serverAddress.sin_addr.s_addr = INADDR_ANY;
 
 	//4. link address and socket
