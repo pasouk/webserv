@@ -6,32 +6,33 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/17 12:14:39 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/17 13:43:09 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "QueryListener.hpp"
+#include "ConfigParser.hpp"
 
-CQueryListener::CQueryListener()
+QueryListener::QueryListener()
 {
 	initListener();
 	queriesListen();
 }
 
 //release socker
-CQueryListener::~CQueryListener()
+QueryListener::~QueryListener()
 {
 	stopListening();
 	std::cout << "Destructor called\n";
 }
 
 //exit queriesListen() and free up resources
-void CQueryListener::stopListening()
+void QueryListener::stopListening()
 {
 	g_listening = false;
 }
 
-void CQueryListener::initListener()
+void QueryListener::initListener()
 {
 	int opt = 1;
 	
@@ -79,7 +80,7 @@ void CQueryListener::initListener()
 	}
 }
 
-void CQueryListener::queriesListen()
+void QueryListener::queriesListen()
 {
 	int				client_fd, ret, n;
 	socklen_t serverlen = sizeof(m_serverAddress);
@@ -141,7 +142,7 @@ void CQueryListener::queriesListen()
 	std::cout << "Stop listening\n";
 }
 
-void CQueryListener::closeFds()
+void QueryListener::closeFds()
 {		
 	for (int i = 0; i <= MAX_CLIENTS; i++)
 		if (m_fds[i].fd != -1)

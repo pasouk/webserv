@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/17 11:40:34 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/17 12:58:31 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,14 +31,14 @@
 
 extern bool g_listening;
 
-class CQueryListener
+class QueryListener
 {
 public:
-	CQueryListener();
-	~CQueryListener();
-	CQueryListener(const CQueryListener&);
+	QueryListener();
+	~QueryListener();
+	QueryListener(const QueryListener&);
 
-	CQueryListener& operator=(const CQueryListener&);
+	QueryListener& operator=(const QueryListener&);
 	
 private:
 	struct sockaddr_in 	m_serverAddress;

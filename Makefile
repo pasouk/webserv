@@ -6,7 +6,7 @@
 #    By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/08/10 13:52:57 by fabricebuyl      ###   ########.fr        #
+#    Updated: 2025/08/17 13:43:42 by fabricebuyl      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,6 +15,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 NAME = webserv
 
 SOURCES = QueryListener.cpp \
+	ConfigParser.cpp \
 	webserv.cpp
 	
 OBJECTS = $(SOURCES:.cpp=.o)
