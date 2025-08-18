@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/18 09:18:37 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/08/18 15:26:03 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,9 +40,11 @@ int main(int argc, char *argv[])
 	try
 	{
 		ConfigParser cp(argv[1]);
-		std::map<std::string, std::string> dirs = cp.getDirective();
-		for(std::map<std::string, std::string>::iterator it = dirs.begin(); it != dirs.end(); ++it)
-			std::cout << it->first << ": " << it->second << std::endl;
+		//std::map<std::string, std::string> dirs = cp.getDirective();
+		//for(std::map<std::string, std::string>::iterator it = dirs.begin(); it != dirs.end(); ++it)
+		//	std::cout << it->first << ": " << it->second << std::endl;
+
+		cp.getFormat();
 
 		//QueryListener listener;
 	}

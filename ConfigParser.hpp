@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/18 07:51:29 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/08/18 15:11:41 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,36 @@
 # include <iostream>
 # include <map>
 
+struct Node
+{
+public:
+	Node();
+	Node(const std::string);
+	virtual ~Node();
+	const std::string& getType() const;
+protected:
+	std::string type;
+};
+
+struct NodeDirective : public Node
+{
+public:
+	NodeDirective(std::string);
+private:
+	std::string directive;
+};
+
+struct NodeBlock : public Node
+{
+public:
+	NodeBlock(std::map<std::string, Node>, std::string&);
+private:
+	std::map<std::string, Node> block;
+	std::string args;
+};
+
+typedef std::map<std::string, std::string> conf_directive;
+
 class ConfigParser
 {
 public:
@@ -29,13 +59,16 @@ public:
 
 	ConfigParser& operator=(const ConfigParser&);
 
-	std::map<std::string, std::string> getDirective();
+	conf_directive getDirective();
+	Node getFormat();
 
 private:
 	std::ifstream m_config_file;
 
 private:
 	void openFile(const std::string&);
+
+private:
 };
 
 #endif
