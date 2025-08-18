@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/17 13:42:22 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/18 09:47:23 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,14 +21,15 @@ ConfigParser::ConfigParser(const std::string& file)
 ConfigParser::~ConfigParser()
 {
 	m_config_file.close();
+	std::cout << "Destructor called\n";
 }
 
 void ConfigParser::openFile(const std::string& file)
 {
-	m_config_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	m_config_file.exceptions(std::ifstream::badbit);
 	try
 	{
-		m_config_file.open(file, std::ifstream::in);
+		m_config_file.open(file.c_str(), std::ifstream::in);
 	}
 	catch(const std::ios_base::failure& e)
 	{
@@ -36,11 +37,22 @@ void ConfigParser::openFile(const std::string& file)
 	}	
 }
 
-void ConfigParser::checkLines(const std::ifstream& s)
+std::map<std::string, std::string> ConfigParser::getDirective()
 {
-	std::string l;
-	while (std::getline(m_config_file, l))
+	std::map<std::string, std::string> directives;
+	std::string l, w, f;
+
+	while (std::getline(m_config_file, l, ';'))
 	{
-		
+		f = "";
+		std::stringstream ss(l);
+		while (ss >> w)
+		{
+			if (f == "")
+				f = w;
+			else
+				directives[f] += w + " ";
+		}
 	}
+	return (directives);
 }

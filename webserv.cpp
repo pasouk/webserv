@@ -3,14 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/17 12:58:31 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/18 09:18:37 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "QueryListener.hpp"
+
+#include "ConfigParser.hpp" //remove when tested
 
 bool g_listening = true;
 
@@ -22,7 +24,7 @@ void handle_sigint(int sig)
 
 int main(int argc, char *argv[])
 {
-	(void)argv;
+	//(void)argv;
 	if (argc != 2)
 	{
 		std::cout << "Usage: <configuration file>" << std::endl;
@@ -37,7 +39,12 @@ int main(int argc, char *argv[])
 	
 	try
 	{
-		QueryListener listener;
+		ConfigParser cp(argv[1]);
+		std::map<std::string, std::string> dirs = cp.getDirective();
+		for(std::map<std::string, std::string>::iterator it = dirs.begin(); it != dirs.end(); ++it)
+			std::cout << it->first << ": " << it->second << std::endl;
+
+		//QueryListener listener;
 	}
 	catch(const std::exception& e)
 	{
