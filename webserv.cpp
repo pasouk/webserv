@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/18 15:26:03 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/19 16:38:33 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,8 @@ int main(int argc, char *argv[])
 		//for(std::map<std::string, std::string>::iterator it = dirs.begin(); it != dirs.end(); ++it)
 		//	std::cout << it->first << ": " << it->second << std::endl;
 
-		cp.getFormat();
+		NodeBlock root;
+		cp.getFormat(root);
 
 		//QueryListener listener;
 	}
