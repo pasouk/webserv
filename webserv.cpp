@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/19 16:38:33 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/20 14:16:50 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@ void handle_sigint(int sig)
 
 int main(int argc, char *argv[])
 {
-	//(void)argv;
 	if (argc != 2)
 	{
 		std::cout << "Usage: <configuration file>" << std::endl;
@@ -40,14 +39,9 @@ int main(int argc, char *argv[])
 	try
 	{
 		ConfigParser cp(argv[1]);
-		//std::map<std::string, std::string> dirs = cp.getDirective();
-		//for(std::map<std::string, std::string>::iterator it = dirs.begin(); it != dirs.end(); ++it)
-		//	std::cout << it->first << ": " << it->second << std::endl;
+		std::cout << cp;
 
-		NodeBlock root;
-		cp.getFormat(root);
-
-		//QueryListener listener;
+		QueryListener listener;
 	}
 	catch(const std::exception& e)
 	{
