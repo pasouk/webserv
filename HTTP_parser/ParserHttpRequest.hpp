@@ -1,0 +1,89 @@
+#ifndef PARSERHTTPREQUEST_HPP
+#define PARSERHTTPREQUEST_HPP
+
+#include <iostream>
+#include <string>
+#include "Colors.hpp"
+#include <map>
+
+//ATTENTION A MODIFIER LE TABLEAU METHOD_MAP DANS LE .CPP SI ON MODIFIE L ENUM
+enum HttpMethod
+{
+    GET,
+    POST,
+    DELETE_,
+    UNKNOWN,
+};
+
+struct MethodMap 
+{
+    const char* name;
+    HttpMethod value;
+};
+
+extern MethodMap methods_map[]; 
+
+enum parsingState
+{
+    INIT,
+    RAWAQUIRED,
+    RAWDEVIDED,
+    FINISHED
+};
+
+parsingState operator++(parsingState &state, int);
+
+
+
+class ParserHttpRequest
+{
+    private:
+        std::string     _rawRequest;
+        std::string     _methodLine;
+        std::string     _headerLine;
+        std::string     _bodyLine;
+
+
+        HttpMethod                      _method;
+        std::string                     _path;
+        std::string                     _version;
+        std::map<std::string, std::string>   _headers;
+
+        parsingState    _state;
+
+
+    public:
+        ParserHttpRequest();
+        ParserHttpRequest(std::string rawRequest);
+
+        std::string getMethodLine();
+        std::string getHeaderLine();
+        std::string getBodyLine();
+
+        HttpMethod getMethod();
+        std::string getPath();
+        std::string getVersion();
+        const std::map<std::string, std::string>& getHeaders() const;
+        
+
+
+
+        void        devideRequest();
+        void        parseMethodLine();
+        void        parseHeaderLine();
+
+        void    findMethod();
+        void    findPath();
+};
+
+
+
+
+
+
+
+
+
+
+
+#endif
