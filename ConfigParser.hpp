@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/20 14:14:47 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/22 15:33:56 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,7 @@ struct NodeBlock : public Node
 public:
 	NodeBlock();
 	~NodeBlock();
-	void setBlock(std::string);
+	void setBlock(const std::string&);
 	const std::string& getName() const;
 	const std::vector<NodeBlock*> getChilds() const;
 	const std::vector<NodeDirective*> getDirectives() const;
@@ -80,16 +80,19 @@ public:
 
 	ConfigParser& operator=(const ConfigParser&);
 
-	void print(std::ostream& os) const;
+	void displayAST(std::ostream& os) const;
 
 private:
 	std::ifstream m_config_file;
 	NodeBlock m_root;
+	std::vector<std::string> m_blockType;
+	std::vector<std::string> m_directiveType;
 
 private:
 	void openFile(const std::string&);
 	void getFormat(NodeBlock &node);
-	void printTree(const NodeBlock&, std::ostream& os, int&) const;
+	void printAST(const NodeBlock&, std::ostream& os, int&) const;
+	bool checkName(Node&, const std::string&) const;
 };
 
 #endif

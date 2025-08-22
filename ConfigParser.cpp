@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/20 14:15:28 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/22 15:50:09 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,20 @@
 
 ConfigParser::ConfigParser(const std::string& file)
 {
+	if (m_blockType.empty())
+	{
+        m_blockType.push_back("http");
+        m_blockType.push_back("server");
+        m_blockType.push_back("location");
+	}
+	if (m_directiveType.empty())
+	{
+        m_directiveType.push_back("root");
+        m_directiveType.push_back("server_name");
+        m_directiveType.push_back("listen");
+		m_directiveType.push_back("index");
+	}
+	
 	//if failed -> exception
 	openFile(file);
 	getFormat(m_root);
@@ -41,17 +55,24 @@ void ConfigParser::openFile(const std::string& file)
 void ConfigParser::getFormat(NodeBlock &node)
 {
 	std::stringstream 	ss;
+	std::ostringstream 	oss;
 	std::string 		block, name;
 	NodeBlock			*child;
 	char				c;
+	int					line;
 	
+	line = 1;
 	while (m_config_file.get(c))
 	{
-		if (c == '{')
+		if (c == '\n')
+			oss << ++line;
+		else if (c == '{')
 		{
 			ss.clear();
 			ss.str(block);
 			ss >> name;
+			if(!checkName(node, name))
+				throw std::runtime_error("Bad NAME: " + name + " at: " + oss.str());
 			child = node.addChild();
 			child->setBlock(name);
 			getFormat(*child);
@@ -64,7 +85,8 @@ void ConfigParser::getFormat(NodeBlock &node)
 			ss.clear();
 			ss.str(block);
 			ss >> name;
-			node.addDirective(name);
+			if (!checkName(*node.addDirective(name), name))
+				throw std::runtime_error("Bad NAME: " + name + " at: " + oss.str());
 			block.clear();
 		}
 		else
@@ -72,7 +94,7 @@ void ConfigParser::getFormat(NodeBlock &node)
 	} 
 }
 
-void ConfigParser::printTree(const NodeBlock& root, std::ostream& os, int& deep) const
+void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) const
 {
 	size_t i;
 	std::string spaces;
@@ -85,14 +107,27 @@ void ConfigParser::printTree(const NodeBlock& root, std::ostream& os, int& deep)
 	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it < directives.end(); ++it)
 		os << spaces << "   ." << "\e[0;32m" << (*it)->getName() << "\e[0m" << std::endl;
 	while(++i < root.getChilds().size())
-		printTree(*root.getChilds()[i], os, ++deep);
+		printAST(*root.getChilds()[i], os, ++deep);
 	--deep;
 }
 
-void ConfigParser::print(std::ostream& os) const
+void ConfigParser::displayAST(std::ostream& os) const
 {
 	int	level = 0;
-	printTree(m_root, os, level);
+	printAST(m_root, os, level);
+}
+
+bool ConfigParser::checkName(Node& node, const std::string& name) const
+{
+	std::vector<std::string> type;
+
+	type = m_directiveType;
+	if (node.getType() == "block")
+		type = m_blockType;
+	for (std::vector<std::string>::const_iterator it = type.begin(); it != type.end(); ++it)
+		if (*it == name)
+			return (true);	
+	return (false);
 }
 
 Node::Node(const std::string type) : type(type), args("") {}
@@ -124,7 +159,7 @@ const std::string& NodeDirective::getName() const
 	return (directive);
 }
 	
-NodeBlock::NodeBlock() : Node("block"), block("root") {}
+NodeBlock::NodeBlock() : Node("block"),  block("unknown") {}
 
 NodeBlock::~NodeBlock()
 {
@@ -134,7 +169,7 @@ NodeBlock::~NodeBlock()
 		delete (*it);
 }
 
-void NodeBlock::setBlock(std::string block)
+void NodeBlock::setBlock(const std::string& block)
 {
 	this->block = block;
 }
@@ -172,6 +207,6 @@ NodeDirective* NodeBlock::addDirective(std::string directive)
 
 std::ostream& operator<<(std::ostream& os, const ConfigParser& cp)
 {
-    cp.print(os);
+    cp.displayAST(os);
     return os;
 }
