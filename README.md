@@ -1,6 +1,7 @@
 CONFIG_FILE PARSER:
+
 	SAMPLE CONFIG FILE:
-	
+
 	http {
 
 		server {
