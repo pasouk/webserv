@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 14:18:17 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/23 15:52:26 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_brace(0), m_f
 ConfigParser::~ConfigParser()
 {
 	m_config_file.close();
-	std::cout << "Destructor called\n";
+	//std::cout << "Destructor called\n";
 }
 
 void ConfigParser::openFile(const std::string& file)
@@ -56,7 +56,7 @@ void ConfigParser::getFormat(NodeBlock &node)
 {
 	std::stringstream 	ss;
 	std::string 		block, name;
-	NodeBlock			*child;
+	Node				*p_node;
 	char				c, d;
 	std::ostringstream 	oss;
 	
@@ -72,9 +72,10 @@ void ConfigParser::getFormat(NodeBlock &node)
 			ss.str(block);
 			ss >> name;
 			checkKeyword(node, name);
-			child = node.addChild();
-			child->setBlock(name);
-			getFormat(*child);
+			p_node = node.addChild();
+			((NodeBlock*)p_node)->setBlock(name);
+			p_node->setArgs(ss);
+			getFormat(*((NodeBlock*)p_node));
 			block.clear();
 		}
 		else if (c == '}')
@@ -88,7 +89,9 @@ void ConfigParser::getFormat(NodeBlock &node)
 			ss.clear();
 			ss.str(block);
 			ss >> name;
-			checkKeyword(*node.addDirective(name), name);
+			p_node = node.addDirective(name);
+			p_node->setArgs(ss);
+			checkKeyword(*p_node, name);
 			block.clear();
 		}
 		else
@@ -103,14 +106,26 @@ void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) 
 {
 	size_t i;
 	std::string spaces;
-
+	std::vector<std::string>::const_iterator it2;
+	std::vector<std::string> args;
+	
 	for (int j = 0; j < deep; ++j)
 		spaces += "   ";
 	i = -1;
-	os << spaces << root.getName() << std::endl;
+	os << spaces << root.getName();
+	args = root.getArgs();
+	for (it2 = args.begin(); it2 != args.end(); ++it2)
+		os << " \e[0;33m" << *it2;
+	os << "\e[0m" << std::endl;
 	const std::vector<NodeDirective*>& directives = root.getDirectives();
 	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it < directives.end(); ++it)
-		os << spaces << "   ." << "\e[0;32m" << (*it)->getName() << "\e[0m" << std::endl;
+	{
+		os << spaces << "   ." << "\e[0;32m" << (*it)->getName() << "\e[0m";
+		args = (*it)->getArgs();
+		for (it2 = args.begin(); it2 != args.end(); ++it2)
+			os << " \e[0;33m" << *it2;
+		os << "\e[0m" << std::endl;
+	}
 	while(++i < root.getChilds().size())
 		printAST(*root.getChilds()[i], os, ++deep);
 	--deep;

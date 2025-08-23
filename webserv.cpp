@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/22 15:51:03 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/23 15:00:38 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 		ConfigParser cp(argv[1]);
 		std::cout << cp;
 
-		QueryListener listener;
+		//QueryListener listener;
 	}
 	catch(const std::exception& e)
 	{
