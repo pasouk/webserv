@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+         #
+#    By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/08/18 07:10:29 by fbuyl            ###   ########.fr        #
+#    Updated: 2025/08/23 11:54:35 by fabricebuyl      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,6 +16,9 @@ NAME = webserv
 
 SOURCES = QueryListener.cpp \
 	ConfigParser.cpp \
+	Node.cpp \
+	NodeDirective.cpp \
+	NodeBlock.cpp \
 	webserv.cpp
 	
 OBJECTS = $(SOURCES:.cpp=.o)

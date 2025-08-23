@@ -6,13 +6,13 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/22 15:50:09 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/23 14:18:17 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
 
-ConfigParser::ConfigParser(const std::string& file)
+ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_brace(0), m_file(file)
 {
 	if (m_blockType.empty())
 	{
@@ -55,43 +55,48 @@ void ConfigParser::openFile(const std::string& file)
 void ConfigParser::getFormat(NodeBlock &node)
 {
 	std::stringstream 	ss;
-	std::ostringstream 	oss;
 	std::string 		block, name;
 	NodeBlock			*child;
-	char				c;
-	int					line;
+	char				c, d;
+	std::ostringstream 	oss;
 	
-	line = 1;
+	d = ';';
 	while (m_config_file.get(c))
 	{
 		if (c == '\n')
-			oss << ++line;
+			++m_line;
 		else if (c == '{')
 		{
+			++m_brace;
 			ss.clear();
 			ss.str(block);
 			ss >> name;
-			if(!checkName(node, name))
-				throw std::runtime_error("Bad NAME: " + name + " at: " + oss.str());
+			checkKeyword(node, name);
 			child = node.addChild();
 			child->setBlock(name);
 			getFormat(*child);
 			block.clear();
 		}
 		else if (c == '}')
+		{
+			--m_brace;
+			checkBlock(d, name);
 			return ;
+		}
 		else if (c == ';')
 		{
 			ss.clear();
 			ss.str(block);
 			ss >> name;
-			if (!checkName(*node.addDirective(name), name))
-				throw std::runtime_error("Bad NAME: " + name + " at: " + oss.str());
+			checkKeyword(*node.addDirective(name), name);
 			block.clear();
 		}
 		else
 			block += c;
-	} 
+		if (!std::isspace(static_cast<unsigned char>(c)))
+			d = c;
+	}
+	checkBrace();
 }
 
 void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) const
@@ -117,92 +122,46 @@ void ConfigParser::displayAST(std::ostream& os) const
 	printAST(m_root, os, level);
 }
 
-bool ConfigParser::checkName(Node& node, const std::string& name) const
+void ConfigParser::checkKeyword(Node& node, const std::string& name)
 {
 	std::vector<std::string> type;
+	std::ostringstream 	oss;
 
 	type = m_directiveType;
 	if (node.getType() == "block")
 		type = m_blockType;
 	for (std::vector<std::string>::const_iterator it = type.begin(); it != type.end(); ++it)
 		if (*it == name)
-			return (true);	
-	return (false);
+			return ;
+	oss.clear();
+	oss << m_line;
+	m_config_file.close();
+	throw std::runtime_error("error: unknown directive \e[0;32m\""
+		+ name + "\" \e[0;34min\e[0m " + m_file + ":" + oss.str());
 }
 
-Node::Node(const std::string type) : type(type), args("") {}
-
-Node::Node() : type(""), args("") {}
-
-Node::~Node() {}
-
-const std::string& Node::getType() const
+void ConfigParser::checkBrace()
 {
-	return (type);
+	if (m_brace > 0)
+	{
+		m_config_file.close();
+		throw std::runtime_error("error: parenthensis is missing \e[0;34min\e[0m "
+			+ m_file);			
+	}
 }
 
-const std::string& Node::getArgs() const
+void ConfigParser::checkBlock(char d, std::string &name)
 {
-	return (args);
-}
+	std::ostringstream 	oss;
 
-void Node::setArgs(std::string args)
-{
-	this->args = args;
-}
-
-NodeDirective::NodeDirective(std::string directive)
-	: Node("directive"), directive(directive) {}
-
-const std::string& NodeDirective::getName() const
-{
-	return (directive);
-}
-	
-NodeBlock::NodeBlock() : Node("block"),  block("unknown") {}
-
-NodeBlock::~NodeBlock()
-{
-	for (std::vector<NodeBlock*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it)
-		delete (*it);
-	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it != directives.end(); ++it)
-		delete (*it);
-}
-
-void NodeBlock::setBlock(const std::string& block)
-{
-	this->block = block;
-}
-
-const std::string& NodeBlock::getName() const
-{
-	return (block);
-}
-
-const std::vector<NodeBlock*> NodeBlock::getChilds() const
-{
-	return (nodes);
-}
-
-const std::vector<NodeDirective*> NodeBlock::getDirectives() const
-{
-	return (directives);
-}
-
-NodeBlock* NodeBlock::addChild()
-{
-	NodeBlock* newBlock;
-
-	newBlock = new (std::nothrow) NodeBlock();
-	return (nodes.push_back(newBlock), newBlock);
-}
-
-NodeDirective* NodeBlock::addDirective(std::string directive)
-{
-	NodeDirective* newDirective;
-
-	newDirective = new (std::nothrow) NodeDirective(directive);
-	return (directives.push_back(newDirective), newDirective);
+	if ((d != '}' && d != '{' && d != ';') || m_brace < 0)
+	{
+		oss.clear();
+		oss << m_line;
+		m_config_file.close();
+		throw std::runtime_error("error: invalide block \e[0;32m\""
+			+ name + "\" \e[0;34min\e[0m " + m_file + ":" + oss.str());
+	}
 }
 
 std::ostream& operator<<(std::ostream& os, const ConfigParser& cp)

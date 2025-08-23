@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/22 15:33:56 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/23 14:18:17 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,56 +19,10 @@
 # include <iostream>
 # include <map>
 # include <vector>
+# include "NodeBlock.hpp"
 
 class ConfigParser;
 std::ostream& operator<<(std::ostream& os, const ConfigParser& p);
-
-struct Node
-{
-public:
-	Node();
-	Node(const std::string);
-	virtual ~Node();
-
-	virtual const std::string& getName() const = 0;
-	const std::string& getType() const;
-	const std::string& getArgs() const;
-	void setArgs(std::string);
-	
-protected:
-	std::string type;
-	std::string args;
-};
-
-struct NodeDirective : public Node
-{
-public:
-	NodeDirective(std::string);
-	const std::string& getName() const;
-
-private:
-	std::string directive;
-};
-
-struct NodeBlock : public Node
-{
-public:
-	NodeBlock();
-	~NodeBlock();
-	void setBlock(const std::string&);
-	const std::string& getName() const;
-	const std::vector<NodeBlock*> getChilds() const;
-	const std::vector<NodeDirective*> getDirectives() const;
-	NodeBlock* addChild();
-	NodeDirective* addDirective(std::string);
-	
-private:
-	std::string block;
-	std::vector<NodeDirective*> directives;
-	std::vector<NodeBlock*> nodes;
-};
-
-typedef std::map<std::string, std::string> conf_directive;
 
 class ConfigParser
 {
@@ -83,8 +37,11 @@ public:
 	void displayAST(std::ostream& os) const;
 
 private:
-	std::ifstream m_config_file;
-	NodeBlock m_root;
+	int				m_line;
+	int				m_brace;
+	std::string 	m_file;
+	std::ifstream 	m_config_file;
+	NodeBlock 		m_root;
 	std::vector<std::string> m_blockType;
 	std::vector<std::string> m_directiveType;
 
@@ -92,7 +49,9 @@ private:
 	void openFile(const std::string&);
 	void getFormat(NodeBlock &node);
 	void printAST(const NodeBlock&, std::ostream& os, int&) const;
-	bool checkName(Node&, const std::string&) const;
+	void checkKeyword(Node&, const std::string&);
+	void checkBrace();
+	void checkBlock(char, std::string&);
 };
 
 #endif
