@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 14:18:17 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/24 14:35:05 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 # include <map>
 # include <vector>
 # include "NodeBlock.hpp"
+# include "Directives.hpp"
 
 class ConfigParser;
 std::ostream& operator<<(std::ostream& os, const ConfigParser& p);
@@ -41,15 +42,14 @@ private:
 	int				m_brace;
 	std::string 	m_file;
 	std::ifstream 	m_config_file;
-	NodeBlock 		m_root;
-	std::vector<std::string> m_blockType;
-	std::vector<std::string> m_directiveType;
+	NodeBlock 		m_ast;
+	std::vector<Directives> m_directives;
 
 private:
 	void openFile(const std::string&);
 	void getFormat(NodeBlock &node);
 	void printAST(const NodeBlock&, std::ostream& os, int&) const;
-	void checkKeyword(Node&, const std::string&);
+	const Directives& checkDirective(const std::string&, const std::string&);
 	void checkBrace();
 	void checkBlock(char, std::string&);
 };

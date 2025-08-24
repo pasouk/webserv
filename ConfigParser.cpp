@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 15:52:26 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/24 14:53:42 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,23 +14,20 @@
 
 ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_brace(0), m_file(file)
 {
-	if (m_blockType.empty())
-	{
-        m_blockType.push_back("http");
-        m_blockType.push_back("server");
-        m_blockType.push_back("location");
-	}
-	if (m_directiveType.empty())
-	{
-        m_directiveType.push_back("root");
-        m_directiveType.push_back("server_name");
-        m_directiveType.push_back("listen");
-		m_directiveType.push_back("index");
-	}
+	//block
+	m_directives.push_back(Http());
+	m_directives.push_back(Server());
+	m_directives.push_back(Location());
+
+	//directives
+	m_directives.push_back(Root());
+	m_directives.push_back(ServerName());
+	m_directives.push_back(Listen());
+	m_directives.push_back(Index());
 	
 	//if failed -> exception
 	openFile(file);
-	getFormat(m_root);
+	getFormat(m_ast);
 }
 
 ConfigParser::~ConfigParser()
@@ -71,9 +68,8 @@ void ConfigParser::getFormat(NodeBlock &node)
 			ss.clear();
 			ss.str(block);
 			ss >> name;
-			checkKeyword(node, name);
 			p_node = node.addChild();
-			((NodeBlock*)p_node)->setBlock(name);
+			((NodeBlock*)p_node)->addBlock(checkDirective(node.getName(), name));
 			p_node->setArgs(ss);
 			getFormat(*((NodeBlock*)p_node));
 			block.clear();
@@ -89,9 +85,8 @@ void ConfigParser::getFormat(NodeBlock &node)
 			ss.clear();
 			ss.str(block);
 			ss >> name;
-			p_node = node.addDirective(name);
+			p_node = node.addDirective(checkDirective(node.getName(), name));
 			p_node->setArgs(ss);
-			checkKeyword(*p_node, name);
 			block.clear();
 		}
 		else
@@ -134,22 +129,27 @@ void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) 
 void ConfigParser::displayAST(std::ostream& os) const
 {
 	int	level = 0;
-	printAST(m_root, os, level);
+	printAST(m_ast, os, level);
 }
 
-void ConfigParser::checkKeyword(Node& node, const std::string& name)
+const Directives& ConfigParser::checkDirective(const std::string& parent, const std::string& name)
 {
-	std::vector<std::string> type;
 	std::ostringstream 	oss;
 
-	type = m_directiveType;
-	if (node.getType() == "block")
-		type = m_blockType;
-	for (std::vector<std::string>::const_iterator it = type.begin(); it != type.end(); ++it)
-		if (*it == name)
-			return ;
 	oss.clear();
 	oss << m_line;
+	for (std::vector<Directives>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
+		if ((*it).getName() == name)
+		{
+			if (!(*it).isValid(parent))
+			{
+				m_config_file.close();
+				throw std::runtime_error("error: \e[0;32m\"" + name
+					+ "\"\e[0m directive is not allowed here \e[0;34min\e[0m "
+					+ m_file + ":" + oss.str());
+			}
+			return (*it);
+		}
 	m_config_file.close();
 	throw std::runtime_error("error: unknown directive \e[0;32m\""
 		+ name + "\" \e[0;34min\e[0m " + m_file + ":" + oss.str());
@@ -160,7 +160,7 @@ void ConfigParser::checkBrace()
 	if (m_brace > 0)
 	{
 		m_config_file.close();
-		throw std::runtime_error("error: parenthensis is missing \e[0;34min\e[0m "
+		throw std::runtime_error("error: brace(s) is/are missing \e[0;34min\e[0m "
 			+ m_file);			
 	}
 }

@@ -6,7 +6,7 @@
 #    By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/08/23 11:54:35 by fabricebuyl      ###   ########.fr        #
+#    Updated: 2025/08/24 13:36:38 by fabricebuyl      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,6 +19,7 @@ SOURCES = QueryListener.cpp \
 	Node.cpp \
 	NodeDirective.cpp \
 	NodeBlock.cpp \
+	Directives.cpp \
 	webserv.cpp
 	
 OBJECTS = $(SOURCES:.cpp=.o)

@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 13:57:47 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/24 12:15:09 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,16 +14,17 @@
 # define NODEDIRECTIVE_HPP
 
 # include "Node.hpp"
+# include "Directives.hpp"
 
 class NodeDirective : public Node
 {
 public:
-	NodeDirective(std::string);
+	NodeDirective(Directives);
 	~NodeDirective();
 	const std::string& getName() const;
 
 private:
-	std::string directive;
+	Directives directive;
 };
 
 #endif

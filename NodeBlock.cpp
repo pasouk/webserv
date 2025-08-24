@@ -6,13 +6,13 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:49 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 13:47:10 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/24 13:45:44 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "NodeBlock.hpp"
 
-NodeBlock::NodeBlock() : Node("block"),  block("AST:") {}
+NodeBlock::NodeBlock() : block(true, 0, "ASP") {}
 
 NodeBlock::~NodeBlock()
 {
@@ -22,14 +22,14 @@ NodeBlock::~NodeBlock()
 		delete (*it);
 }
 
-void NodeBlock::setBlock(const std::string& block)
+void NodeBlock::addBlock(const Directives& block)
 {
 	this->block = block;
 }
 
 const std::string& NodeBlock::getName() const
 {
-	return (block);
+	return (block.getName());
 }
 
 const std::vector<NodeBlock*> NodeBlock::getChilds() const
@@ -50,7 +50,7 @@ NodeBlock* NodeBlock::addChild()
 	return (nodes.push_back(newBlock), newBlock);
 }
 
-NodeDirective* NodeBlock::addDirective(std::string directive)
+NodeDirective* NodeBlock::addDirective(const Directives& directive)
 {
 	NodeDirective* newDirective;
 
