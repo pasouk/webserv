@@ -6,13 +6,14 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:49 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/24 13:45:44 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/25 16:09:14 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "NodeBlock.hpp"
+NodeBlock::NodeBlock() : Node("ASP") {}
 
-NodeBlock::NodeBlock() : block(true, 0, "ASP") {}
+NodeBlock::NodeBlock(const std::string& name) : Node(name) {}
 
 NodeBlock::~NodeBlock()
 {
@@ -20,16 +21,6 @@ NodeBlock::~NodeBlock()
 		delete (*it);
 	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it != directives.end(); ++it)
 		delete (*it);
-}
-
-void NodeBlock::addBlock(const Directives& block)
-{
-	this->block = block;
-}
-
-const std::string& NodeBlock::getName() const
-{
-	return (block.getName());
 }
 
 const std::vector<NodeBlock*> NodeBlock::getChilds() const
@@ -42,18 +33,16 @@ const std::vector<NodeDirective*> NodeBlock::getDirectives() const
 	return (directives);
 }
 
-NodeBlock* NodeBlock::addChild()
+Node* NodeBlock::addChild(const Directives& directive, const std::string& name)
 {
-	NodeBlock* newBlock;
+	Node* node;
 
-	newBlock = new (std::nothrow) NodeBlock();
-	return (nodes.push_back(newBlock), newBlock);
-}
-
-NodeDirective* NodeBlock::addDirective(const Directives& directive)
-{
-	NodeDirective* newDirective;
-
-	newDirective = new (std::nothrow) NodeDirective(directive);
-	return (directives.push_back(newDirective), newDirective);
+	block = directive;
+	if (directive.isBlock())
+	{
+		node = new (std::nothrow) NodeBlock(name);
+		return (nodes.push_back(static_cast<NodeBlock*>(node)), node);
+	}
+	node = new (std::nothrow) NodeDirective(name);
+	return (directives.push_back(static_cast<NodeDirective*>(node)), node);
 }

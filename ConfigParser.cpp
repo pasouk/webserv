@@ -6,13 +6,13 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/24 14:53:42 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/25 16:54:38 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
 
-ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_brace(0), m_file(file)
+ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 {
 	//block
 	m_directives.push_back(Http());
@@ -52,49 +52,49 @@ void ConfigParser::openFile(const std::string& file)
 void ConfigParser::getFormat(NodeBlock &node)
 {
 	std::stringstream 	ss;
-	std::string 		block, name;
+	std::string 		block, name, arg;
 	Node				*p_node;
-	char				c, d;
+	char				c;
+	Directives			directive;
 	std::ostringstream 	oss;
+	std::vector<std::string> args;
 	
-	d = ';';
 	while (m_config_file.get(c))
 	{
 		if (c == '\n')
 			++m_line;
 		else if (c == '{')
 		{
-			++m_brace;
 			ss.clear();
 			ss.str(block);
 			ss >> name;
-			p_node = node.addChild();
-			((NodeBlock*)p_node)->addBlock(checkDirective(node.getName(), name));
-			p_node->setArgs(ss);
+			args.clear();
+			while (ss >> arg)
+				args.push_back(arg);
+			directive = checkDirective(args.size(), true, node.getName(), name);
+			p_node = node.addChild(directive, name);
+			p_node->setArgs(args);
 			getFormat(*((NodeBlock*)p_node));
 			block.clear();
 		}
 		else if (c == '}')
-		{
-			--m_brace;
-			checkBlock(d, name);
 			return ;
-		}
 		else if (c == ';')
 		{
 			ss.clear();
 			ss.str(block);
 			ss >> name;
-			p_node = node.addDirective(checkDirective(node.getName(), name));
-			p_node->setArgs(ss);
+			args.clear();
+			while (ss >> arg)
+				args.push_back(arg);
+			directive = checkDirective(args.size(), false, node.getName(), name);
+			p_node = node.addChild(directive, name);
+			p_node->setArgs(args);
 			block.clear();
 		}
 		else
 			block += c;
-		if (!std::isspace(static_cast<unsigned char>(c)))
-			d = c;
 	}
-	checkBrace();
 }
 
 void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) const
@@ -113,7 +113,7 @@ void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) 
 		os << " \e[0;33m" << *it2;
 	os << "\e[0m" << std::endl;
 	const std::vector<NodeDirective*>& directives = root.getDirectives();
-	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it < directives.end(); ++it)
+	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it != directives.end(); ++it)
 	{
 		os << spaces << "   ." << "\e[0;32m" << (*it)->getName() << "\e[0m";
 		args = (*it)->getArgs();
@@ -132,20 +132,39 @@ void ConfigParser::displayAST(std::ostream& os) const
 	printAST(m_ast, os, level);
 }
 
-const Directives& ConfigParser::checkDirective(const std::string& parent, const std::string& name)
+const Directives& ConfigParser::checkDirective(int num_args, bool block, const std::string& parent, const std::string& name)
 {
 	std::ostringstream 	oss;
+	std::string c;
 
 	oss.clear();
 	oss << m_line;
 	for (std::vector<Directives>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
 		if ((*it).getName() == name)
 		{
-			if (!(*it).isValid(parent))
+			if (!(*it).isMembership(parent))
 			{
 				m_config_file.close();
 				throw std::runtime_error("error: \e[0;32m\"" + name
 					+ "\"\e[0m directive is not allowed here \e[0;34min\e[0m "
+					+ m_file + ":" + oss.str());
+			}
+			else if (block != (*it).isBlock())
+			{
+				m_config_file.close();
+				c =";";
+				if ((*it).isBlock())
+					c = "{";
+				throw std::runtime_error("error: \e[0;32m\"" + name
+					+ "\"\e[0m directive is not terminated by \e[0;32m\""
+					+ c + "\" \e[0;34min\e[0m "
+					+ m_file + ":" + oss.str());
+			}
+			else if (num_args > (*it).getMaxArgs() || num_args < (*it).getMinArgs())
+			{
+				m_config_file.close();
+				throw std::runtime_error("error: invalid number of arguments \e[0;34min \e[0;32m\""
+					+ name + "\"\e[0m" + " directive \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());
 			}
 			return (*it);
@@ -153,30 +172,6 @@ const Directives& ConfigParser::checkDirective(const std::string& parent, const 
 	m_config_file.close();
 	throw std::runtime_error("error: unknown directive \e[0;32m\""
 		+ name + "\" \e[0;34min\e[0m " + m_file + ":" + oss.str());
-}
-
-void ConfigParser::checkBrace()
-{
-	if (m_brace > 0)
-	{
-		m_config_file.close();
-		throw std::runtime_error("error: brace(s) is/are missing \e[0;34min\e[0m "
-			+ m_file);			
-	}
-}
-
-void ConfigParser::checkBlock(char d, std::string &name)
-{
-	std::ostringstream 	oss;
-
-	if ((d != '}' && d != '{' && d != ';') || m_brace < 0)
-	{
-		oss.clear();
-		oss << m_line;
-		m_config_file.close();
-		throw std::runtime_error("error: invalide block \e[0;32m\""
-			+ name + "\" \e[0;34min\e[0m " + m_file + ":" + oss.str());
-	}
 }
 
 std::ostream& operator<<(std::ostream& os, const ConfigParser& cp)

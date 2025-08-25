@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/24 14:35:05 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/25 16:30:19 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,6 @@ public:
 
 private:
 	int				m_line;
-	int				m_brace;
 	std::string 	m_file;
 	std::ifstream 	m_config_file;
 	NodeBlock 		m_ast;
@@ -49,9 +48,7 @@ private:
 	void openFile(const std::string&);
 	void getFormat(NodeBlock &node);
 	void printAST(const NodeBlock&, std::ostream& os, int&) const;
-	const Directives& checkDirective(const std::string&, const std::string&);
-	void checkBrace();
-	void checkBlock(char, std::string&);
+	const Directives& checkDirective(int, bool, const std::string&, const std::string&);
 };
 
 #endif

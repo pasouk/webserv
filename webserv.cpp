@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/24 14:55:30 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/25 14:08:28 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,14 +38,16 @@ int main(int argc, char *argv[])
 	
 	try
 	{
-		//ConfigParser cp(argv[1]);
-		//std::cout << cp;
+		ConfigParser cp(argv[1]);
+		std::cout << cp;
 
-		QueryListener listener;
+		//QueryListener listener;
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		std::cerr << "webserv: configuration file " 
+			+ std::string(argv[1]) + " \e[0;33mtest\e[0m failed\n";
 		return (1);
 	}
 
