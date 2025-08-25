@@ -6,11 +6,13 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/17 12:58:31 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/23 15:00:38 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "QueryListener.hpp"
+
+#include "ConfigParser.hpp" //remove when tested
 
 bool g_listening = true;
 
@@ -22,7 +24,6 @@ void handle_sigint(int sig)
 
 int main(int argc, char *argv[])
 {
-	(void)argv;
 	if (argc != 2)
 	{
 		std::cout << "Usage: <configuration file>" << std::endl;
@@ -37,7 +38,10 @@ int main(int argc, char *argv[])
 	
 	try
 	{
-		QueryListener listener;
+		ConfigParser cp(argv[1]);
+		std::cout << cp;
+
+		//QueryListener listener;
 	}
 	catch(const std::exception& e)
 	{

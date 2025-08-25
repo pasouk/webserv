@@ -1,1 +1,29 @@
+CONFIG_FILE PARSER:
+
+	SAMPLE CONFIG FILE:
+
+	http {
+
+		server {
+
+			listen 443 ssl;
+			server_name fabrice.42.fr;
+			root /var/www/mysite;
+			index index.php index.html;
+
+			location / 
+			{}
+		}
+	}
+
+	AFTER PARSE ():
+	AST:
+	http
+		server
+			.listen 443 ssl
+			.server_name fabrice.42.fr
+			.root /var/www/mysite
+			.index index.php index.html
+			location /
+
 
