@@ -69,11 +69,22 @@ class ParserHttpRequest
 
 
         void        devideRequest();
-        void        parseMethodLine();
-        void        parseHeaderLine();
+        int        parseMethodLine();
+        int        parseHeaderLine();
 
         void    findMethod();
         void    findPath();
+
+
+        bool    isSeveralLines();
+        bool    isBodySeparator();
+        int     basicChecks();
+        int     checkHeaderLine();
+        int     checkVersionAndMethod();
+        int     debugParsingRequest();
+        int     parseRequest();
+        void    sanitize();
+        void    printParsedData();
 };
 
 
