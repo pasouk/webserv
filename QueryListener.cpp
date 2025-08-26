@@ -38,8 +38,12 @@ void QueryListener::initListener()
 	
 	//1. build a socket TCP IPv4 and sets the non bloquing mode and
 	// initialize pollfd struct array.
-	for (int i = 1; i <= MAX_CLIENTS; i++)
+	for (int i = 0; i <= MAX_CLIENTS; i++)
+	{
 		m_fds[i].fd = -1;
+		m_fds[i].events = 0;
+		m_fds[i].revents = 0; 
+	}
 	m_fds[0].fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_fds[0].fd == -1)
 		throw std::runtime_error(std::strerror(errno));
