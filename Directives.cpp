@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/25 16:53:35 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/26 12:31:39 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ int Directives::getMinArgs() const
 	return (m_min_args);
 }
 
-Listen::Listen() : Directives(false, 1, MAX_ARGS, "listen")
+Listen::Listen() : Directives(false, 0, MAX_ARGS, "listen")
 {
 	m_memberships.push_back("server");
 }

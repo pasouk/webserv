@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/25 16:30:19 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/26 09:40:53 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,7 @@ private:
 	void getFormat(NodeBlock &node);
 	void printAST(const NodeBlock&, std::ostream& os, int&) const;
 	const Directives& checkDirective(int, bool, const std::string&, const std::string&);
+	void buildNode(bool, NodeBlock&, std::string&);
 };
 
 #endif

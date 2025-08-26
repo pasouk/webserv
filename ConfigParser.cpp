@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/25 16:54:38 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/26 09:48:30 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,50 +51,44 @@ void ConfigParser::openFile(const std::string& file)
 
 void ConfigParser::getFormat(NodeBlock &node)
 {
-	std::stringstream 	ss;
-	std::string 		block, name, arg;
-	Node				*p_node;
+	std::string 		block;
 	char				c;
-	Directives			directive;
-	std::ostringstream 	oss;
-	std::vector<std::string> args;
 	
 	while (m_config_file.get(c))
 	{
 		if (c == '\n')
 			++m_line;
 		else if (c == '{')
-		{
-			ss.clear();
-			ss.str(block);
-			ss >> name;
-			args.clear();
-			while (ss >> arg)
-				args.push_back(arg);
-			directive = checkDirective(args.size(), true, node.getName(), name);
-			p_node = node.addChild(directive, name);
-			p_node->setArgs(args);
-			getFormat(*((NodeBlock*)p_node));
-			block.clear();
-		}
+			buildNode(true, node, block);
 		else if (c == '}')
 			return ;
 		else if (c == ';')
-		{
-			ss.clear();
-			ss.str(block);
-			ss >> name;
-			args.clear();
-			while (ss >> arg)
-				args.push_back(arg);
-			directive = checkDirective(args.size(), false, node.getName(), name);
-			p_node = node.addChild(directive, name);
-			p_node->setArgs(args);
-			block.clear();
-		}
+			buildNode(false, node, block);
 		else
 			block += c;
 	}
+}
+
+void ConfigParser::buildNode(bool bblock, NodeBlock &node, std::string& block)
+{
+	std::vector<std::string> args;
+	std::stringstream 	ss;
+	std::string 		name, arg;
+	Node				*p_node;
+	Directives			directive;
+
+	ss.clear();
+	ss.str(block);
+	ss >> name;
+	args.clear();
+	while (ss >> arg)
+		args.push_back(arg);
+	directive = checkDirective(args.size(), bblock, node.getName(), name);
+	p_node = node.addChild(directive, name);
+	p_node->setArgs(args);
+	if (bblock)
+		getFormat(*((NodeBlock*)p_node));
+	block.clear();
 }
 
 void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) const
