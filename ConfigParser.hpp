@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/26 09:40:53 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/28 15:09:45 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 # include <map>
 # include <vector>
 # include "NodeBlock.hpp"
+# include "NodeDirective.hpp"
 # include "Directives.hpp"
 
 class ConfigParser;
@@ -28,14 +29,15 @@ std::ostream& operator<<(std::ostream& os, const ConfigParser& p);
 class ConfigParser
 {
 public:
-	ConfigParser();
 	ConfigParser(const ConfigParser&);
+	ConfigParser();
 	ConfigParser(const std::string&);
 	~ConfigParser();
 
 	ConfigParser& operator=(const ConfigParser&);
 
 	void displayAST(std::ostream& os) const;
+	const std::vector<Node*> getDirectives(const std::string&, const NodeBlock* = NULL) const;
 
 private:
 	int				m_line;
@@ -50,6 +52,7 @@ private:
 	void printAST(const NodeBlock&, std::ostream& os, int&) const;
 	const Directives& checkDirective(int, bool, const std::string&, const std::string&);
 	void buildNode(bool, NodeBlock&, std::string&);
+	void ast(const NodeBlock&, std::vector<Node*>&, const std::string&) const;
 };
 
 #endif

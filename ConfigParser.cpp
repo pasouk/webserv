@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/26 09:48:30 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/28 15:09:46 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,6 +91,35 @@ void ConfigParser::buildNode(bool bblock, NodeBlock &node, std::string& block)
 	block.clear();
 }
 
+const std::vector<Node*> ConfigParser::getDirectives(const std::string& name, const NodeBlock* node) const
+{
+	std::vector<Node*> directives;
+	if (node == NULL)
+		node = &m_ast;
+	return (ast(*node, directives, name), directives);
+}
+
+void ConfigParser::ast(const NodeBlock& root, std::vector<Node*>& nodes, const std::string& name) const
+{
+	std::vector<NodeBlock*>::const_iterator it_b;
+	std::vector<NodeDirective*>::const_iterator it_d;
+	std::vector<NodeBlock*>	blocks;
+	std::vector<NodeDirective*> directives;
+
+	directives = root.getDirectives();
+	for (it_d = directives.begin(); it_d != directives.end(); ++it_d)
+		if ((*it_d)->getName() == name)
+			nodes.push_back(*it_d);
+	blocks = root.getBlocks();
+	if (blocks.size())
+		for (it_b = blocks.begin(); it_b != blocks.end(); ++it_b)
+		{
+			if ((*it_b)->getName() == name)
+				nodes.push_back(*it_b);
+			ast(**it_b, nodes, name);
+		}
+}
+
 void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) const
 {
 	size_t i;
@@ -115,8 +144,8 @@ void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) 
 			os << " \e[0;33m" << *it2;
 		os << "\e[0m" << std::endl;
 	}
-	while(++i < root.getChilds().size())
-		printAST(*root.getChilds()[i], os, ++deep);
+	while(++i < root.getBlocks().size())
+		printAST(*root.getBlocks()[i], os, ++deep);
 	--deep;
 }
 

@@ -1,34 +1,32 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   NodeBlock.hpp                                      :+:      :+:    :+:   */
+/*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/08/23 11:49:51 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/28 09:12:21 by fabricebuyl      ###   ########.fr       */
+/*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
+/*   Updated: 2025/08/28 14:53:09 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef NODEBLOCK_HPP
-# define NODEBLOCK_HPP
+#ifndef WEBSERV_HPP
+# define WEBSERV_HPP
 
-# include "Node.hpp"
+# include "QueryListener.hpp"
 
-class NodeDirective;
-class NodeBlock : public Node
+class Webserv
 {
 public:
-	NodeBlock();
-	NodeBlock(const std::string&);
-	~NodeBlock();
-	Node* addChild(const Directives&, const std::string&);
-	const std::vector<NodeBlock*> getBlocks() const;
-	const std::vector<NodeDirective*> getDirectives() const;
-	
+	Webserv(ConfigParser*);
+	Webserv();
+	~Webserv();
+	Webserv(const Webserv&);
+
+	Webserv& operator=(const Webserv&);
+
 private:
-	std::vector<NodeDirective*> directives;
-	std::vector<NodeBlock*> blocks;
+	ConfigParser* m_parser;
 };
 
 #endif

@@ -1,18 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   webserv.cpp                                        :+:      :+:    :+:   */
+/*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/26 10:13:54 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/27 10:14:48 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "QueryListener.hpp"
-
-#include "ConfigParser.hpp" //remove when tested
+#include "Webserv.hpp"
+//#include "QueryListener.hpp"
 
 bool g_listening = true;
 
@@ -42,7 +41,6 @@ int main(int argc, char *argv[])
 	try
 	{
 		cp = new ConfigParser(argv[1]);
-		//std::cout << *cp;
 	}
 	catch(const std::exception& e)
 	{
@@ -56,11 +54,13 @@ int main(int argc, char *argv[])
 	//Listener
 	try
 	{
-		QueryListener listener(cp);
+		Webserv	webserv(cp);
+		//QueryListener listener(cp);
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		delete (cp);
 		return (1);
 	}
 

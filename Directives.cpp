@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/26 12:31:39 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/27 09:05:59 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,7 +80,7 @@ Location::Location() : Directives(true, 1, 1, "location")
 Server::Server() : Directives(true, 0, 0, "server")
 {
 	m_memberships.push_back("http"); //HTTP/HTTPS
-	m_memberships.push_back("stream"); //TCP/UDP
+	//m_memberships.push_back("stream"); //TCP/UDP
 }
 
 Http::Http() : Directives(true, 0, 0, "http")
