@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/28 15:09:45 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/29 11:19:43 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,13 +44,13 @@ private:
 	std::string 	m_file;
 	std::ifstream 	m_config_file;
 	NodeBlock 		m_ast;
-	std::vector<Directives> m_directives;
+	std::vector<Directives*> m_directives;
 
 private:
 	void openFile(const std::string&);
 	void getFormat(NodeBlock &node);
 	void printAST(const NodeBlock&, std::ostream& os, int&) const;
-	const Directives& checkDirective(int, bool, const std::string&, const std::string&);
+	const Directives& checkDirective(const std::vector<std::string>&, bool, const std::string&, const std::string&);
 	void buildNode(bool, NodeBlock&, std::string&);
 	void ast(const NodeBlock&, std::vector<Node*>&, const std::string&) const;
 };

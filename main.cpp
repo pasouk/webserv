@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/27 10:14:48 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/29 14:01:37 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,6 @@ int main(int argc, char *argv[])
 		std::cerr << e.what() << std::endl;
 		std::cerr << "webserv: configuration file " 
 			+ std::string(argv[1]) + " \e[0;33mtest\e[0m failed\n";
-		delete (cp);
 		return (1);
 	}
 

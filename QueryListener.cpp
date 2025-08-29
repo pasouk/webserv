@@ -6,14 +6,14 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/27 09:30:16 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/29 10:20:17 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "QueryListener.hpp"
 #include "ConfigParser.hpp"
 
-QueryListener::QueryListener(ConfigParser* config) : m_config(config)
+QueryListener::QueryListener()
 {
 	initListener();
 	queriesListen();

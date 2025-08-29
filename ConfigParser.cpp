@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/28 15:09:46 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/29 11:31:56 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,18 +14,21 @@
 
 ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 {
+	//use new to ovoid "objects slicing" (polymorphism failed !!)
+	//instead passing by value ! 
+	
 	//block
-	m_directives.push_back(Http());
-	m_directives.push_back(Server());
-	m_directives.push_back(Location());
+	m_directives.push_back(new Http());
+	m_directives.push_back(new Server());
+	m_directives.push_back(new Location());
 
 	//directives
-	m_directives.push_back(Root());
-	m_directives.push_back(ServerName());
-	m_directives.push_back(Listen());
-	m_directives.push_back(Index());
+	m_directives.push_back(new Root());
+	m_directives.push_back(new ServerName());
+	m_directives.push_back(new Listen());
+	m_directives.push_back(new Index());
 	
-	//if failed -> exception
+	//if fail -> exception
 	openFile(file);
 	getFormat(m_ast);
 }
@@ -33,6 +36,8 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 ConfigParser::~ConfigParser()
 {
 	m_config_file.close();
+	for (std::vector<Directives*>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
+		delete (*it);
 	//std::cout << "Destructor called\n";
 }
 
@@ -83,7 +88,7 @@ void ConfigParser::buildNode(bool bblock, NodeBlock &node, std::string& block)
 	args.clear();
 	while (ss >> arg)
 		args.push_back(arg);
-	directive = checkDirective(args.size(), bblock, node.getName(), name);
+	directive = checkDirective(args, bblock, node.getName(), name);
 	p_node = node.addChild(directive, name);
 	p_node->setArgs(args);
 	if (bblock)
@@ -155,42 +160,49 @@ void ConfigParser::displayAST(std::ostream& os) const
 	printAST(m_ast, os, level);
 }
 
-const Directives& ConfigParser::checkDirective(int num_args, bool block, const std::string& parent, const std::string& name)
+const Directives& ConfigParser::checkDirective(const std::vector<std::string>& args, bool block, const std::string& parent, const std::string& name)
 {
 	std::ostringstream 	oss;
 	std::string c;
 
 	oss.clear();
 	oss << m_line;
-	for (std::vector<Directives>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
-		if ((*it).getName() == name)
+	for (std::vector<Directives*>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
+		if ((*it)->getName() == name)
 		{
-			if (!(*it).isMembership(parent))
+			if (!(*it)->isMembership(parent))
 			{
 				m_config_file.close();
 				throw std::runtime_error("error: \e[0;32m\"" + name
 					+ "\"\e[0m directive is not allowed here \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());
 			}
-			else if (block != (*it).isBlock())
+			else if (block != (*it)->isBlock())
 			{
 				m_config_file.close();
 				c =";";
-				if ((*it).isBlock())
+				if ((*it)->isBlock())
 					c = "{";
 				throw std::runtime_error("error: \e[0;32m\"" + name
 					+ "\"\e[0m directive is not terminated by \e[0;32m\""
 					+ c + "\" \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());
 			}
-			else if (num_args > (*it).getMaxArgs() || num_args < (*it).getMinArgs())
+			else if (args.size() > (*it)->getMaxArgs() || args.size() < (*it)->getMinArgs())
 			{
 				m_config_file.close();
 				throw std::runtime_error("error: invalid number of arguments \e[0;34min \e[0;32m\""
 					+ name + "\"\e[0m" + " directive \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());
 			}
-			return (*it);
+			else if (!(*it)->areArgsValid(args))
+			{
+				m_config_file.close();
+				throw std::runtime_error("error: invalid format arguments \e[0;34min \e[0;32m\""
+					+ name + "\"\e[0m" + " directive \e[0;34min\e[0m "
+					+ m_file + ":" + oss.str());			
+			}
+			return (**it);
 		}
 	m_config_file.close();
 	throw std::runtime_error("error: unknown directive \e[0;32m\""

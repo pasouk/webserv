@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/26 10:12:04 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/29 10:20:30 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,14 +35,13 @@ extern bool g_listening;
 class QueryListener
 {
 public:
-	QueryListener(ConfigParser*);
+	QueryListener();
 	~QueryListener();
 	QueryListener(const QueryListener&);
 
 	QueryListener& operator=(const QueryListener&);
 	
 private:
-	ConfigParser *m_config;
 	struct sockaddr_in 	m_serverAddress;
 	struct pollfd 		m_fds[MAX_CLIENTS + 1];
 

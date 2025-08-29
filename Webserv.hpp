@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/28 14:53:09 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/29 10:14:00 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ public:
 	Webserv& operator=(const Webserv&);
 
 private:
-	ConfigParser* m_parser;
+	std::vector<QueryListener*> listeners;
 };
 
 #endif

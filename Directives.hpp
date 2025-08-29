@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/25 16:55:27 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/29 11:11:09 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,27 +16,31 @@
 
 # include <iostream>
 # include <vector>
+# include <regex.h> //not boost or external library, it's a standard POSIX library
 
 class Directives
 {
 public:
 	Directives();
+	virtual ~Directives();
 	Directives(bool, int, int, std::string);
+	
 	const std::string& getName() const;
-	int getMaxArgs() const;
-	int getMinArgs() const;
+	size_t getMaxArgs() const;
+	size_t getMinArgs() const;
 	bool isMembership(const std::string&) const;
 	bool isBlock() const;
+	virtual bool areArgsValid(const std::vector<std::string>&) const;
 
 protected:
 	bool		m_block;
-	int			m_min_args;
-	int			m_max_args;
+	size_t		m_min_args;
+	size_t		m_max_args;
 	std::string	m_name;
 	std::vector<std::string> m_memberships;
 };
 
-class Listen : public Directives { public: Listen(); };
+class Listen : public Directives { public: Listen(); bool areArgsValid(const std::vector<std::string>&) const;};
 class ServerName : public Directives { public: ServerName(); };
 class Root : public Directives { public: Root(); };
 class Index : public Directives { public: Index(); };
