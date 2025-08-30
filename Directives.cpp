@@ -52,7 +52,7 @@ bool Directives::areArgsValid(const std::vector<std::string>& args) const
 	return (true);
 }
 
-Listen::Listen() : Directives(false, 0, MAX_ARGS, "listen")
+Listen::Listen() : Directives(false, 0, 2, "listen")
 {
 	m_memberships.push_back("server");
 }
@@ -60,16 +60,20 @@ Listen::Listen() : Directives(false, 0, MAX_ARGS, "listen")
 bool Listen::areArgsValid(const std::vector<std::string>& args) const
 {
 	regex_t regex;
-	std::string pattern("^((25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})(\\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})){3}(:[0-9]+)?)$|^([0-9]+)$");
-	
+	std::string pattern(
+		//url + port or port
+		"(^((25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})(\\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})){3}"
+		"(:(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4][0-9]{3}|[1-5][0-9]{4}|[0-9]{1,4}))?)$)"
+		//only port
+		"|(^(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4][0-9]{3}|[1-5][0-9]{4}|[0-9]{1,4})$)"
+	);
+		
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{
 		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
 			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
 				return (regfree(&regex), false);
 	}
-	else
-		std::cout << "LOULOU\n";
 	return (regfree(&regex), true);
 }
 

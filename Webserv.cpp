@@ -25,8 +25,19 @@ Webserv::Webserv(ConfigParser* parser)
 	for (std::vector<Node*>::const_iterator it = serveurs.begin(); it != serveurs.end(); ++it)
 	{		
 		listens = parser->getDirectives("listen", static_cast<NodeBlock*>(*it));
-		for (std::vector<Node*>::const_iterator it = listens.begin(); it != listens.end(); ++it)
+		if (listens.size() == 0)
+		{
+			std::cout << "NO LISTEN\n";
 			listeners.push_back(new QueryListener());
+		}
+		else
+		{
+			std::cout << listens.size() << " LISTENERS\n";
+			for (std::vector<Node*>::const_iterator it = listens.begin(); it != listens.end(); ++it)
+			{
+				listeners.push_back(new QueryListener());
+			}
+		}
 	}
 	//std::cout << *config;
 }

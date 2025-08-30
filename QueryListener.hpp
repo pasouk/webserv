@@ -24,17 +24,18 @@
 # include <sys/wait.h>
 # include <sys/mman.h>
 # include <poll.h>
+# include <arpa/inet.h>
 # include "ConfigParser.hpp"
 
 # define BUFFER_SIZE 4096
 # define MAX_CLIENTS 10
-# define PORT 8080
 
 extern bool g_listening;
 
 class QueryListener
 {
 public:
+	QueryListener(uint16_t, const std::string&);
 	QueryListener();
 	~QueryListener();
 	QueryListener(const QueryListener&);
@@ -46,7 +47,7 @@ private:
 	struct pollfd 		m_fds[MAX_CLIENTS + 1];
 
 private:
-	void initListener();
+	void initListener(uint16_t = 80, const std::string& = "0.0.0.0");
 	void queriesListen();
 	void stopListening();
 	void closeFds();

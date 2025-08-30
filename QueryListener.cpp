@@ -13,6 +13,12 @@
 #include "QueryListener.hpp"
 #include "ConfigParser.hpp"
 
+QueryListener::QueryListener(uint16_t port, const std::string& host)
+{
+	initListener(port, host);
+	queriesListen();
+}
+
 QueryListener::QueryListener()
 {
 	initListener();
@@ -32,7 +38,7 @@ void QueryListener::stopListening()
 	g_listening = false;
 }
 
-void QueryListener::initListener()
+void QueryListener::initListener(uint16_t port, const std::string& host)
 {
 	int opt = 1;
 	
@@ -66,8 +72,9 @@ void QueryListener::initListener()
 	//3. port address definition
 	memset(&m_serverAddress, 0, sizeof(m_serverAddress));
  	m_serverAddress.sin_family = AF_INET;
-	m_serverAddress.sin_port = htons(PORT);
-	m_serverAddress.sin_addr.s_addr = INADDR_ANY;
+	m_serverAddress.sin_port = htons(port);
+	inet_pton(AF_INET6, host.c_str(), &m_serverAddress);
+	//m_serverAddress.sin_addr.s_addr = INADDR_ANY; // = inet_addr("127.0.0.1");
 
 	//4. link address and socket
 	if (bind(m_fds[0].fd, (struct sockaddr*)&m_serverAddress, sizeof(m_serverAddress)) < 0)
