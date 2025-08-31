@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/29 15:08:49 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 10:37:06 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ size_t Directives::getMinArgs() const
 	return (m_min_args);
 }
 
-bool Directives::areArgsValid(const std::vector<std::string>& args) const
+bool Directives::areArgsValid(const std::vector<std::string>& args, std::string&) const
 {
 	(void)args;
 	return (true);
@@ -57,7 +57,7 @@ Listen::Listen() : Directives(false, 0, 2, "listen")
 	m_memberships.push_back("server");
 }
 
-bool Listen::areArgsValid(const std::vector<std::string>& args) const
+bool Listen::areArgsValid(const std::vector<std::string>& args, std::string& err) const
 {
 	regex_t regex;
 	std::string pattern(
@@ -72,7 +72,7 @@ bool Listen::areArgsValid(const std::vector<std::string>& args) const
 	{
 		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
 			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
-				return (regfree(&regex), false);
+				return (err = (*it), regfree(&regex), false);
 	}
 	return (regfree(&regex), true);
 }

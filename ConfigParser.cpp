@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/29 11:31:56 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 10:05:53 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -163,7 +163,7 @@ void ConfigParser::displayAST(std::ostream& os) const
 const Directives& ConfigParser::checkDirective(const std::vector<std::string>& args, bool block, const std::string& parent, const std::string& name)
 {
 	std::ostringstream 	oss;
-	std::string c;
+	std::string c, bad_arg;
 
 	oss.clear();
 	oss << m_line;
@@ -195,11 +195,11 @@ const Directives& ConfigParser::checkDirective(const std::vector<std::string>& a
 					+ name + "\"\e[0m" + " directive \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());
 			}
-			else if (!(*it)->areArgsValid(args))
+			else if (!(*it)->areArgsValid(args, bad_arg))
 			{
 				m_config_file.close();
 				throw std::runtime_error("error: invalid format arguments \e[0;34min \e[0;32m\""
-					+ name + "\"\e[0m" + " directive \e[0;34min\e[0m "
+					+ name + ": " + bad_arg + "\"\e[0m" + " directive \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());			
 			}
 			return (**it);

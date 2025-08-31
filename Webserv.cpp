@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   webserv.cpp                                        :+:      :+:    :+:   */
+/*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/29 10:21:13 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 10:51:32 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@ Webserv::Webserv(ConfigParser* parser)
 {
 	std::vector<Node*> serveurs;
 	std::vector<Node*> listens;
+	uint16_t port = 80;
+	std::string host;
 
 	if (parser == NULL)
 		throw std::runtime_error("No configuration");
@@ -35,7 +37,8 @@ Webserv::Webserv(ConfigParser* parser)
 			std::cout << listens.size() << " LISTENERS\n";
 			for (std::vector<Node*>::const_iterator it = listens.begin(); it != listens.end(); ++it)
 			{
-				listeners.push_back(new QueryListener());
+				static_cast<NodeDirective*>(*it)->getHostPort(port, host);
+				listeners.push_back(new QueryListener(port, host));
 			}
 		}
 	}

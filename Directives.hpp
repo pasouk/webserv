@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/29 11:11:09 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 10:36:51 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ public:
 	size_t getMinArgs() const;
 	bool isMembership(const std::string&) const;
 	bool isBlock() const;
-	virtual bool areArgsValid(const std::vector<std::string>&) const;
+	virtual bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 
 protected:
 	bool		m_block;
@@ -40,7 +40,12 @@ protected:
 	std::vector<std::string> m_memberships;
 };
 
-class Listen : public Directives { public: Listen(); bool areArgsValid(const std::vector<std::string>&) const;};
+class Listen : public Directives
+{
+public: 
+	Listen(); 
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
 class ServerName : public Directives { public: ServerName(); };
 class Root : public Directives { public: Root(); };
 class Index : public Directives { public: Index(); };
