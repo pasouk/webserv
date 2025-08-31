@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/31 10:05:53 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 15:05:08 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,9 +35,7 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 
 ConfigParser::~ConfigParser()
 {
-	m_config_file.close();
-	for (std::vector<Directives*>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
-		delete (*it);
+	cleanParser();
 	//std::cout << "Destructor called\n";
 }
 
@@ -172,14 +170,14 @@ const Directives& ConfigParser::checkDirective(const std::vector<std::string>& a
 		{
 			if (!(*it)->isMembership(parent))
 			{
-				m_config_file.close();
+				cleanParser();
 				throw std::runtime_error("error: \e[0;32m\"" + name
 					+ "\"\e[0m directive is not allowed here \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());
 			}
 			else if (block != (*it)->isBlock())
 			{
-				m_config_file.close();
+				cleanParser();
 				c =";";
 				if ((*it)->isBlock())
 					c = "{";
@@ -190,23 +188,30 @@ const Directives& ConfigParser::checkDirective(const std::vector<std::string>& a
 			}
 			else if (args.size() > (*it)->getMaxArgs() || args.size() < (*it)->getMinArgs())
 			{
-				m_config_file.close();
+				cleanParser();
 				throw std::runtime_error("error: invalid number of arguments \e[0;34min \e[0;32m\""
 					+ name + "\"\e[0m" + " directive \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());
 			}
 			else if (!(*it)->areArgsValid(args, bad_arg))
 			{
-				m_config_file.close();
+				cleanParser();
 				throw std::runtime_error("error: invalid format arguments \e[0;34min \e[0;32m\""
 					+ name + ": " + bad_arg + "\"\e[0m" + " directive \e[0;34min\e[0m "
 					+ m_file + ":" + oss.str());			
 			}
 			return (**it);
 		}
-	m_config_file.close();
+	cleanParser();
 	throw std::runtime_error("error: unknown directive \e[0;32m\""
 		+ name + "\" \e[0;34min\e[0m " + m_file + ":" + oss.str());
+}
+
+void ConfigParser::cleanParser()
+{
+	m_config_file.close();
+	for (std::vector<Directives*>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
+		delete (*it);
 }
 
 std::ostream& operator<<(std::ostream& os, const ConfigParser& cp)

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   QueryListener.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/29 10:20:30 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 14:36:22 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@
 # include "ConfigParser.hpp"
 
 # define BUFFER_SIZE 4096
-# define MAX_CLIENTS 10
+# define MAX_CLIENTS 100
 
 extern bool g_listening;
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   QueryListener.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/29 10:20:17 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 14:43:10 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ void QueryListener::initListener(uint16_t port, const std::string& host)
 	m_fds[0].fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_fds[0].fd == -1)
 		throw std::runtime_error(std::strerror(errno));
-	m_fds[0].events = POLLIN | POLLOUT;
+	m_fds[0].events = POLLIN;
 
 	// only F_SETFL, O_NONBLOCK and FD_CLOEXEC can be used (macOS).
 	if (fcntl(m_fds[0].fd, F_SETFL, O_NONBLOCK) == -1)
@@ -93,7 +93,7 @@ void QueryListener::initListener(uint16_t port, const std::string& host)
 
 void QueryListener::queriesListen()
 {
-	int				client_fd, ret, n;
+	int	client_fd, ret, n;
 	socklen_t serverlen = sizeof(m_serverAddress);
 	
 	while (g_listening)
@@ -121,7 +121,7 @@ void QueryListener::queriesListen()
                     break;
                 }
 				else if (i == MAX_CLIENTS)
-					std::cout << "Increase MAX_CLIENTS.\n";
+					std::cout << "No more client accepted, increase MAX_CLIENTS.\n";
             }
         }
 
@@ -143,9 +143,6 @@ void QueryListener::queriesListen()
                     std::cout << "Client N°" << i <<" send: " << buffer;
                 }
             }
-            if (m_fds[i].fd != -1 && (m_fds[i].revents & POLLOUT))
-			{
-			}
         }
 	}
 

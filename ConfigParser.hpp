@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/29 11:19:43 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 15:02:12 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ private:
 	const Directives& checkDirective(const std::vector<std::string>&, bool, const std::string&, const std::string&);
 	void buildNode(bool, NodeBlock&, std::string&);
 	void ast(const NodeBlock&, std::vector<Node*>&, const std::string&) const;
+	void cleanParser();
 };
 
 #endif

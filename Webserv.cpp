@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/31 10:51:32 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/31 14:50:57 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@ Webserv::Webserv(ConfigParser* parser)
 			for (std::vector<Node*>::const_iterator it = listens.begin(); it != listens.end(); ++it)
 			{
 				static_cast<NodeDirective*>(*it)->getHostPort(port, host);
+				std::cout << "host: " << host << ", port: " << port << std::endl;
 				listeners.push_back(new QueryListener(port, host));
 			}
 		}
@@ -49,4 +50,9 @@ Webserv::~Webserv()
 {
 	for (std::vector<QueryListener*>::iterator it = listeners.begin(); it != listeners.end(); ++it)
 		delete (*it);
+}
+
+void Webserv::queriesListen() const
+{
+
 }
