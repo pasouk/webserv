@@ -5,6 +5,8 @@
 #include <string>
 #include "Colors.hpp"
 #include <map>
+#include <cstring>
+#include "ParserHttp.hpp"
 
 //ATTENTION A MODIFIER LE TABLEAU METHOD_MAP DANS LE .CPP SI ON MODIFIE L ENUM
 enum HttpMethod

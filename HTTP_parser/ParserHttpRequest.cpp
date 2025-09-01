@@ -29,30 +29,7 @@ int    ParserHttpRequest::basicChecks()
     if (!isSeveralLines() || !isBodySeparator())
         return 400;
     return 0;
-
-
-    
 }
-
-int ft_countwords(std::string str)
-{
-    int words = 0;
-    int i = 1;
-
-    if (str.empty())
-        return 0;
-    while (str[i] && str[i] != '\r')
-    {
-        if ((str[i - 1] && str[i] != ' ' && str[i - 1] == ' ')\
-            || (words == 0 && str[i] != ' '))
-        {
-            words++;
-        }
-            i++;
-    }
-    return words;
-}
-
 
 parsingState operator++(parsingState &state, int)
 {
@@ -108,13 +85,13 @@ void ParserHttpRequest::devideRequest()
     if (pos1 != std::string::npos)
         _methodLine = _rawRequest.substr(0, pos1);
     else
-        _methodLine = ""; // mettre une erreur + tard
+        _methodLine = "";
 
     size_t pos2 = _rawRequest.find("\r\n\r\n", pos1 + 2);
     if (pos2 != std::string::npos && pos2 + 4 <= _rawRequest.size())
         _headerLine = _rawRequest.substr(pos1 + 2, pos2 - (pos1 + 2));
     else
-        _headerLine = ""; //mettre une erreur + tard
+        _headerLine = "";
 
     if (pos2 != std::string::npos && pos2 + 4 < _rawRequest.size())
         _bodyLine = _rawRequest.substr(pos2 + 4);
@@ -223,23 +200,18 @@ int    ParserHttpRequest::debugParsingRequest()
     int ret;
     std::cout << Colors::BLUE << "\n\n----------- STEP 0 : Before parsing (Raw request) ----------\n" \
      << Colors::RESET << std::endl  << _rawRequest << std::endl;
-     
     devideRequest();
     std::cout << Colors::BLUE << "\n\n----------- STEP 1 : devide request in 3 ---------- \n" \
      << Colors::RESET << std::endl << Colors::CYAN << "Method line : " << Colors::RESET << getMethodLine() << std::endl \
      << Colors::RESET << std::endl << Colors::CYAN << "Header line : " << Colors::RESET << getHeaderLine() << std::endl \
      << Colors::RESET << std::endl << Colors::CYAN << "body line : " << Colors::RESET << getBodyLine() << std::endl;
-
     ret = parseMethodLine();
     if (ret)
         return ret;
-    
         std::cout << Colors::BLUE << "\n\n----------- STEP 2 : Parsing method line ----------\n" \
      << Colors::RESET << std::endl << Colors::CYAN << "Method found: " << Colors::RESET << methods_map[getMethod()].name << std::endl \
      << Colors::RESET << Colors::CYAN << "Path found : " << Colors::RESET << getPath() << std::endl \
      << Colors::RESET << Colors::CYAN << "Version found : " << Colors::RESET << getVersion() << std::endl;
-
-
      ret = parseHeaderLine();
      if (ret)
         return ret;
@@ -250,9 +222,6 @@ int    ParserHttpRequest::debugParsingRequest()
     {
         std::cout << it->first << " : " << it->second << std::endl;
     }
-
-     //<< Colors::RESET << std::endl << Colors::CYAN << "Method found: " << Colors::RESET << methods_map[instance1.getMethod()].name << std::endl \
-      << std::endl;
       return 0;
 }
 
@@ -276,11 +245,9 @@ int ParserHttpRequest::parseRequest()
     if (ret)
         return ret;
     devideRequest();
-
     ret = parseMethodLine();
     if (ret)
         return ret;
-
     ret = parseHeaderLine();
     if (ret)
         return ret;
@@ -288,18 +255,11 @@ int ParserHttpRequest::parseRequest()
     return 0;
 }
 
-static inline std::string trim(const std::string& s) {
-    size_t start = s.find_first_not_of(" \t\r\n");
-    if (start == std::string::npos) return ""; // chaîne vide ou que des espaces
-    size_t end = s.find_last_not_of(" \t\r\n");
-    return s.substr(start, end - start + 1);
-}
-
-void ParserHttpRequest::sanitize() {
+void ParserHttpRequest::sanitize()
+{
     _path    = trim(_path);
     _version = trim(_version);
 
-    // Nettoyer toutes les clés/valeurs des headers
     std::map<std::string, std::string> cleaned;
     for (std::map<std::string, std::string>::iterator it = _headers.begin();
          it != _headers.end(); ++it) 
@@ -308,32 +268,5 @@ void ParserHttpRequest::sanitize() {
         std::string value = trim(it->second);
         cleaned[key] = value;
     }
-    _headers.swap(cleaned); // remplace par la version nettoyée
-}
-
-int main()
-{
-    std::string rawRequest = "POST / HTTP/1.1\r\n \
-        Host: localhost:8080\r\n \
-        User-Agent: curl/7.81.0\r\n \
-        Accept: */*\r\n \
-        Content-Length: 7\r\n \
-        Content-Type: application/x-www-form-urlencoded\r\n\r\n name=42";
-
-
-    ParserHttpRequest request1(rawRequest);
-    int ret = request1.parseRequest();
-    if(ret)
-    {
-        std::cout << Colors::RED << "Parsing exit code : " << ret << Colors::RESET << std::endl;
-        return 0;
-    }
-    else 
-        std::cout << Colors::GREEN << "Parsing exit code : " << ret << Colors::RESET << std::endl;
-
-    request1.printParsedData();
-    
-    //request1.debugParsingRequest();
-    
-    
+    _headers.swap(cleaned);
 }
