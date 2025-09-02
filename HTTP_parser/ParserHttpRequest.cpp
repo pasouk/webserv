@@ -59,17 +59,17 @@ std::string ParserHttpRequest::getBodyLine()
     return _bodyLine;
 }
 
-HttpMethod ParserHttpRequest::getMethod()
+HttpMethod ParserHttpRequest::getMethod() const
 {
     return _method;
 }
 
-std::string ParserHttpRequest::getPath()
+std::string ParserHttpRequest::getPath() const
 {
     return _path;
 }
 
-std::string ParserHttpRequest::getVersion()
+std::string ParserHttpRequest::getVersion() const
 {
     return _version;
 }

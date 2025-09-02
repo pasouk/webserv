@@ -45,14 +45,12 @@ class ParserHttpRequest
         std::string     _headerLine;
         std::string     _bodyLine;
 
-
         HttpMethod                      _method;
         std::string                     _path;
         std::string                     _version;
         std::map<std::string, std::string>   _headers;
 
         parsingState    _state;
-
 
     public:
         ParserHttpRequest();
@@ -62,9 +60,9 @@ class ParserHttpRequest
         std::string getHeaderLine();
         std::string getBodyLine();
 
-        HttpMethod getMethod();
-        std::string getPath();
-        std::string getVersion();
+        HttpMethod getMethod() const;
+        std::string getPath() const;
+        std::string getVersion() const;
         const std::map<std::string, std::string>& getHeaders() const;
         
 
