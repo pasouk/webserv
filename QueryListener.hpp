@@ -27,10 +27,7 @@
 # include <arpa/inet.h>
 # include "ConfigParser.hpp"
 
-# define BUFFER_SIZE 4096
-# define MAX_CLIENTS 100
-
-extern bool g_listening;
+//extern bool g_listening;
 
 class QueryListener
 {
@@ -41,16 +38,20 @@ public:
 	QueryListener(const QueryListener&);
 
 	QueryListener& operator=(const QueryListener&);
+
+	int getListenFD() const;
+	const struct sockaddr_in& getServerAddress() const;
 	
 private:
-	struct sockaddr_in 	m_serverAddress;
-	struct pollfd 		m_fds[MAX_CLIENTS + 1];
+	sockaddr_in m_serverAddress;
+	int			m_listenFD;
+	//struct pollfd 		m_fds[MAX_CLIENTS + 1];
 
 private:
 	void initListener(uint16_t = 80, const std::string& = "0.0.0.0");
-	void queriesListen();
-	void stopListening();
-	void closeFds();
+	//void queriesListen();
+	//void stopListening();
+	//void closeFds();
 };
 
 #endif

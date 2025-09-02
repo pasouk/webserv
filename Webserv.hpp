@@ -14,6 +14,12 @@
 # define WEBSERV_HPP
 
 # include "QueryListener.hpp"
+# include <sys/resource.h>
+# include <algorithm>
+
+# define BUFFER_SIZE 4096
+
+extern bool g_listening;
 
 class Webserv
 {
@@ -24,10 +30,16 @@ public:
 	Webserv(const Webserv&);
 
 	Webserv& operator=(const Webserv&);
-	void queriesListen() const;
+	void queriesListen();
+	void stopListening();
 
 private:
-	std::vector<QueryListener*> listeners;
+	std::vector<pollfd> m_fds;
+	std::vector<bool> m_isClient;
+	std::vector<QueryListener*> m_listeners;
+
+private:
+	void cleanWebserv();
 };
 
 #endif
