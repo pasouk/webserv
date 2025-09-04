@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/31 15:05:08 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/03 13:58:46 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,15 +94,15 @@ void ConfigParser::buildNode(bool bblock, NodeBlock &node, std::string& block)
 	block.clear();
 }
 
-const std::vector<Node*> ConfigParser::getDirectives(const std::string& name, const NodeBlock* node) const
+const std::vector<const Node*> ConfigParser::getDirectives(const std::string& name, const NodeBlock* node) const
 {
-	std::vector<Node*> directives;
+	std::vector<const Node*> directives;
 	if (node == NULL)
 		node = &m_ast;
 	return (ast(*node, directives, name), directives);
 }
 
-void ConfigParser::ast(const NodeBlock& root, std::vector<Node*>& nodes, const std::string& name) const
+void ConfigParser::ast(const NodeBlock& root, std::vector<const Node*>& nodes, const std::string& name) const
 {
 	std::vector<NodeBlock*>::const_iterator it_b;
 	std::vector<NodeDirective*>::const_iterator it_d;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   NodeDirective.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:14 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/31 13:02:21 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/03 13:34:40 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,13 +18,15 @@ NodeDirective::NodeDirective(const std::string& name) : Node(name) {}
 NodeDirective::~NodeDirective() {}
 
 //Here we assume that arguments (getArgs) parsing has passed !
-void NodeDirective::getHostPort(uint16_t& port, std::string& host) const
+int NodeDirective::getListenHostPort(uint16_t& port, std::string& host) const
 {
 	std::vector<std::string> args, splits;
 	std::string split;
 	std::stringstream ss;
 	std::istringstream iss;
 
+	if (name != "listen")
+		return (1);
 	args = getArgs();
 	for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
 	{
@@ -46,7 +48,7 @@ void NodeDirective::getHostPort(uint16_t& port, std::string& host) const
 				ss << splits[0];
 				ss >> port;
 			}
-			return ;
+			return (0);
 		}
 		else
 		{
@@ -59,4 +61,5 @@ void NodeDirective::getHostPort(uint16_t& port, std::string& host) const
 			}
 		}
 	}
+	return (0);
 }

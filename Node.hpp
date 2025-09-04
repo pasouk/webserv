@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:42:30 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/28 15:23:46 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/03 15:41:45 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,11 @@
 class Node
 {
 public:
+	Node();
 	Node(const std::string);
 	virtual ~Node();
+
+	Node& operator=(const Node&);
 
 	const std::string& getName() const;
 	const std::vector<std::string>& getArgs() const;

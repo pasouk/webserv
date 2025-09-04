@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:51 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/28 09:12:21 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/03 15:44:19 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,9 @@ public:
 	NodeBlock();
 	NodeBlock(const std::string&);
 	~NodeBlock();
+
+	NodeBlock& operator=(const NodeBlock&);
+
 	Node* addChild(const Directives&, const std::string&);
 	const std::vector<NodeBlock*> getBlocks() const;
 	const std::vector<NodeDirective*> getDirectives() const;

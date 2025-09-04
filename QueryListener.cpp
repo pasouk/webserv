@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   QueryListener.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/31 14:43:10 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/04 14:13:56 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,6 @@
 QueryListener::QueryListener(uint16_t port, const std::string& host)
 {
 	initListener(port, host);
-}
-
-QueryListener::QueryListener()
-{
-	initListener();
 }
 
 //release socker
@@ -71,7 +66,7 @@ void QueryListener::initListener(uint16_t port, const std::string& host)
 	memset(&m_serverAddress, 0, sizeof(m_serverAddress));
  	m_serverAddress.sin_family = AF_INET;
 	m_serverAddress.sin_port = htons(port);
-	inet_pton(AF_INET6, host.c_str(), &m_serverAddress);
+	inet_pton(AF_INET, host.c_str(), &m_serverAddress.sin_addr);
 
 	//4. link address and socket
 	if (bind(m_listenFD, (struct sockaddr*)&m_serverAddress, sizeof(m_serverAddress)) < 0)

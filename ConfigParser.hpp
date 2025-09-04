@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 12:59:12 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/31 15:02:12 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/03 13:58:40 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ public:
 	ConfigParser& operator=(const ConfigParser&);
 
 	void displayAST(std::ostream& os) const;
-	const std::vector<Node*> getDirectives(const std::string&, const NodeBlock* = NULL) const;
+	const std::vector<const Node*> getDirectives(const std::string&, const NodeBlock* = NULL) const;
 
 private:
 	int				m_line;
@@ -52,7 +52,7 @@ private:
 	void printAST(const NodeBlock&, std::ostream& os, int&) const;
 	const Directives& checkDirective(const std::vector<std::string>&, bool, const std::string&, const std::string&);
 	void buildNode(bool, NodeBlock&, std::string&);
-	void ast(const NodeBlock&, std::vector<Node*>&, const std::string&) const;
+	void ast(const NodeBlock&, std::vector<const Node*>&, const std::string&) const;
 	void cleanParser();
 };
 

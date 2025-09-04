@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/31 14:58:07 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/03 15:15:19 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	try
 	{
 		Webserv	webserv(cp);
-		//QueryListener listener(cp);
+		webserv.startListening();
 	}
 	catch(const std::exception& e)
 	{
