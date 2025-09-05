@@ -15,6 +15,7 @@
 
 Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 {
+	QueryListener* ql;
 	std::vector<const Node*> serveurs;
 	std::vector<const Node*> listens;
 	std::vector<Node*>::const_iterator it2;
@@ -30,7 +31,9 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 		if (listens.size() == 0)
 		{
 			std::cout << "NO LISTEN\n";
-			m_listeners.push_back(createListener(port, host));
+			ql = createListener(port, host);
+			if (ql)
+				m_listeners.push_back(ql);
 		}
 		else
 		{
@@ -38,21 +41,38 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 			for (std::vector<const Node*>::const_iterator it = listens.begin(); it != listens.end(); ++it)
 			{
 				if (!static_cast<const NodeDirective*>(*it)->getListenHostPort(port, host))
-					m_listeners.push_back(createListener(port, host));
+				{
+					ql = createListener(port, host);
+					if (ql)
+						m_listeners.push_back(ql);
+				}
 			}
 		}
 	}
+	std::cout << "NUM OF LISTENERS: " << m_listeners.size() << std::endl;
 }
 
 Webserv::~Webserv()
 {
 	cleanWebserv();
+	if (m_queries.size())
+		std::cout << "\033[0;33mWarning: \033[0m" << m_queries.size() << " unprocessed queries.\n";
+}
+
+const std::vector<query>& Webserv::getQueries() const
+{
+	return (m_queries);
+}
+
+const std::vector<server>& Webserv::getServers() const
+{
+	return (m_servers);
 }
 
 void Webserv::startListening()
 {
 	pollfd fd;
-	Query query;
+	query query;
 	rlimit limit;
 
 	//check system queue size
@@ -92,7 +112,7 @@ void Webserv::addClient(size_t i)
 {
 	sockaddr_in serverAddress;
 	socklen_t serverlen;
-	Query query;
+	query query;
 	pollfd fd;
 	size_t j;
 	char ip[INET_ADDRSTRLEN];
@@ -113,16 +133,13 @@ void Webserv::addClient(size_t i)
 			{
 				m_fds.push_back(fd);
 				m_isClient.push_back(true);
-				
-
 				getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 				query.fd = fd.fd;
 				query.port = ntohs(serverAddress.sin_port);
 				inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 				query.host = ip;
-				m_queries.push_back(query);
+				m_clients.push_back(query);
 
-			
 				std::cout << "New client connected: fd:" << fd.fd
 					<< ", port:"<< ntohs(serverAddress.sin_port) << std::endl;
 			}
@@ -149,14 +166,10 @@ void Webserv::checkQueries(size_t i)
 	else
 	{
 		buffer[n] = '\0';
-		for (std::vector<Query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 			if (m_fds[i].fd == (*it).fd)
 			{
-				(*it).http = buffer;
-
-				(*it).root = getArgsFromServerDirective("root", (*it).port, (*it).host)[0];
-				(*it).server_names = getArgsFromServerDirective("server_name", (*it).port, (*it).host);
-
+				m_queries.push_back(*it);
 				printQuery(*it);
 				break;
 			}
@@ -189,9 +202,7 @@ QueryListener* Webserv::createListener(u_int16_t port, const std::string& host)
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
-		cleanWebserv();
-		throw std::runtime_error(e.what());
+		return (NULL);
 	}	
 }
 
@@ -227,23 +238,17 @@ std::vector<std::string> Webserv::getArgsFromServerDirective(const std::string& 
 	return (ret);
 }
 
-void Webserv::printQuery(Query& query) const
+void Webserv::printQuery(query& query) const
 {
     int col1 = 20;
     int col2 = 20;
 
     std::cout << std::setw(col1) << "fd:" 
               << "\033[0;36m" << std::setw(col2) << query.fd << "\033[0m" << std::endl;
-	for (std::vector<std::string>::iterator it = query.server_names.begin(); it != query.server_names.end(); ++it)
-		std::cout << std::setw(col1) << "server_name:" 
-    		<< "\033[0;36m" << std::setw(col2) << (*it) << "\033[0m" << " ";
-	std::cout << std::endl;
    	std::cout << std::setw(col1) << "port:" 
               << "\033[0;36m" << std::setw(col2) << query.port << "\033[0m" << std::endl;
     std::cout << std::setw(col1) << "host:" 
               << "\033[0;36m" << std::setw(col2) << query.host << "\033[0m" << std::endl;
-    std::cout << std::setw(col1) << "root:" 
-              << "\033[0;36m" << std::setw(col2) << query.root << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "http:" 
-              << "\033[0;36m" << std::endl << query.http << "\033[0m";
+              << "\033[0;36m" << std::endl << query.http << "\033[0m" << std::endl;
 }

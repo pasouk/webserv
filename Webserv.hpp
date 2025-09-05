@@ -22,14 +22,20 @@
 
 extern bool g_listening;
 
-struct Query
+struct query
 {
 	int							fd;
-	std::vector<std::string> 	server_names;
 	uint16_t 					port;
 	std::string					host;
-	std::string					root;
 	std::string					http;
+};
+
+struct server
+{
+	std::vector<std::string>	server_names;
+	uint16_t 					port;
+	std::string					host;
+	std::string					root;	
 };
 
 class Webserv
@@ -44,10 +50,14 @@ public:
 	
 	void startListening();
 	void stopListening();
+	const std::vector<query>& getQueries() const;	//get a list of all waiting queries
+	const std::vector<server>& getServers() const;	//get e list of all listening servers
 
 private:
 	ConfigParser* m_parser;
-	std::vector<Query> m_queries;
+	std::vector<query> m_queries;
+	std::vector<server> m_servers;
+	std::vector<query> m_clients;
 	std::vector<pollfd> m_fds;
 	std::vector<bool> m_isClient;
 	std::vector<const QueryListener*> m_listeners;
@@ -58,7 +68,7 @@ private:
 private:
 	void cleanWebserv();
 	QueryListener* createListener(u_int16_t, const std::string&);
-	void printQuery(Query&) const;
+	void printQuery(query&) const;
 	void addClient(size_t);
 	void checkQueries(size_t);
 	std::vector<std::string> getArgsFromServerDirective(const std::string&, uint16_t, const std::string&) const;

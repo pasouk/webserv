@@ -45,13 +45,9 @@ public:
 private:
 	sockaddr_in m_serverAddress;
 	int			m_listenFD;
-	//struct pollfd 		m_fds[MAX_CLIENTS + 1];
 
 private:
 	void initListener(uint16_t = 80, const std::string& = "0.0.0.0");
-	//void queriesListen();
-	//void stopListening();
-	//void closeFds();
 };
 
 #endif
