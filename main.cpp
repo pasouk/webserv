@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/03 15:15:19 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/06 13:18:41 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
 	try
 	{
 		Webserv	webserv(cp);
+		webserv.printServers();
 		webserv.startListening();
 	}
 	catch(const std::exception& e)

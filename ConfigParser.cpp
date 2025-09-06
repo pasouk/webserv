@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/03 13:58:46 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/06 13:29:45 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,41 +123,6 @@ void ConfigParser::ast(const NodeBlock& root, std::vector<const Node*>& nodes, c
 		}
 }
 
-void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) const
-{
-	size_t i;
-	std::string spaces;
-	std::vector<std::string>::const_iterator it2;
-	std::vector<std::string> args;
-	
-	for (int j = 0; j < deep; ++j)
-		spaces += "   ";
-	i = -1;
-	os << spaces << root.getName();
-	args = root.getArgs();
-	for (it2 = args.begin(); it2 != args.end(); ++it2)
-		os << " \e[0;33m" << *it2;
-	os << "\e[0m" << std::endl;
-	const std::vector<NodeDirective*>& directives = root.getDirectives();
-	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it != directives.end(); ++it)
-	{
-		os << spaces << "   ." << "\e[0;32m" << (*it)->getName() << "\e[0m";
-		args = (*it)->getArgs();
-		for (it2 = args.begin(); it2 != args.end(); ++it2)
-			os << " \e[0;33m" << *it2;
-		os << "\e[0m" << std::endl;
-	}
-	while(++i < root.getBlocks().size())
-		printAST(*root.getBlocks()[i], os, ++deep);
-	--deep;
-}
-
-void ConfigParser::displayAST(std::ostream& os) const
-{
-	int	level = 0;
-	printAST(m_ast, os, level);
-}
-
 const Directives& ConfigParser::checkDirective(const std::vector<std::string>& args, bool block, const std::string& parent, const std::string& name)
 {
 	std::ostringstream 	oss;
@@ -212,10 +177,4 @@ void ConfigParser::cleanParser()
 	m_config_file.close();
 	for (std::vector<Directives*>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
 		delete (*it);
-}
-
-std::ostream& operator<<(std::ostream& os, const ConfigParser& cp)
-{
-    cp.displayAST(os);
-    return os;
 }

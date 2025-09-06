@@ -6,7 +6,7 @@
 #    By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/08/27 09:36:01 by fabricebuyl      ###   ########.fr        #
+#    Updated: 2025/09/06 15:10:40 by fabricebuyl      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -27,11 +27,11 @@ OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(NAME)
 
-%.o: %.c
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -I./headers -c $< -o $@
 
 $(NAME): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJECTS)
+	$(CXX) $(CXXFLAGS) -I./headers -o $(NAME) $(OBJECTS)
 
 clean:
 	rm -f *.o

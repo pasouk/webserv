@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/04 14:13:56 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/06 13:24:15 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,8 +39,6 @@ const struct sockaddr_in& QueryListener::getServerAddress() const
 void QueryListener::initListener(uint16_t port, const std::string& host)
 {
 	int opt = 1;
-	
-	std::cout << "host: " << host << ", port: " << port << std::endl;
 
 	//1. build a socket TCP IPv4 and sets the non bloquing mode and
 	// initialize pollfd struct array.
