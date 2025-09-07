@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/06 13:18:41 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/07 14:39:34 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,14 @@ void handle_sigint(int sig)
 {
 	(void)sig;
 	g_listening = false;
+}
+
+void onHttpRequest(std::vector<query>& queries, std::vector<server>& servers, void* myObject)
+{
+	(void)myObject;
+	(void)servers;
+	(void)queries;
+	std::cout << "RECEIVED HTTP REQUEST\n";
 }
 
 int main(int argc, char *argv[])
@@ -49,13 +57,12 @@ int main(int argc, char *argv[])
 			+ std::string(argv[1]) + " \e[0;33mtest\e[0m failed\n";
 		return (1);
 	}
-
 	//Listener
 	try
 	{
-		Webserv	webserv(cp);
+		Webserv	webserv(cp, NULL/*myObject*/);
 		webserv.printServers();
-		webserv.startListening();
+		webserv.startListening(onHttpRequest);
 	}
 	catch(const std::exception& e)
 	{
@@ -63,7 +70,6 @@ int main(int argc, char *argv[])
 		delete (cp);
 		return (1);
 	}
-
 	delete (cp);
 	return (0);
 }

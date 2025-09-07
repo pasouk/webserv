@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:14 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/06 14:24:06 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/07 10:02:04 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,8 +24,6 @@ int NodeDirective::getListenHostPort(uint16_t& port, std::string& host) const
 	std::string split;
 	std::stringstream ss;
 	std::istringstream iss;
-
-std::cout << "port: " << port << ", host:" << host << std::endl;
 
 	if (name != "listen")
 		return (1);

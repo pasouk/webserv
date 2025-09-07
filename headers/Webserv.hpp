@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/06 13:27:05 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/07 14:34:04 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,9 @@ struct query
 	int							fd;
 	uint16_t 					port;
 	std::string					host;
-	std::string					http;
+	std::string					httpRequest;
+	std::string					httpResponce;
+	size_t						bytes_sent;
 };
 
 struct server
@@ -41,36 +43,36 @@ struct server
 class Webserv
 {
 public:
-	Webserv(ConfigParser*);
+	Webserv(ConfigParser*, void*);
 	Webserv();
 	~Webserv();
 	Webserv(const Webserv&);
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening();
-	void stopListening();
-	const std::vector<query>& getQueries() const;	//get a list of all waiting queries
-	const std::vector<server>& getServers() const;	//get e list of all listening servers
+	void startListening(void (*)(std::vector<query>&, std::vector<server>&, void*));
 	void printServers();
 
 private:
+	void* m_myObject;
 	ConfigParser* m_parser;
-	std::vector<query> m_queries;
-	std::vector<server> m_servers;
+	std::vector<query> m_queries;		//list of all waiting queries
+	std::vector<server> m_servers;		//list of all listening servers
 	std::vector<query> m_clients;
 	std::vector<pollfd> m_fds;
 	std::vector<bool> m_isClient;
 	std::vector<const QueryListener*> m_listeners;
 
 private:
-	void cleanWebserv();
 	QueryListener* createListener(u_int16_t, const std::string&);
+	std::vector<server> findServers() const;
+	void cleanWebserv();
 	void printQuery(query&) const;
 	void printServer(server&) const;
 	void addClient(size_t);
-	void checkQueries(size_t);
-	std::vector<server> findServers() const;
+	void checkQueries(size_t, void (*)(std::vector<query>&, std::vector<server>&, void*));
+	void stopListening();
+	void sendResponse(query&);
 };
 
 #endif

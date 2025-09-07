@@ -6,14 +6,14 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/06 15:05:00 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/07 14:37:38 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
+Webserv::Webserv(ConfigParser* parser, void* myObject) : m_myObject(myObject), m_parser(parser)
 {
 	QueryListener* ql;
 	std::vector<std::string> args;
@@ -62,17 +62,7 @@ Webserv::~Webserv()
 		std::cout << "\033[0;33mWarning: \033[0m" << m_queries.size() << " unprocessed queries.\n";
 }
 
-const std::vector<query>& Webserv::getQueries() const
-{
-	return (m_queries);
-}
-
-const std::vector<server>& Webserv::getServers() const
-{
-	return (m_servers);
-}
-
-void Webserv::startListening()
+void Webserv::startListening(void (*onHttpRequest)(std::vector<query>&, std::vector<server>&, void*))
 {
 	pollfd fd;
 	query query;
@@ -104,8 +94,8 @@ void Webserv::startListening()
 		{
 			if (!m_isClient[i] && (m_fds[i].revents & POLLIN))
 				addClient(i);
-			if (m_isClient[i] && (m_fds[i].revents & POLLIN))
-				checkQueries(i);
+			if (m_isClient[i] && (m_fds[i].revents & POLLIN || m_fds[i].revents & POLLOUT))
+				checkQueries(i, onHttpRequest);
 		}
 	}
 	cleanWebserv();
@@ -142,6 +132,7 @@ void Webserv::addClient(size_t i)
 			query.port = ntohs(serverAddress.sin_port);
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;
+			query.bytes_sent = 0;
 			m_clients.push_back(query);
 
 			std::cout << "New client connected: fd:" << fd.fd
@@ -151,7 +142,7 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::checkQueries(size_t i)
+void Webserv::checkQueries(size_t i, void (*onHttpRequest)(std::vector<query>&, std::vector<server>&, void*))
 {
 	sockaddr_in serverAddress;
 	socklen_t serverlen;
@@ -173,12 +164,21 @@ void Webserv::checkQueries(size_t i)
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 			if (m_fds[i].fd == (*it).fd)
 			{
-				(*it).http = buffer;
+				(*it).httpRequest = buffer;
 				m_queries.push_back(*it);
+				onHttpRequest(m_queries, m_servers, m_myObject);
+				sendResponse(*it);
 				printQuery(*it);
 				break;
 			}
 	}	
+}
+
+void Webserv::sendResponse(query& query)
+{
+	if (query.httpResponce.size() == 0)
+		return ;
+	
 }
 
 std::vector<server> Webserv::findServers() const
@@ -274,7 +274,7 @@ void Webserv::printQuery(query& query) const
     std::cout << std::setw(col1) << "host:" 
               << "\033[0;36m" << std::setw(col2) << query.host << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "http:" 
-              << "\033[0;36m" << std::endl << query.http << "\033[0m" << std::endl;
+              << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
 }
 
 void Webserv::printServer(server& server) const
