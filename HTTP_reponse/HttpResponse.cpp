@@ -15,6 +15,11 @@ void HttpResponse::setRoot(std::string root)
     _root = root;
 }
 
+void HttpResponse::setUploadDir(std::string dir)
+{
+    _uploads_dir = dir;
+}
+
 std::string HttpResponse::getFullPath()
 {
     return _fullPath;
@@ -61,6 +66,9 @@ void HttpResponse::printElements()
     {
         std::cout << it->first << " : " << it->second << std::endl;
     }
+
+
+    std::cout << Colors::BLUE << "Formated Response: " << Colors::RESET << _formated_response << std::endl;
 
 }
 
@@ -109,6 +117,89 @@ void HttpResponse::manageHeaders()
     }
 }
 
+std::string getHeaderValue(const std::string &key, const std::map<std::string, std::string> &headers)
+{
+    std::map<std::string, std::string>::const_iterator it = headers.find(key);
+    if (it != headers.end())
+        return it->second;
+    return "";
+}
+
+std::string HttpResponse::extractFileName(const std::string &str) 
+{
+    size_t pos = str.find("filename=");
+
+    if (pos == std::string::npos)
+        return "UnknownFileName";
+    pos += 9;
+    
+    std::string filename = str.substr(pos);
+
+    if (!filename.empty() && filename[0] == '"') 
+    {
+        filename = filename.substr(1, filename.size() - 2);
+    }
+
+    return filename;
+}
+
+std::string generateUploadedFileName()
+{
+    time_t now = time(NULL);
+    std::string tsStr;
+    std::ostringstream oss;
+
+    oss << now;
+    tsStr = oss.str();
+    return ("upload_" + tsStr + ".txt");
+
+}
+
+bool HttpReponse::writeUploadedFile(std::string name) 
+{
+
+    int fd = open(name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd == -1) 
+    {
+        this->HttpResponseError(500, "Internal Server Error (writing file)");
+        return;
+    }
+
+    if (write(fd, _body.c_str(), _body.size()) == -1) 
+    {
+        close(fd);
+        this->HttpResponseError(500, "Internal Server Error (writing file)");
+        return;
+    }
+
+    close(fd);
+}
+
+void HttpResponse::buildPost()
+{
+    std::string contentLen = getHeaderValue("Content-Length", _headers);
+    std::string contentVal = getHeaderValue("Content-Disposition", _headers);
+    std::string fileName;
+
+    //pour l'instant, a changer pllus tard
+    setUploadDir("uploads");
+
+    if (contentLen.empty())
+    {
+        HttpResponseError(400, "Bad Request")
+        return;
+    }
+
+    if(!contentVal.empty())
+    {
+        fileName = extractFileName(contentVal);
+    }
+    else 
+        fileName = generateUploadedFileName();
+    writeUploadedFile(fileName);
+
+}
+
 void HttpResponse::buildGet()
 {
     if(isFolder(_fullPath))
@@ -138,6 +229,29 @@ void HttpResponse::buildGet()
     manageHeaders();
     _reason_phrase = "OK";
     _status_code =  200;
+}
+
+void HttpResponse::serialize()
+{
+    std::ostringstream oss;
+    oss <<  _ParsedRequest.getVersion() << " "
+        << _status_code << " " 
+        << _reason_phrase << "\r\n";
+
+    for (std::map<std::string, std::string>::const_iterator it = _headers.begin();
+            it != _headers.end();
+            ++it)
+    {
+        oss << it->first << ": " << it->second << "\r\n";
+    }
+     // 3. Ligne vide
+    oss << "\r\n";
+
+    // 4. Body
+    oss << _body;
+
+    // Résultat final
+    _formated_response = oss.str();
 }
 
 void HttpResponse::HttpResponseManager() 

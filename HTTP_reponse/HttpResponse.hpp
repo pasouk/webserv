@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 
 bool resourceExists(const std::string& path);
 bool    isFolder(std::string &path);
@@ -24,6 +25,8 @@ class   HttpResponse
         std::string                                 _body;
         std::string                                 _root;
         std::string                                 _fullPath;
+        std::string                                 _formated_response;
+        std::string                                 _uploads_dir;
 
     public:
 
@@ -35,6 +38,7 @@ class   HttpResponse
 
         int getParserExitCode() const;
         void setRoot(std::string root);
+        void setUploadDir(std::string dir);
         std::string getFullPath();
 
         void HttpResponseError(int code, std::string reason);
@@ -45,9 +49,13 @@ class   HttpResponse
         void manageContentType();
 
         void    buildGet();
-        //void    buildPost();
+        void    buildPost();
         //void    buildDelete();
 
+        void serialize();
+
+        std::string extractFileName(std::string str);
+        void writeUploadedFile(std::string name) ;
 
         void printElements();
 
