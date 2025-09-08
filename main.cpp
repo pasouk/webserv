@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/07 14:39:34 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/08 10:58:36 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,11 +21,10 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onHttpRequest(std::vector<query>& queries, std::vector<server>& servers, void* myObject)
+void onHttpRequest(query& query, std::vector<server>& servers)
 {
-	(void)myObject;
 	(void)servers;
-	(void)queries;
+	(void)query;
 	std::cout << "RECEIVED HTTP REQUEST\n";
 }
 
@@ -60,7 +59,7 @@ int main(int argc, char *argv[])
 	//Listener
 	try
 	{
-		Webserv	webserv(cp, NULL/*myObject*/);
+		Webserv	webserv(cp);
 		webserv.printServers();
 		webserv.startListening(onHttpRequest);
 	}

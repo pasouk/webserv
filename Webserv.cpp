@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/07 14:37:38 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/08 11:54:46 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser, void* myObject) : m_myObject(myObject), m_parser(parser)
+Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 {
 	QueryListener* ql;
 	std::vector<std::string> args;
@@ -62,11 +62,11 @@ Webserv::~Webserv()
 		std::cout << "\033[0;33mWarning: \033[0m" << m_queries.size() << " unprocessed queries.\n";
 }
 
-void Webserv::startListening(void (*onHttpRequest)(std::vector<query>&, std::vector<server>&, void*))
+void Webserv::startListening(void (*onHttpRequest)(query&, std::vector<server>&))
 {
 	pollfd fd;
-	query query;
-	rlimit limit;
+	static query query;
+	static rlimit limit;
 
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
@@ -94,8 +94,13 @@ void Webserv::startListening(void (*onHttpRequest)(std::vector<query>&, std::vec
 		{
 			if (!m_isClient[i] && (m_fds[i].revents & POLLIN))
 				addClient(i);
-			if (m_isClient[i] && (m_fds[i].revents & POLLIN || m_fds[i].revents & POLLOUT))
-				checkQueries(i, onHttpRequest);
+			if (m_isClient[i])
+			{
+				if (m_fds[i].revents & POLLIN)
+					readQuery(i, onHttpRequest);
+				if (m_fds[i].revents & POLLOUT)
+					sendQuery(i);
+			}
 		}
 	}
 	cleanWebserv();
@@ -104,8 +109,8 @@ void Webserv::startListening(void (*onHttpRequest)(std::vector<query>&, std::vec
 
 void Webserv::addClient(size_t i)
 {
-	sockaddr_in serverAddress;
-	socklen_t serverlen;
+	static sockaddr_in serverAddress;
+	static socklen_t serverlen;
 	query query;
 	pollfd fd;
 	size_t j;
@@ -142,10 +147,10 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::checkQueries(size_t i, void (*onHttpRequest)(std::vector<query>&, std::vector<server>&, void*))
+void Webserv::readQuery(size_t i, void (*onHttpRequest)(query&, std::vector<server>&))
 {
-	sockaddr_in serverAddress;
-	socklen_t serverlen;
+	static sockaddr_in serverAddress;
+	static socklen_t serverlen;
 	char buffer[BUFFER_SIZE];
 	int n;
 	
@@ -165,20 +170,24 @@ void Webserv::checkQueries(size_t i, void (*onHttpRequest)(std::vector<query>&, 
 			if (m_fds[i].fd == (*it).fd)
 			{
 				(*it).httpRequest = buffer;
-				m_queries.push_back(*it);
-				onHttpRequest(m_queries, m_servers, m_myObject);
-				sendResponse(*it);
 				printQuery(*it);
+				m_queries.push_back(*it);
+				onHttpRequest(*it, m_servers);
+				if ((*it).httpResponce.size() == 0)
+				{
+					m_queries.pop_back();
+					std::cout << "No response to client fd:" << (*it).fd << ", query released from queue.\n";
+				}
+				else
+					m_fds[i].events |= POLLOUT;
 				break;
 			}
 	}	
 }
 
-void Webserv::sendResponse(query& query)
+void Webserv::sendQuery(size_t i)
 {
-	if (query.httpResponce.size() == 0)
-		return ;
-	
+	(void)i;
 }
 
 std::vector<server> Webserv::findServers() const

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/07 14:34:04 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/08 11:21:40 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,18 +43,17 @@ struct server
 class Webserv
 {
 public:
-	Webserv(ConfigParser*, void*);
+	Webserv(ConfigParser*);
 	Webserv();
 	~Webserv();
 	Webserv(const Webserv&);
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening(void (*)(std::vector<query>&, std::vector<server>&, void*));
+	void startListening(void (*)(query&, std::vector<server>&));
 	void printServers();
 
 private:
-	void* m_myObject;
 	ConfigParser* m_parser;
 	std::vector<query> m_queries;		//list of all waiting queries
 	std::vector<server> m_servers;		//list of all listening servers
@@ -70,9 +69,9 @@ private:
 	void printQuery(query&) const;
 	void printServer(server&) const;
 	void addClient(size_t);
-	void checkQueries(size_t, void (*)(std::vector<query>&, std::vector<server>&, void*));
+	void readQuery(size_t, void (*)(query&, std::vector<server>&));
+	void sendQuery(size_t);
 	void stopListening();
-	void sendResponse(query&);
 };
 
 #endif
