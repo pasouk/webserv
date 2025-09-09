@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/08 11:54:46 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/09 16:44:15 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ Webserv::~Webserv()
 		std::cout << "\033[0;33mWarning: \033[0m" << m_queries.size() << " unprocessed queries.\n";
 }
 
-void Webserv::startListening(void (*onHttpRequest)(query&, std::vector<server>&))
+void Webserv::startListening(void (*onHttpRequest)(std::vector<query>&, std::vector<server>&, Webserv*))
 {
 	pollfd fd;
 	static query query;
@@ -111,7 +111,7 @@ void Webserv::addClient(size_t i)
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
-	query query;
+	static query query;
 	pollfd fd;
 	size_t j;
 	char ip[INET_ADDRSTRLEN];
@@ -137,7 +137,7 @@ void Webserv::addClient(size_t i)
 			query.port = ntohs(serverAddress.sin_port);
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;
-			query.bytes_sent = 0;
+			query.bodySize = 0;
 			m_clients.push_back(query);
 
 			std::cout << "New client connected: fd:" << fd.fd
@@ -147,11 +147,13 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::readQuery(size_t i, void (*onHttpRequest)(query&, std::vector<server>&))
+void Webserv::readQuery(size_t i, void (*onHttpRequest)(std::vector<query>&, std::vector<server>&, Webserv*))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
+	std::string _buffer;
 	char buffer[BUFFER_SIZE];
+	size_t pos;
 	int n;
 	
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
@@ -161,7 +163,20 @@ void Webserv::readQuery(size_t i, void (*onHttpRequest)(query&, std::vector<serv
 		std::cout << "Deconnected client fd:" << m_fds[i].fd
 			<< ", port:"<< ntohs(serverAddress.sin_port) << std::endl;
 		close(m_fds[i].fd);
+		for (size_t j = 0; j < m_clients.size(); ++j)
+			if (m_fds[i].fd == m_clients[j].fd)
+			{
+				m_clients.erase(m_clients.begin() + j);
+				break ;
+			}
+		for (size_t j = 0; j < m_queries.size(); ++j)
+			if (m_fds[i].fd == m_queries[j].fd)
+			{
+				m_queries.erase(m_queries.begin() + j);
+				break ;
+			}		
 		m_fds.erase(m_fds.begin() + i);
+		m_isClient.erase(m_isClient.begin() + i);
 	}
 	else
 	{
@@ -169,25 +184,42 @@ void Webserv::readQuery(size_t i, void (*onHttpRequest)(query&, std::vector<serv
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 			if (m_fds[i].fd == (*it).fd)
 			{
-				(*it).httpRequest = buffer;
-				printQuery(*it);
-				m_queries.push_back(*it);
-				onHttpRequest(*it, m_servers);
-				if ((*it).httpResponce.size() == 0)
+				_buffer = buffer;
+				pos = _buffer.find("\r\n\r\n");
+				if (pos != std::string::npos)
 				{
-					m_queries.pop_back();
-					std::cout << "No response to client fd:" << (*it).fd << ", query released from queue.\n";
+					(*it).httpRequest += _buffer.substr(0, pos);
+					(*it).httpBody = _buffer.substr(pos + 4, _buffer.length() - (pos - 4));
+					m_queries.push_back(*it);		
 				}
 				else
-					m_fds[i].events |= POLLOUT;
+				{
+					pos = (*it).httpRequest.find("\r\n\r\n");
+					if (pos != std::string::npos)
+					{
+						(*it).httpBody += (*it).httpRequest.substr(pos + 4, (*it).httpRequest.length() - (pos - 4));
+						(*it).httpRequest.erase(pos + 4, (*it).httpRequest.length() - (pos - 4));
+						(*it).httpBody += _buffer;
+						m_queries.push_back(*it);
+					}
+					else
+						(*it).httpRequest += _buffer;
+				}
 				break;
 			}
-	}	
+		onHttpRequest(m_queries, m_servers, this);
+	}
 }
 
 void Webserv::sendQuery(size_t i)
 {
 	(void)i;
+
+	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+		if (m_fds[i].fd == (*it).fd)
+		{
+			//while ()
+		}
 }
 
 std::vector<server> Webserv::findServers() const
@@ -284,6 +316,8 @@ void Webserv::printQuery(query& query) const
               << "\033[0;36m" << std::setw(col2) << query.host << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "http:" 
               << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
+	std::cout << std::setw(col1) << "body:" 
+              << "\033[0;36m" << std::endl << query.httpBody << "\033[0m" << std::endl;
 }
 
 void Webserv::printServer(server& server) const

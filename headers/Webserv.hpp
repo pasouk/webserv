@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/08 11:21:40 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/09 16:44:17 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,18 +18,20 @@
 # include <iomanip>
 # include <algorithm>
 
-# define BUFFER_SIZE 4096
+# define BUFFER_SIZE 4
 
 extern bool g_listening;
 
 struct query
 {
 	int							fd;
+	bool						httpComplete;
 	uint16_t 					port;
 	std::string					host;
 	std::string					httpRequest;
+	std::string					httpBody;
 	std::string					httpResponce;
-	size_t						bytes_sent;
+	size_t						bodySize;
 };
 
 struct server
@@ -50,8 +52,9 @@ public:
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening(void (*)(query&, std::vector<server>&));
+	void startListening(void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
 	void printServers();
+	void printQuery(query&) const;
 
 private:
 	ConfigParser* m_parser;
@@ -66,10 +69,9 @@ private:
 	QueryListener* createListener(u_int16_t, const std::string&);
 	std::vector<server> findServers() const;
 	void cleanWebserv();
-	void printQuery(query&) const;
 	void printServer(server&) const;
 	void addClient(size_t);
-	void readQuery(size_t, void (*)(query&, std::vector<server>&));
+	void readQuery(size_t, void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
 	void sendQuery(size_t);
 	void stopListening();
 };
