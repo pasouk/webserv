@@ -1,0 +1,16 @@
+POST /api HTTP/1.1
+Host: example.com
+Content-Type: application/json
+Content-Length: 25
+
+{"name":"Alice","age":25}POST /api HTTP/1.1
+Host: toto.com
+Content-Type: application/json
+Content-Length: 25
+
+{"name":"Alice","age":00}POST /api HTTP/1.1
+Host: quiqui.com
+Content-Type: application/json
+Content-Length: 25
+
+{"name":"Alain","age":99}

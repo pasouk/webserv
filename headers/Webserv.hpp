@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/09 16:44:17 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/12 15:23:01 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,20 +18,18 @@
 # include <iomanip>
 # include <algorithm>
 
-# define BUFFER_SIZE 4
+# define BUFFER_SIZE 300
 
 extern bool g_listening;
 
 struct query
 {
 	int							fd;
-	bool						httpComplete;
+	bool						checkContentLength;
+	size_t						bodySize;
 	uint16_t 					port;
 	std::string					host;
 	std::string					httpRequest;
-	std::string					httpBody;
-	std::string					httpResponce;
-	size_t						bodySize;
 };
 
 struct server
@@ -52,7 +50,8 @@ public:
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening(void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
+	void startListening(void (*)(query&, Webserv*)
+		, void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
 	void printServers();
 	void printQuery(query&) const;
 
@@ -71,9 +70,12 @@ private:
 	void cleanWebserv();
 	void printServer(server&) const;
 	void addClient(size_t);
-	void readQuery(size_t, void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
+	void readQuery(size_t, void (*)(query&, Webserv*)
+		, void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
 	void sendQuery(size_t);
 	void stopListening();
+	void tcpStream(char* buffer, std::vector<query>::iterator
+		, void (*)(query&, Webserv*));
 };
 
 #endif

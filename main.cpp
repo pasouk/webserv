@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/09 16:33:08 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/12 14:39:37 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,11 +21,25 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onHttpRequest(std::vector<query>& q, std::vector<server>& s, Webserv* server)
+void onContentLength(query& q, Webserv* server)
+{
+	(void)q;
+	(void)server;
+
+	q.bodySize = 25;
+}
+
+void onQueries(std::vector<query>& q, std::vector<server>& s, Webserv* server)
 {
 	(void)s;
-	for (std::vector<query>::iterator it = q.begin(); it != q.end(); ++it)
-		server->printQuery(*it);
+	(void)q;
+	(void)server;
+
+	/*do
+	{
+		server->printQuery(q.back());
+		q.pop_back();
+	} while (q.size());*/
 }
 
 int main(int argc, char *argv[])
@@ -61,7 +75,7 @@ int main(int argc, char *argv[])
 	{
 		Webserv	webserv(cp);
 		webserv.printServers();
-		webserv.startListening(onHttpRequest);
+		webserv.startListening(onContentLength, onQueries);
 	}
 	catch(const std::exception& e)
 	{
