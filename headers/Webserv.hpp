@@ -18,14 +18,14 @@
 # include <iomanip>
 # include <algorithm>
 
-# define BUFFER_SIZE 300
+# define BUFFER_SIZE 101
 
 extern bool g_listening;
 
 struct query
 {
 	int							fd;
-	bool						checkContentLength;
+	size_t						start;
 	size_t						bodySize;
 	uint16_t 					port;
 	std::string					host;

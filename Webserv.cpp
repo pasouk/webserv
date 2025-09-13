@@ -198,36 +198,59 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 void Webserv::tcpStream(char* buffer, std::vector<query>::iterator it
 	, void (*onContentLength)(query&, Webserv*))
 {
-	static size_t start;
 	size_t pos;
 	std::string _buffer;
 
 	_buffer = buffer;
-	pos = _buffer.find("\r\n\r\n", start);
+	if ((*it).bodySize > 0)
+	{
+		if ((*it).start + (*it).bodySize <= _buffer.length())
+		{
+			(*it).httpRequest += _buffer.substr(0, (*it).bodySize);
+			printQuery(*it);
+			m_queries.push_back(*it);
+			(*it).httpRequest.clear();
+			(*it).start += (*it).bodySize;
+			(*it).bodySize = 0;
+		}
+		else
+		{
+			//std::cout << "LLLLLLL\n";
+			(*it).httpRequest += _buffer.substr((*it).start, _buffer.length() - (*it).start);
+			(*it).bodySize = (*it).start + (*it).bodySize - _buffer.length();
+			(*it).start = 0;
+		}
+	}
+	pos = _buffer.find("\r\n\r\n", (*it).start);
 	if (pos != std::string::npos)
 	{
 		//si fin http dans buffer, savoir si body
-		(*it).httpRequest += _buffer.substr(start, pos - start);
-		start = pos + 4;
+		(*it).httpRequest += _buffer.substr((*it).start, pos - (*it).start);
+		(*it).start = pos + 4;
 		onContentLength(*it, this);
 		//si on a un body, l'ajouter a http
 		if ((*it).bodySize > 0)
 		{
 			//verifier si taille http + body plus petit ou égale à buffer
-			if (start + (*it).bodySize <= _buffer.length())
+			if ((*it).start + (*it).bodySize <= _buffer.length())
 			{
-				(*it).httpRequest += _buffer.substr(start - 4, (*it).bodySize + 4);
+				(*it).httpRequest += _buffer.substr((*it).start - 4, (*it).bodySize + 4);
 				//http est complète, push dans la list et nettoyer
 				printQuery(*it);
 				m_queries.push_back(*it);
 				(*it).httpRequest.clear();
+				(*it).start += (*it).bodySize;
+				(*it).bodySize = 0;
 				//http n'est pas complète, recursive sur reste buffer
-				if (start + (*it).bodySize < _buffer.length())
-					tcpStream(buffer, it, onContentLength);
+				tcpStream(buffer, it, onContentLength);
 			}
 			else
-				(*it).httpRequest += _buffer.substr(start - 4, _buffer.length() - start + 4);
-				//ou http est complete ou nouveau POLLIN
+			{
+				(*it).httpRequest += _buffer.substr((*it).start - 4, _buffer.length() - (*it).start + 4);
+				(*it).bodySize = (*it).start + (*it).bodySize - _buffer.length();
+				(*it).start = 0;
+				//ou http est complete ou nouveau POLLIN avec ou sans reste
+			}
 		}
 		else
 		//si pas de body, http est complete, push dans la list et nettoyer
@@ -245,16 +268,24 @@ void Webserv::tcpStream(char* buffer, std::vector<query>::iterator it
 	}
 	else
 	{
-		std::cout << "END OF STREAM\n" << _buffer.length() << "/" << std::endl;
-		std::cout << _buffer << std::endl;
-
 		//si pas fin http dans tcp, ajouter a requete
-		(*it).httpRequest += _buffer;
-		//tester si http complete apres ajout
-		if ((*it).httpRequest.find("\r\n\r\n") != std::string::npos)
+		(*it).httpRequest += _buffer.substr((*it).start, _buffer.length() - (*it).start);
+		pos = (*it).httpRequest.find("\r\n\r\n", (*it).start);
+		if (pos != std::string::npos)
 		{
+			/*onContentLength(*it, this);
+			if ((*it).bodySize > 0)
+			{
+				tcpStream(buffer, it, onContentLength);
+			}*/
 
+			printQuery(*it);
+			m_queries.push_back(*it);
+			(*it).httpRequest.clear();
 		}
+		(*it).start = 0;
+		std::cout << "RESTE\n";
+		//std::cout << (*it).httpRequest << std::endl;
 	}
 }
 
