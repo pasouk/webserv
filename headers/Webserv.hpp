@@ -18,14 +18,13 @@
 # include <iomanip>
 # include <algorithm>
 
-# define BUFFER_SIZE 101
+# define BUFFER_SIZE 4096
 
 extern bool g_listening;
 
 struct query
 {
 	int							fd;
-	size_t						start;
 	size_t						bodySize;
 	uint16_t 					port;
 	std::string					host;
@@ -74,7 +73,7 @@ private:
 		, void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
 	void sendQuery(size_t);
 	void stopListening();
-	void tcpStream(char* buffer, std::vector<query>::iterator
+	void tcpStream(char* buffer, size_t, std::vector<query>::iterator
 		, void (*)(query&, Webserv*));
 };
 
