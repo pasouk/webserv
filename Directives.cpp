@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/03 13:13:53 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 13:28:03 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,4 +112,11 @@ Server::Server() : Directives(true, 0, 0, "server")
 Http::Http() : Directives(true, 0, 0, "http")
 {
 	m_memberships.push_back("ASP"); //principal context
+}
+
+ClientBodyBufferSize::ClientBodyBufferSize() : Directives(false, 1, 1, "client_body_buffer_size")
+{
+	m_memberships.push_back("http");
+	m_memberships.push_back("server");
+	m_memberships.push_back("location");
 }

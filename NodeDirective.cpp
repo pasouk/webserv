@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:14 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/07 10:02:04 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 14:57:27 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,5 +61,16 @@ int NodeDirective::getListenHostPort(uint16_t& port, std::string& host) const
 			}
 		}
 	}
+	return (0);
+}
+
+int NodeDirective::getClientBodyBufferSize(size_t& size) const
+{
+	std::stringstream ss;
+
+	if (name != "client_body_buffer_size")
+		return (1);
+	ss << getArgs()[0];
+	ss >> size;
 	return (0);
 }

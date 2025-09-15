@@ -6,18 +6,19 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 11:20:16 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 14:51:56 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
+Webserv::Webserv(ConfigParser* parser) : m_body_buffer_size(BODY_BUFFER_SIZE), m_parser(parser)
 {
 	QueryListener* ql;
 	std::vector<std::string> args;
-	std::vector<const Node*> serveurs;
+	std::vector<const Node*> servers;
+	std::vector<const Node*> clientBodyBufferSize;
 	std::vector<const Node*> listens;
 	std::vector<Node*>::const_iterator it2;
 	uint16_t port;
@@ -26,8 +27,8 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 	if (parser == NULL)
 		throw std::runtime_error("No configuration");
 	m_servers = findServers();
-	serveurs = parser->getDirectives("server");
-	for (std::vector<const Node*>::const_iterator it = serveurs.begin(); it != serveurs.end(); ++it)
+	servers = parser->getDirectives("server");
+	for (std::vector<const Node*>::const_iterator it = servers.begin(); it != servers.end(); ++it)
 	{
 		port = 80;
 		host = "0.0.0.0";
@@ -53,6 +54,10 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 			}
 		}
 	}
+	clientBodyBufferSize = parser->getDirectives("client_body_buffer_size");
+	for (std::vector<const Node*>::const_iterator it = clientBodyBufferSize.begin(); it != clientBodyBufferSize.end(); ++it)
+		static_cast<const NodeDirective*>(*it)->getClientBodyBufferSize(m_body_buffer_size);
+	std::cout << "Buffer_size: " << m_body_buffer_size << std::endl;
 }
 
 Webserv::~Webserv()
@@ -139,7 +144,6 @@ void Webserv::addClient(size_t i)
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;
 			m_clients.push_back(query);
-
 			std::cout << "New client connected: fd:" << fd.fd
 				<< ", port:"<< ntohs(serverAddress.sin_port) << std::endl;
 		}
@@ -153,9 +157,16 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
 	std::string _buffer;
-	char buffer[BUFFER_SIZE];
+	//char buffer[m_body_buffer_size + 1];
+	char *buffer;
 	int n;
 	
+	buffer = new (std::nothrow) char[m_body_buffer_size + 1];
+	if (buffer == NULL)
+	{
+		cleanWebserv();
+		throw std::bad_alloc();
+	}
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 	n = read(m_fds[i].fd, buffer, sizeof(buffer) - 1);
 	if (n <= 0)
@@ -191,6 +202,7 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 		}
 		onQueries(m_queries, m_servers, this);
 	}
+	delete (buffer);
 }
 
 void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it

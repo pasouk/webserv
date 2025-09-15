@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 09:40:24 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 14:57:10 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 # include <iomanip>
 # include <algorithm>
 
-# define BUFFER_SIZE 4096
+# define BODY_BUFFER_SIZE 4096
 
 extern bool g_listening;
 
@@ -55,6 +55,7 @@ public:
 	void printQuery(query&) const;
 
 private:
+	size_t m_body_buffer_size;
 	ConfigParser* m_parser;
 	std::vector<query> m_queries;		//list of all waiting queries
 	std::vector<server> m_servers;		//list of all listening servers
