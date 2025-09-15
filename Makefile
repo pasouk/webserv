@@ -6,13 +6,13 @@
 #    By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/09/06 15:10:40 by fabricebuyl      ###   ########.fr        #
+#    Updated: 2025/09/15 10:37:16 by fabricebuyl      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 CXX = g++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
-NAME = webserv
+NAME = webserv 
 
 SOURCES = QueryListener.cpp \
 	ConfigParser.cpp \
@@ -21,19 +21,22 @@ SOURCES = QueryListener.cpp \
 	NodeBlock.cpp \
 	Directives.cpp \
 	Webserv.cpp \
-	main.cpp
+	main.cpp \
+	HTTP_parser/ParserHttpRequest.cpp\
+	HTTP_parser/ParserHttpUtils.cpp
 	
 OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(NAME)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -I./headers -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -c $< -o $@
 
 $(NAME): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -I./headers -o $(NAME) $(OBJECTS)
+	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -o $(NAME) $(OBJECTS)
 
 clean:
+	rm -f HTTP_parser/*.o
 	rm -f *.o
 
 fclean: clean

@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 09:41:06 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 11:20:16 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,7 +118,7 @@ void Webserv::addClient(size_t i)
 	char ip[INET_ADDRSTRLEN];
 
 	for (std::vector<const QueryListener*>::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
-	{
+	{					
 		serverAddress = (*it)->getServerAddress();
 		serverlen = sizeof(serverAddress);
 		fd.fd = accept(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
@@ -154,8 +154,6 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	static socklen_t serverlen;
 	std::string _buffer;
 	char buffer[BUFFER_SIZE];
-	//size_t pos;
-	//size_t start;
 	int n;
 	
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);

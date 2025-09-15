@@ -6,12 +6,12 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 09:46:55 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 11:45:15 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
-//#include "QueryListener.hpp"
+#include "ParserHttp.hpp"
 
 bool g_listening = true;
 
@@ -26,19 +26,33 @@ void onContentLength(query& q, Webserv* server)
 	(void)q;
 	(void)server;
 
-	q.bodySize = 25;
+    ParserHttpRequest request1(q.httpRequest);
+   	int ret = request1.parseRequest();
+	if(ret)
+    {
+        std::cout << Colors::RED << "Parsing exit code : " << ret << Colors::RESET << std::endl;
+		q.bodySize = 25; //request1.getBodySize();
+	}
+    else
+	{
+        std::cout << Colors::GREEN << "Parsing exit code : " << ret << Colors::RESET << std::endl;
+		q.bodySize = 25; //request1.getBodySize();
+	}
 }
 
 void onQueries(std::vector<query>& q, std::vector<server>& s, Webserv* server)
 {
 	(void)s;
+	(void)q;
+	(void)server;
 
-	do
-	{
-		server->printQuery(q.back());
-		std::cout << "------------------\n";
-		q.pop_back();
-	} while (q.size());
+	if (q.size())
+		do
+		{
+			server->printQuery(q.back());
+			std::cout << "------------------\n";
+			q.pop_back();
+		} while (q.size());
 }
 
 int main(int argc, char *argv[])
