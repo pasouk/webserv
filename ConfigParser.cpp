@@ -6,36 +6,36 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 15:52:26 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/06 13:29:45 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
 
-ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_brace(0), m_file(file)
+ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 {
-	if (m_blockType.empty())
-	{
-        m_blockType.push_back("http");
-        m_blockType.push_back("server");
-        m_blockType.push_back("location");
-	}
-	if (m_directiveType.empty())
-	{
-        m_directiveType.push_back("root");
-        m_directiveType.push_back("server_name");
-        m_directiveType.push_back("listen");
-		m_directiveType.push_back("index");
-	}
+	//use new to ovoid "objects slicing" (polymorphism failed !!)
+	//instead passing by value ! 
 	
-	//if failed -> exception
+	//block
+	m_directives.push_back(new Http());
+	m_directives.push_back(new Server());
+	m_directives.push_back(new Location());
+
+	//directives
+	m_directives.push_back(new Root());
+	m_directives.push_back(new ServerName());
+	m_directives.push_back(new Listen());
+	m_directives.push_back(new Index());
+	
+	//if fail -> exception
 	openFile(file);
-	getFormat(m_root);
+	getFormat(m_ast);
 }
 
 ConfigParser::~ConfigParser()
 {
-	m_config_file.close();
+	cleanParser();
 	//std::cout << "Destructor called\n";
 }
 
@@ -54,133 +54,127 @@ void ConfigParser::openFile(const std::string& file)
 
 void ConfigParser::getFormat(NodeBlock &node)
 {
-	std::stringstream 	ss;
-	std::string 		block, name;
-	Node				*p_node;
-	char				c, d;
-	std::ostringstream 	oss;
+	std::string 		block;
+	char				c;
 	
-	d = ';';
 	while (m_config_file.get(c))
 	{
 		if (c == '\n')
 			++m_line;
 		else if (c == '{')
-		{
-			++m_brace;
-			ss.clear();
-			ss.str(block);
-			ss >> name;
-			checkKeyword(node, name);
-			p_node = node.addChild();
-			((NodeBlock*)p_node)->setBlock(name);
-			p_node->setArgs(ss);
-			getFormat(*((NodeBlock*)p_node));
-			block.clear();
-		}
+			buildNode(true, node, block);
 		else if (c == '}')
-		{
-			--m_brace;
-			checkBlock(d, name);
 			return ;
-		}
 		else if (c == ';')
-		{
-			ss.clear();
-			ss.str(block);
-			ss >> name;
-			p_node = node.addDirective(name);
-			p_node->setArgs(ss);
-			checkKeyword(*p_node, name);
-			block.clear();
-		}
+			buildNode(false, node, block);
 		else
 			block += c;
-		if (!std::isspace(static_cast<unsigned char>(c)))
-			d = c;
 	}
-	checkBrace();
 }
 
-void ConfigParser::printAST(const NodeBlock& root, std::ostream& os, int& deep) const
+void ConfigParser::buildNode(bool bblock, NodeBlock &node, std::string& block)
 {
-	size_t i;
-	std::string spaces;
-	std::vector<std::string>::const_iterator it2;
 	std::vector<std::string> args;
-	
-	for (int j = 0; j < deep; ++j)
-		spaces += "   ";
-	i = -1;
-	os << spaces << root.getName();
-	args = root.getArgs();
-	for (it2 = args.begin(); it2 != args.end(); ++it2)
-		os << " \e[0;33m" << *it2;
-	os << "\e[0m" << std::endl;
-	const std::vector<NodeDirective*>& directives = root.getDirectives();
-	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it < directives.end(); ++it)
-	{
-		os << spaces << "   ." << "\e[0;32m" << (*it)->getName() << "\e[0m";
-		args = (*it)->getArgs();
-		for (it2 = args.begin(); it2 != args.end(); ++it2)
-			os << " \e[0;33m" << *it2;
-		os << "\e[0m" << std::endl;
-	}
-	while(++i < root.getChilds().size())
-		printAST(*root.getChilds()[i], os, ++deep);
-	--deep;
+	std::stringstream 	ss;
+	std::string 		name, arg;
+	Node				*p_node;
+	Directives			directive;
+
+	ss.clear();
+	ss.str(block);
+	ss >> name;
+	args.clear();
+	while (ss >> arg)
+		args.push_back(arg);
+	directive = checkDirective(args, bblock, node.getName(), name);
+	p_node = node.addChild(directive, name);
+	p_node->setArgs(args);
+	if (bblock)
+		getFormat(*((NodeBlock*)p_node));
+	block.clear();
 }
 
-void ConfigParser::displayAST(std::ostream& os) const
+const std::vector<const Node*> ConfigParser::getDirectives(const std::string& name, const NodeBlock* node) const
 {
-	int	level = 0;
-	printAST(m_root, os, level);
+	std::vector<const Node*> directives;
+	if (node == NULL)
+		node = &m_ast;
+	return (ast(*node, directives, name), directives);
 }
 
-void ConfigParser::checkKeyword(Node& node, const std::string& name)
+void ConfigParser::ast(const NodeBlock& root, std::vector<const Node*>& nodes, const std::string& name) const
 {
-	std::vector<std::string> type;
+	std::vector<NodeBlock*>::const_iterator it_b;
+	std::vector<NodeDirective*>::const_iterator it_d;
+	std::vector<NodeBlock*>	blocks;
+	std::vector<NodeDirective*> directives;
+
+	directives = root.getDirectives();
+	for (it_d = directives.begin(); it_d != directives.end(); ++it_d)
+		if ((*it_d)->getName() == name)
+			nodes.push_back(*it_d);
+	blocks = root.getBlocks();
+	if (blocks.size())
+		for (it_b = blocks.begin(); it_b != blocks.end(); ++it_b)
+		{
+			if ((*it_b)->getName() == name)
+				nodes.push_back(*it_b);
+			ast(**it_b, nodes, name);
+		}
+}
+
+const Directives& ConfigParser::checkDirective(const std::vector<std::string>& args, bool block, const std::string& parent, const std::string& name)
+{
 	std::ostringstream 	oss;
+	std::string c, bad_arg;
 
-	type = m_directiveType;
-	if (node.getType() == "block")
-		type = m_blockType;
-	for (std::vector<std::string>::const_iterator it = type.begin(); it != type.end(); ++it)
-		if (*it == name)
-			return ;
 	oss.clear();
 	oss << m_line;
-	m_config_file.close();
+	for (std::vector<Directives*>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
+		if ((*it)->getName() == name)
+		{
+			if (!(*it)->isMembership(parent))
+			{
+				cleanParser();
+				throw std::runtime_error("error: \e[0;32m\"" + name
+					+ "\"\e[0m directive is not allowed here \e[0;34min\e[0m "
+					+ m_file + ":" + oss.str());
+			}
+			else if (block != (*it)->isBlock())
+			{
+				cleanParser();
+				c =";";
+				if ((*it)->isBlock())
+					c = "{";
+				throw std::runtime_error("error: \e[0;32m\"" + name
+					+ "\"\e[0m directive is not terminated by \e[0;32m\""
+					+ c + "\" \e[0;34min\e[0m "
+					+ m_file + ":" + oss.str());
+			}
+			else if (args.size() > (*it)->getMaxArgs() || args.size() < (*it)->getMinArgs())
+			{
+				cleanParser();
+				throw std::runtime_error("error: invalid number of arguments \e[0;34min \e[0;32m\""
+					+ name + "\"\e[0m" + " directive \e[0;34min\e[0m "
+					+ m_file + ":" + oss.str());
+			}
+			else if (!(*it)->areArgsValid(args, bad_arg))
+			{
+				cleanParser();
+				throw std::runtime_error("error: invalid format arguments \e[0;34min \e[0;32m\""
+					+ name + ": " + bad_arg + "\"\e[0m" + " directive \e[0;34min\e[0m "
+					+ m_file + ":" + oss.str());			
+			}
+			return (**it);
+		}
+	cleanParser();
 	throw std::runtime_error("error: unknown directive \e[0;32m\""
 		+ name + "\" \e[0;34min\e[0m " + m_file + ":" + oss.str());
 }
 
-void ConfigParser::checkBrace()
+void ConfigParser::cleanParser()
 {
-	if (m_brace > 0)
-	{
-		m_config_file.close();
-		throw std::runtime_error("error: parenthensis is missing \e[0;34min\e[0m "
-			+ m_file);			
-	}
-}
-
-void ConfigParser::checkBlock(char d, std::string &name)
-{
-	std::ostringstream 	oss;
-
-	if ((d != '}' && d != '{' && d != ';') || m_brace < 0)
-	{
-		oss.clear();
-		oss << m_line;
-		m_config_file.close();
-		throw std::runtime_error("error: invalide block \e[0;32m\""
-			+ name + "\" \e[0;34min\e[0m " + m_file + ":" + oss.str());
-	}
-}
-
-std::ostream& operator<<(std::ostream& os, const ConfigParser& cp)
-{
-    cp.displayAST(os);
-    return os;
+	m_config_file.close();
+	for (std::vector<Directives*>::const_iterator it = m_directives.begin(); it != m_directives.end(); ++it)
+		delete (*it);
 }

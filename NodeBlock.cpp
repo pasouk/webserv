@@ -6,35 +6,28 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:49 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 13:47:10 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/08/28 09:12:30 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "NodeBlock.hpp"
+#include "NodeDirective.hpp"
 
-NodeBlock::NodeBlock() : Node("block"),  block("AST:") {}
+NodeBlock::NodeBlock() : Node("ASP") {}
+
+NodeBlock::NodeBlock(const std::string& name) : Node(name) {}
 
 NodeBlock::~NodeBlock()
 {
-	for (std::vector<NodeBlock*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it)
+	for (std::vector<NodeBlock*>::const_iterator it = blocks.begin(); it != blocks.end(); ++it)
 		delete (*it);
 	for (std::vector<NodeDirective*>::const_iterator it = directives.begin(); it != directives.end(); ++it)
 		delete (*it);
 }
 
-void NodeBlock::setBlock(const std::string& block)
+const std::vector<NodeBlock*> NodeBlock::getBlocks() const
 {
-	this->block = block;
-}
-
-const std::string& NodeBlock::getName() const
-{
-	return (block);
-}
-
-const std::vector<NodeBlock*> NodeBlock::getChilds() const
-{
-	return (nodes);
+	return (blocks);
 }
 
 const std::vector<NodeDirective*> NodeBlock::getDirectives() const
@@ -42,18 +35,16 @@ const std::vector<NodeDirective*> NodeBlock::getDirectives() const
 	return (directives);
 }
 
-NodeBlock* NodeBlock::addChild()
+Node* NodeBlock::addChild(const Directives& directive, const std::string& name)
 {
-	NodeBlock* newBlock;
+	Node* node;
 
-	newBlock = new (std::nothrow) NodeBlock();
-	return (nodes.push_back(newBlock), newBlock);
-}
-
-NodeDirective* NodeBlock::addDirective(std::string directive)
-{
-	NodeDirective* newDirective;
-
-	newDirective = new (std::nothrow) NodeDirective(directive);
-	return (directives.push_back(newDirective), newDirective);
+	block = directive;
+	if (directive.isBlock())
+	{
+		node = new (std::nothrow) NodeBlock(name);
+		return (blocks.push_back(static_cast<NodeBlock*>(node)), node);
+	}
+	node = new (std::nothrow) NodeDirective(name);
+	return (directives.push_back(static_cast<NodeDirective*>(node)), node);
 }

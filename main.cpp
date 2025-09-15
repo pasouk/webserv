@@ -1,18 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   webserv.cpp                                        :+:      :+:    :+:   */
+/*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 15:00:38 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 09:46:55 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "QueryListener.hpp"
-
-#include "ConfigParser.hpp" //remove when tested
+#include "Webserv.hpp"
+//#include "QueryListener.hpp"
 
 bool g_listening = true;
 
@@ -22,8 +21,30 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
+void onContentLength(query& q, Webserv* server)
+{
+	(void)q;
+	(void)server;
+
+	q.bodySize = 25;
+}
+
+void onQueries(std::vector<query>& q, std::vector<server>& s, Webserv* server)
+{
+	(void)s;
+
+	do
+	{
+		server->printQuery(q.back());
+		std::cout << "------------------\n";
+		q.pop_back();
+	} while (q.size());
+}
+
 int main(int argc, char *argv[])
 {
+	ConfigParser *cp;
+
 	if (argc != 2)
 	{
 		std::cout << "Usage: <configuration file>" << std::endl;
@@ -36,18 +57,31 @@ int main(int argc, char *argv[])
     sigemptyset(&sa.sa_mask);
     sigaction(SIGINT, &sa, NULL);
 	
+	//Config file parsing
 	try
 	{
-		ConfigParser cp(argv[1]);
-		std::cout << cp;
-
-		//QueryListener listener;
+		cp = new ConfigParser(argv[1]);
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		std::cerr << "webserv: configuration file " 
+			+ std::string(argv[1]) + " \e[0;33mtest\e[0m failed\n";
 		return (1);
 	}
-
+	//Listener
+	try
+	{
+		Webserv	webserv(cp);
+		webserv.printServers();
+		webserv.startListening(onContentLength, onQueries);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+		delete (cp);
+		return (1);
+	}
+	delete (cp);
 	return (0);
 }
