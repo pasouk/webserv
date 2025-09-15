@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/12 14:39:37 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 09:46:55 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,14 +32,13 @@ void onContentLength(query& q, Webserv* server)
 void onQueries(std::vector<query>& q, std::vector<server>& s, Webserv* server)
 {
 	(void)s;
-	(void)q;
-	(void)server;
 
-	/*do
+	do
 	{
 		server->printQuery(q.back());
+		std::cout << "------------------\n";
 		q.pop_back();
-	} while (q.size());*/
+	} while (q.size());
 }
 
 int main(int argc, char *argv[])

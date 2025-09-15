@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/12 15:24:47 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/15 09:41:06 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,7 +208,6 @@ void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
 			--(*it).bodySize;
 			if ((*it).bodySize == 0)
 			{
-				printQuery(*it);
 				m_queries.push_back(*it);
 				(*it).httpRequest.clear();
 				break ;
@@ -231,7 +230,6 @@ void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
 						--(*it).bodySize;
 						if ((*it).bodySize == 0)
 						{
-							printQuery(*it);
 							m_queries.push_back(*it);
 							(*it).httpRequest.clear();
 							break ;
@@ -240,14 +238,12 @@ void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
 				}
 				else
 				{
-					printQuery(*it);
 					m_queries.push_back(*it);
 					(*it).httpRequest.clear();
 				}
 			}
 			else
 			{
-				printQuery(*it);
 				m_queries.push_back(*it);
 				(*it).httpRequest.clear();
 				(*it).bodySize = 0;
