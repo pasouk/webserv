@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 11:45:15 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/16 10:50:36 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ void onContentLength(query& q, Webserv* server)
 	(void)q;
 	(void)server;
 
-    ParserHttpRequest request1(q.httpRequest);
+    /*ParserHttpRequest request1(q.httpRequest);
    	int ret = request1.parseRequest();
 	if(ret)
     {
@@ -37,7 +37,7 @@ void onContentLength(query& q, Webserv* server)
 	{
         std::cout << Colors::GREEN << "Parsing exit code : " << ret << Colors::RESET << std::endl;
 		q.bodySize = 25; //request1.getBodySize();
-	}
+	}*/
 }
 
 void onQueries(std::vector<query>& q, std::vector<server>& s, Webserv* server)

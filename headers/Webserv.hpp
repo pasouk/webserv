@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 14:57:10 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/16 10:16:28 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,9 @@ struct query
 	uint16_t 					port;
 	std::string					host;
 	std::string					httpRequest;
+	std::string					httpBody;
+	//ParerHttpRequest			parsedRequest
+	//std::string 				formatedResponse
 };
 
 struct server

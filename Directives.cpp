@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Directives.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 13:28:03 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/16 10:36:07 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,6 +117,6 @@ Http::Http() : Directives(true, 0, 0, "http")
 ClientBodyBufferSize::ClientBodyBufferSize() : Directives(false, 1, 1, "client_body_buffer_size")
 {
 	m_memberships.push_back("http");
-	m_memberships.push_back("server");
-	m_memberships.push_back("location");
+	//m_memberships.push_back("server");
+	//m_memberships.push_back("location");
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 14:51:56 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/16 10:52:29 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,11 +157,11 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
 	std::string _buffer;
-	//char buffer[m_body_buffer_size + 1];
-	char *buffer;
+	//char buffer[BODY_BUFFER_SIZE];
+	char *buffer = NULL;
 	int n;
 	
-	buffer = new (std::nothrow) char[m_body_buffer_size + 1];
+	buffer = new (std::nothrow) char[m_body_buffer_size];
 	if (buffer == NULL)
 	{
 		cleanWebserv();
@@ -202,7 +202,7 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 		}
 		onQueries(m_queries, m_servers, this);
 	}
-	delete (buffer);
+	delete [](buffer);
 }
 
 void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
