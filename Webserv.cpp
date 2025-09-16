@@ -3,17 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/16 10:52:29 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/16 14:52:51 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser) : m_body_buffer_size(BODY_BUFFER_SIZE), m_parser(parser)
+Webserv::Webserv(ConfigParser* parser) : m_body_buffer_size(BODY_BUFFER_SIZE),
+	m_header_buffer_size(HEADER_BUFFER_SIZE), m_parser(parser)
 {
 	QueryListener* ql;
 	std::vector<std::string> args;
@@ -157,18 +158,20 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
 	std::string _buffer;
-	//char buffer[BODY_BUFFER_SIZE];
-	char *buffer = NULL;
+	char *buffer[2]; //0: header, 1: body
 	int n;
 	
-	buffer = new (std::nothrow) char[m_body_buffer_size];
-	if (buffer == NULL)
+	buffer[0] = new (std::nothrow) char[m_body_buffer_size];
+	buffer[1] = new (std::nothrow) char[m_header_buffer_size];
+	if (buffer[0] == NULL || buffer[1] == NULL)
 	{
+		delete [](buffer[0]);
+		delete [](buffer[1]);
 		cleanWebserv();
 		throw std::bad_alloc();
 	}
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
-	n = read(m_fds[i].fd, buffer, sizeof(buffer) - 1);
+	n = read(m_fds[i].fd, buffer[0], sizeof(buffer[0]) - 1);
 	if (n <= 0)
 	{
 		std::cout << "Deconnected client fd:" << m_fds[i].fd
@@ -191,18 +194,19 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	}
 	else
 	{
-		buffer[n] = '\0';
+		buffer[0][n] = '\0';
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 		{
 			if (m_fds[i].fd == (*it).fd)
 			{
-				tcpStream(buffer, n, it, onContentLength);
+				tcpStream(buffer[0], n, it, onContentLength);
 				break;
 			}
 		}
 		onQueries(m_queries, m_servers, this);
 	}
-	delete [](buffer);
+	delete [](buffer[0]);
+	delete [](buffer[1]);
 }
 
 void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
@@ -214,12 +218,13 @@ void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
 	{
 		while (++i < n)
 		{
-			(*it).httpRequest += buffer[i];
+			(*it).httpBody += buffer[i];
 			--(*it).bodySize;
 			if ((*it).bodySize == 0)
 			{
 				m_queries.push_back(*it);
 				(*it).httpRequest.clear();
+				(*it).httpBody.clear();
 				break ;
 			}
 		}
@@ -236,12 +241,13 @@ void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
 				{
 					while (++i < n)
 					{
-						(*it).httpRequest += buffer[i];
+						(*it).httpBody += buffer[i];
 						--(*it).bodySize;
 						if ((*it).bodySize == 0)
 						{
 							m_queries.push_back(*it);
 							(*it).httpRequest.clear();
+							(*it).httpBody.clear();
 							break ;
 						}
 					}
@@ -250,12 +256,14 @@ void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
 				{
 					m_queries.push_back(*it);
 					(*it).httpRequest.clear();
+					(*it).httpBody.clear();
 				}
 			}
 			else
 			{
 				m_queries.push_back(*it);
 				(*it).httpRequest.clear();
+				(*it).httpBody.clear();
 				(*it).bodySize = 0;
 			}
 		}
@@ -368,6 +376,8 @@ void Webserv::printQuery(query& query) const
               << "\033[0;36m" << std::setw(col2) << query.host << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "http:" 
               << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
+	std::cout << std::setw(col1) << "body:" 
+              << "\033[0;36m" << std::endl << query.httpBody << "\033[0m" << std::endl;
 }
 
 void Webserv::printServer(server& server) const

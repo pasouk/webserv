@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/16 10:16:28 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/16 14:38:09 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 # include <algorithm>
 
 # define BODY_BUFFER_SIZE 4096
+# define HEADER_BUFFER_SIZE 1024
 
 extern bool g_listening;
 
@@ -59,6 +60,7 @@ public:
 
 private:
 	size_t m_body_buffer_size;
+	size_t m_header_buffer_size;
 	ConfigParser* m_parser;
 	std::vector<query> m_queries;		//list of all waiting queries
 	std::vector<server> m_servers;		//list of all listening servers
