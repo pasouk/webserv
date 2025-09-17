@@ -6,25 +6,26 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/16 14:52:51 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/17 15:15:10 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser) : m_body_buffer_size(BODY_BUFFER_SIZE),
-	m_header_buffer_size(HEADER_BUFFER_SIZE), m_parser(parser)
+Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 {
 	QueryListener* ql;
 	std::vector<std::string> args;
 	std::vector<const Node*> servers;
-	std::vector<const Node*> clientBodyBufferSize;
+	std::vector<const Node*> clientBufferSize;
 	std::vector<const Node*> listens;
 	std::vector<Node*>::const_iterator it2;
 	uint16_t port;
 	std::string host;
 
+	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
+	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
 	if (parser == NULL)
 		throw std::runtime_error("No configuration");
 	m_servers = findServers();
@@ -55,10 +56,14 @@ Webserv::Webserv(ConfigParser* parser) : m_body_buffer_size(BODY_BUFFER_SIZE),
 			}
 		}
 	}
-	clientBodyBufferSize = parser->getDirectives("client_body_buffer_size");
-	for (std::vector<const Node*>::const_iterator it = clientBodyBufferSize.begin(); it != clientBodyBufferSize.end(); ++it)
-		static_cast<const NodeDirective*>(*it)->getClientBodyBufferSize(m_body_buffer_size);
-	std::cout << "Buffer_size: " << m_body_buffer_size << std::endl;
+	clientBufferSize = parser->getDirectives("client_body_buffer_size");
+	for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
+		static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[1]);
+	clientBufferSize = parser->getDirectives("client_header_buffer_size");
+	for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
+		static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[0]);
+	std::cout << "buffer Header_size: " << m_client_buffers_size[0] << std::endl;
+	std::cout << "buffer Body_size: " << m_client_buffers_size[1] << std::endl;
 }
 
 Webserv::~Webserv()
@@ -157,21 +162,20 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
-	std::string _buffer;
-	char *buffer[2]; //0: header, 1: body
-	int n;
+	static char *buffer[2]; //0: header, 1: body
+	static bool bBody;
+	ssize_t n;
 	
-	buffer[0] = new (std::nothrow) char[m_body_buffer_size];
-	buffer[1] = new (std::nothrow) char[m_header_buffer_size];
-	if (buffer[0] == NULL || buffer[1] == NULL)
+	buffer[0] = new (std::nothrow) char[m_client_buffers_size[0]];
+	if (buffer[0] == NULL)
 	{
-		delete [](buffer[0]);
-		delete [](buffer[1]);
 		cleanWebserv();
 		throw std::bad_alloc();
 	}
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
-	n = read(m_fds[i].fd, buffer[0], sizeof(buffer[0]) - 1);
+	if (bBody)
+		std::cout << "I AM USING BODY BUFFER" << buffer[bBody] << std::endl;
+	n = read(m_fds[i].fd, buffer[bBody], m_client_buffers_size[bBody] - 1);
 	if (n <= 0)
 	{
 		std::cout << "Deconnected client fd:" << m_fds[i].fd
@@ -194,29 +198,52 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	}
 	else
 	{
-		buffer[0][n] = '\0';
+		buffer[bBody][n] = '\0';
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 		{
 			if (m_fds[i].fd == (*it).fd)
 			{
-				tcpStream(buffer[0], n, it, onContentLength);
+				tcpStream(buffer[bBody], n, it, onContentLength);
+				if ((*it).bodySize)
+				{
+					if (buffer[1] == NULL)
+					{
+						buffer[1] = new (std::nothrow) char[m_client_buffers_size[1]];
+						std::cout << "BODY BUFFER: " << m_client_buffers_size[1] << std::endl;
+						if (buffer[1] == NULL)
+						{
+							delete [](buffer[0]);
+							cleanWebserv();
+							throw std::bad_alloc();
+						}
+					}
+					bBody = true;
+				}
+				else
+				{
+					if (buffer[1] != NULL)
+						std::cout << "BYE BYE BODY BUFFER\n";
+					delete [](buffer[1]);
+					buffer[1] = NULL;
+					bBody = false;
+				}
 				break;
 			}
 		}
 		onQueries(m_queries, m_servers, this);
 	}
 	delete [](buffer[0]);
-	delete [](buffer[1]);
+	buffer[0] = NULL;
 }
 
-void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
+void Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 	, void (*onContentLength)(query&, Webserv*))
 {
-	size_t i = -1;
+	ssize_t i = 0;
 
 	if ((*it).bodySize)
 	{
-		while (++i < n)
+		while (i < n)
 		{
 			(*it).httpBody += buffer[i];
 			--(*it).bodySize;
@@ -227,9 +254,11 @@ void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
 				(*it).httpBody.clear();
 				break ;
 			}
+			++i;
 		}
+		++i;
 	}
-	while (++i < n)
+	while (i < n)
 	{
 		(*it).httpRequest += buffer[i];
 		if ((*it).httpRequest.find("\r\n\r\n") != std::string::npos)
@@ -267,6 +296,7 @@ void Webserv::tcpStream(char* buffer, size_t n, std::vector<query>::iterator it
 				(*it).bodySize = 0;
 			}
 		}
+		++i;
 	}
 }
 

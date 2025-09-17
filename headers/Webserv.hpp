@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/16 14:38:09 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/17 13:20:27 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,8 +18,8 @@
 # include <iomanip>
 # include <algorithm>
 
-# define BODY_BUFFER_SIZE 4096
 # define HEADER_BUFFER_SIZE 1024
+# define BODY_BUFFER_SIZE 8192
 
 extern bool g_listening;
 
@@ -59,9 +59,8 @@ public:
 	void printQuery(query&) const;
 
 private:
-	size_t m_body_buffer_size;
-	size_t m_header_buffer_size;
 	ConfigParser* m_parser;
+	size_t m_client_buffers_size[2];	//0: header, 1: body
 	std::vector<query> m_queries;		//list of all waiting queries
 	std::vector<server> m_servers;		//list of all listening servers
 	std::vector<query> m_clients;
@@ -79,7 +78,7 @@ private:
 		, void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
 	void sendQuery(size_t);
 	void stopListening();
-	void tcpStream(char* buffer, size_t, std::vector<query>::iterator
+	void tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
 		, void (*)(query&, Webserv*));
 };
 

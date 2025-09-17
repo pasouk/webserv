@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 14:02:22 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/17 12:36:00 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 	m_directives.push_back(new Listen());
 	m_directives.push_back(new Index());
 	m_directives.push_back(new ClientBodyBufferSize());
+	m_directives.push_back(new ClientHeaderBufferSize());
 	
 	//if fail -> exception
 	openFile(file);
