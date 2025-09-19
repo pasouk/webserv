@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/17 13:20:27 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/19 15:32:24 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,13 +24,13 @@
 extern bool g_listening;
 
 struct query
-{
+{	
 	int							fd;
 	size_t						bodySize;
 	uint16_t 					port;
 	std::string					host;
 	std::string					httpRequest;
-	std::string					httpBody;
+	std::deque<char*>			bodyChunks;
 	//ParerHttpRequest			parsedRequest
 	//std::string 				formatedResponse
 };

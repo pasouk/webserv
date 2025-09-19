@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/17 15:15:10 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/19 15:34:44 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -162,20 +162,18 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
-	static char *buffer[2]; //0: header, 1: body
+	static char *buffer;
 	static bool bBody;
 	ssize_t n;
 	
-	buffer[0] = new (std::nothrow) char[m_client_buffers_size[0]];
-	if (buffer[0] == NULL)
+	buffer = new (std::nothrow) char[m_client_buffers_size[bBody]];
+	if (buffer == NULL)
 	{
 		cleanWebserv();
 		throw std::bad_alloc();
 	}
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
-	if (bBody)
-		std::cout << "I AM USING BODY BUFFER" << buffer[bBody] << std::endl;
-	n = read(m_fds[i].fd, buffer[bBody], m_client_buffers_size[bBody] - 1);
+	n = read(m_fds[i].fd, buffer, m_client_buffers_size[bBody] - 1);
 	if (n <= 0)
 	{
 		std::cout << "Deconnected client fd:" << m_fds[i].fd
@@ -198,42 +196,21 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	}
 	else
 	{
-		buffer[bBody][n] = '\0';
+		buffer[n] = '\0';
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 		{
 			if (m_fds[i].fd == (*it).fd)
 			{
-				tcpStream(buffer[bBody], n, it, onContentLength);
+				tcpStream(buffer, n, it, onContentLength);
+				bBody = false;
 				if ((*it).bodySize)
-				{
-					if (buffer[1] == NULL)
-					{
-						buffer[1] = new (std::nothrow) char[m_client_buffers_size[1]];
-						std::cout << "BODY BUFFER: " << m_client_buffers_size[1] << std::endl;
-						if (buffer[1] == NULL)
-						{
-							delete [](buffer[0]);
-							cleanWebserv();
-							throw std::bad_alloc();
-						}
-					}
 					bBody = true;
-				}
-				else
-				{
-					if (buffer[1] != NULL)
-						std::cout << "BYE BYE BODY BUFFER\n";
-					delete [](buffer[1]);
-					buffer[1] = NULL;
-					bBody = false;
-				}
 				break;
 			}
 		}
 		onQueries(m_queries, m_servers, this);
 	}
-	delete [](buffer[0]);
-	buffer[0] = NULL;
+	//delete [](buffer);
 }
 
 void Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
@@ -243,20 +220,29 @@ void Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 
 	if ((*it).bodySize)
 	{
-		while (i < n)
+		if (i + (*it).bodySize < (size_t)n)
 		{
-			(*it).httpBody += buffer[i];
-			--(*it).bodySize;
+			char *body = new (std::nothrow) char[(*it).bodySize];
+			memcpy(body, &buffer[i], (*it).bodySize);
+			(*it).bodyChunks.push_back(body);
+			i += (*it).bodySize;
+			m_queries.push_back(*it);
+			(*it).httpRequest.clear();
+			(*it).bodySize = 0;
+			(*it).bodyChunks.clear();
+		}
+		else
+		{
+			(*it).bodyChunks.push_back(buffer);
+			(*it).bodySize -= n;
 			if ((*it).bodySize == 0)
 			{
 				m_queries.push_back(*it);
 				(*it).httpRequest.clear();
-				(*it).httpBody.clear();
-				break ;
+				(*it).bodyChunks.clear();
 			}
-			++i;
+			i += n;
 		}
-		++i;
 	}
 	while (i < n)
 	{
@@ -268,16 +254,32 @@ void Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 				onContentLength(*it, this);
 				if ((*it).bodySize > 0)
 				{
-					while (++i < n)
+					if (++i < n)
 					{
-						(*it).httpBody += buffer[i];
-						--(*it).bodySize;
-						if ((*it).bodySize == 0)
+						if (i + (*it).bodySize < (size_t)n)
 						{
+							char *body = new (std::nothrow) char[(*it).bodySize];
+							memcpy(body, &buffer[i], (*it).bodySize);
+							(*it).bodyChunks.push_back(body);
+							i += (*it).bodySize;
 							m_queries.push_back(*it);
 							(*it).httpRequest.clear();
-							(*it).httpBody.clear();
-							break ;
+							(*it).bodySize = 0;
+							(*it).bodyChunks.clear();
+						}
+						else
+						{
+							char *body = new (std::nothrow) char[n - i];
+							memcpy(body, &buffer[i], n - i);
+							(*it).bodyChunks.push_back(body);
+							(*it).bodySize -= n - i;
+							if ((*it).bodySize == 0)
+							{
+								m_queries.push_back(*it);
+								(*it).httpRequest.clear();
+								(*it).bodyChunks.clear();
+							}
+							i = n;
 						}
 					}
 				}
@@ -285,14 +287,14 @@ void Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 				{
 					m_queries.push_back(*it);
 					(*it).httpRequest.clear();
-					(*it).httpBody.clear();
+					(*it).bodyChunks.clear();
 				}
 			}
 			else
 			{
 				m_queries.push_back(*it);
 				(*it).httpRequest.clear();
-				(*it).httpBody.clear();
+				(*it).bodyChunks.clear();
 				(*it).bodySize = 0;
 			}
 		}
@@ -395,7 +397,7 @@ QueryListener* Webserv::createListener(u_int16_t port, const std::string& host)
 
 void Webserv::printQuery(query& query) const
 {
-    int col1 = 10;
+    int col1 = 11;
     int col2 = 20;
 
     std::cout << std::setw(col1) << "fd:" 
@@ -406,8 +408,12 @@ void Webserv::printQuery(query& query) const
               << "\033[0;36m" << std::setw(col2) << query.host << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "http:" 
               << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
-	std::cout << std::setw(col1) << "body:" 
-              << "\033[0;36m" << std::endl << query.httpBody << "\033[0m" << std::endl;
+	std::cout << std::setw(col1) << "bodyChunks:" 
+              << "\033[0;36m" << std::endl;
+	for (std::deque<char*>::iterator it = query.bodyChunks.begin(); it != query.bodyChunks.end()
+		; ++it)
+		std::cout << "\033[0m" << *it << std::endl;
+	std::cout << "\033[0m" << ", num chunck: " << query.bodyChunks.size() << std::endl;
 }
 
 void Webserv::printServer(server& server) const
