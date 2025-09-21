@@ -17,6 +17,7 @@
 # include <sys/resource.h>
 # include <iomanip>
 # include <algorithm>
+# include <deque>
 
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
@@ -26,7 +27,7 @@ extern bool g_listening;
 struct query
 {	
 	int							fd;
-	size_t						bodySize;
+	ssize_t						bodySize;
 	uint16_t 					port;
 	std::string					host;
 	std::string					httpRequest;
@@ -54,16 +55,15 @@ public:
 	Webserv& operator=(const Webserv&);
 	
 	void startListening(void (*)(query&, Webserv*)
-		, void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
+		, void (*)(query&, std::vector<server>&, Webserv*));
 	void printServers();
 	void printQuery(query&) const;
 
 private:
 	ConfigParser* m_parser;
 	size_t m_client_buffers_size[2];	//0: header, 1: body
-	std::vector<query> m_queries;		//list of all waiting queries
-	std::vector<server> m_servers;		//list of all listening servers
-	std::vector<query> m_clients;
+	std::vector<server> m_servers;		//servers list
+	std::vector<query> m_clients;		//connected clients
 	std::vector<pollfd> m_fds;
 	std::vector<bool> m_isClient;
 	std::vector<const QueryListener*> m_listeners;
@@ -75,11 +75,11 @@ private:
 	void printServer(server&) const;
 	void addClient(size_t);
 	void readQuery(size_t, void (*)(query&, Webserv*)
-		, void (*)(std::vector<query>&, std::vector<server>&, Webserv*));
+		, void (*)(query&, std::vector<server>&, Webserv*));
 	void sendQuery(size_t);
 	void stopListening();
-	void tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
-		, void (*)(query&, Webserv*));
+	bool tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
+		, void (*)(query&, Webserv*), void (*)(query&, std::vector<server>&, Webserv*));
 };
 
 #endif

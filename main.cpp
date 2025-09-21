@@ -41,18 +41,13 @@ void onContentLength(query& q, Webserv* server)
 	q.bodySize = 25;
 }
 
-void onQueries(std::vector<query>& q, std::vector<server>& s, Webserv* server)
+void onQuery(query& q, std::vector<server>& s, Webserv* server)
 {
 	(void)s;
 	(void)q;
 	(void)server;
 
-	while (q.size())
-	{
-		server->printQuery(q.back());
-		std::cout << "------------------\n";
-		q.pop_back();
-	} 
+	server->printQuery(q);
 }
 
 int main(int argc, char *argv[])
@@ -88,7 +83,7 @@ int main(int argc, char *argv[])
 	{
 		Webserv	webserv(cp);
 		webserv.printServers();
-		webserv.startListening(onContentLength, onQueries);
+		webserv.startListening(onContentLength, onQuery);
 	}
 	catch(const std::exception& e)
 	{

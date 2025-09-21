@@ -69,12 +69,10 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 Webserv::~Webserv()
 {
 	cleanWebserv();
-	if (m_queries.size())
-		std::cout << "\033[0;33mWarning: \033[0m" << m_queries.size() << " unprocessed queries.\n";
 }
 
 void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
-	, void (*onQueries)(std::vector<query>&, std::vector<server>&, Webserv*))
+	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
 	pollfd fd;
 	static query query;
@@ -109,7 +107,7 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 			if (m_isClient[i])
 			{
 				if (m_fds[i].revents & POLLIN)
-					readQuery(i, onContentLength, onQueries);
+					readQuery(i, onContentLength, onQuery);
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
 			}
@@ -158,22 +156,24 @@ void Webserv::addClient(size_t i)
 }
 
 void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
-	, void (*onQueries)(std::vector<query>&, std::vector<server>&, Webserv*))
+	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
-	static char *buffer;
+	static char *buffers;
 	static bool bBody;
+	bool bDelete;
 	ssize_t n;
 	
-	buffer = new (std::nothrow) char[m_client_buffers_size[bBody]];
-	if (buffer == NULL)
+	bDelete = true;
+	buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
+	if (buffers == NULL)
 	{
 		cleanWebserv();
 		throw std::bad_alloc();
 	}
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
-	n = read(m_fds[i].fd, buffer, m_client_buffers_size[bBody] - 1);
+	n = read(m_fds[i].fd, buffers, m_client_buffers_size[bBody] - 1);
 	if (n <= 0)
 	{
 		std::cout << "Deconnected client fd:" << m_fds[i].fd
@@ -185,60 +185,66 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 				m_clients.erase(m_clients.begin() + j);
 				break ;
 			}
-		for (size_t j = 0; j < m_queries.size(); ++j)
-			if (m_fds[i].fd == m_queries[j].fd)
-			{
-				m_queries.erase(m_queries.begin() + j);
-				break ;
-			}	
 		m_fds.erase(m_fds.begin() + i);
 		m_isClient.erase(m_isClient.begin() + i);
 	}
 	else
 	{
-		buffer[n] = '\0';
+		buffers[n] = '\0';
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
-		{
 			if (m_fds[i].fd == (*it).fd)
 			{
-				tcpStream(buffer, n, it, onContentLength);
-				bBody = false;
-				if ((*it).bodySize)
-					bBody = true;
+				bDelete = tcpStream(buffers, n, it, onContentLength, onQuery);
+				(*it).bodySize ? bBody = true : bBody = false;
 				break;
 			}
-		}
-		onQueries(m_queries, m_servers, this);
 	}
-	//delete [](buffer);
+	if (bDelete)
+	{
+		delete [](buffers);
+		buffers = NULL;
+	}
 }
 
-void Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
-	, void (*onContentLength)(query&, Webserv*))
+bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
+	, void (*onContentLength)(query&, Webserv*), void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
 	ssize_t i = 0;
+	bool bDelete = true;
+	char *chunk = NULL;
 
 	if ((*it).bodySize)
 	{
-		if (i + (*it).bodySize < (size_t)n)
+		if (i + (*it).bodySize < n)
 		{
-			char *body = new (std::nothrow) char[(*it).bodySize];
-			memcpy(body, &buffer[i], (*it).bodySize);
-			(*it).bodyChunks.push_back(body);
+			chunk = new (std::nothrow) char[(*it).bodySize + 1];
+			if (chunk == NULL)
+			{
+				cleanWebserv();
+				throw std::bad_alloc();
+			}
+			memcpy(chunk, &buffer[i], (*it).bodySize);
+			chunk[(*it).bodySize] = '\0';
+			(*it).bodyChunks.push_back(chunk);
 			i += (*it).bodySize;
-			m_queries.push_back(*it);
+			onQuery(*it, m_servers, this);
 			(*it).httpRequest.clear();
 			(*it).bodySize = 0;
+			for (size_t k = 0; k < (*it).bodyChunks.size(); ++k)
+				delete []((*it).bodyChunks[k]);
 			(*it).bodyChunks.clear();
 		}
 		else
 		{
 			(*it).bodyChunks.push_back(buffer);
+			bDelete = false;
 			(*it).bodySize -= n;
 			if ((*it).bodySize == 0)
 			{
-				m_queries.push_back(*it);
+				onQuery(*it, m_servers, this);
 				(*it).httpRequest.clear();
+				for (size_t k = 0; k < (*it).bodyChunks.size(); ++k)
+					delete []((*it).bodyChunks[k]);
 				(*it).bodyChunks.clear();
 			}
 			i += n;
@@ -256,27 +262,43 @@ void Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 				{
 					if (++i < n)
 					{
-						if (i + (*it).bodySize < (size_t)n)
+						if (i + (*it).bodySize < n)
 						{
-							char *body = new (std::nothrow) char[(*it).bodySize];
-							memcpy(body, &buffer[i], (*it).bodySize);
-							(*it).bodyChunks.push_back(body);
+							chunk = new (std::nothrow) char[(*it).bodySize + 1];
+							if (chunk == NULL)
+							{
+								cleanWebserv();
+								throw std::bad_alloc();
+							}
+							memcpy(chunk, &buffer[i], (*it).bodySize);
+							chunk[(*it).bodySize] = '\0';
+							(*it).bodyChunks.push_back(chunk);
 							i += (*it).bodySize;
-							m_queries.push_back(*it);
+							onQuery(*it, m_servers, this);
 							(*it).httpRequest.clear();
 							(*it).bodySize = 0;
+							for (size_t k = 0; k < (*it).bodyChunks.size(); ++k)
+								delete []((*it).bodyChunks[k]);
 							(*it).bodyChunks.clear();
 						}
 						else
 						{
-							char *body = new (std::nothrow) char[n - i];
-							memcpy(body, &buffer[i], n - i);
-							(*it).bodyChunks.push_back(body);
+							chunk = new (std::nothrow) char[n - i + 1];
+							if (chunk == NULL)
+							{
+								cleanWebserv();
+								throw std::bad_alloc();
+							}
+							memcpy(chunk, &buffer[i], n - i);
+							chunk[n - i] = '\0';
+							(*it).bodyChunks.push_back(chunk);
 							(*it).bodySize -= n - i;
 							if ((*it).bodySize == 0)
 							{
-								m_queries.push_back(*it);
+								onQuery(*it, m_servers, this);
 								(*it).httpRequest.clear();
+								for (size_t k = 0; k < (*it).bodyChunks.size(); ++k)
+									delete []((*it).bodyChunks[k]);
 								(*it).bodyChunks.clear();
 							}
 							i = n;
@@ -285,21 +307,26 @@ void Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 				}
 				else
 				{
-					m_queries.push_back(*it);
+					onQuery(*it, m_servers, this);
 					(*it).httpRequest.clear();
+					for (size_t k = 0; k < (*it).bodyChunks.size(); ++k)
+						delete []((*it).bodyChunks[k]);
 					(*it).bodyChunks.clear();
 				}
 			}
 			else
 			{
-				m_queries.push_back(*it);
+				onQuery(*it, m_servers, this);
 				(*it).httpRequest.clear();
-				(*it).bodyChunks.clear();
 				(*it).bodySize = 0;
+				for (size_t k = 0; k < (*it).bodyChunks.size(); ++k)
+					delete []((*it).bodyChunks[k]);
+				(*it).bodyChunks.clear();
 			}
 		}
 		++i;
 	}
+	return (bDelete);
 }
 
 
@@ -307,11 +334,11 @@ void Webserv::sendQuery(size_t i)
 {
 	(void)i;
 
-	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+	/*for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 		if (m_fds[i].fd == (*it).fd)
 		{
 			//while ()
-		}
+		}*/
 }
 
 std::vector<server> Webserv::findServers() const
@@ -373,7 +400,13 @@ void Webserv::cleanWebserv()
 	m_listeners.clear();
 	for (size_t i = 0; i < m_fds.size(); ++i)
 		if (m_isClient[i])
+		{
 			close (m_fds[i].fd);
+			for (std::deque<char*>::iterator it = m_clients[i].bodyChunks.begin()
+				; it != m_clients[i].bodyChunks.end(); ++it)
+				delete [](*it);
+			m_clients[i].bodyChunks.clear();
+		}
 	m_fds.clear();
 	m_isClient.clear();
 }
@@ -412,7 +445,7 @@ void Webserv::printQuery(query& query) const
               << "\033[0;36m" << std::endl;
 	for (std::deque<char*>::iterator it = query.bodyChunks.begin(); it != query.bodyChunks.end()
 		; ++it)
-		std::cout << "\033[0m" << *it << std::endl;
+		std::cout << *it << std::endl;
 	std::cout << "\033[0m" << ", num chunck: " << query.bodyChunks.size() << std::endl;
 }
 
