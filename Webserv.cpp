@@ -27,7 +27,7 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
 	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
 	if (parser == NULL)
-		throw std::runtime_error("No configuration");
+		throw std::runtime_error("No configuration.");
 	m_servers = findServers();
 	servers = parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = servers.begin(); it != servers.end(); ++it)
@@ -75,7 +75,6 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
 	pollfd fd;
-	static query query;
 	static rlimit limit;
 
 	//check system queue size
@@ -106,12 +105,25 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 				addClient(i);
 			if (m_isClient[i])
 			{
+				if (needAResponse(i))
+				{
+					std::cout << "SEND RESPONSE\n";
+					m_fds[i].events |= POLLOUT;
+				}
 				if (m_fds[i].revents & POLLIN)
 					readQuery(i, onContentLength, onQuery);
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
 			}
 		}
+		for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+		{
+			for (std::deque<char*>::iterator it2 = (*it).bodyChunks.begin()
+				; it2 != (*it).bodyChunks.end(); ++it2)
+				delete [](*it2);
+			(*it).bodyChunks.clear();
+		}
+		m_queries.clear();
 	}
 	cleanWebserv();
 	std::cout << "Stop listening\n";
@@ -185,6 +197,15 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 				m_clients.erase(m_clients.begin() + j);
 				break ;
 			}
+		for (size_t j = 0; j < m_queries.size(); ++j)
+			if (m_fds[i].fd == m_queries[j].fd)
+			{
+				for (std::deque<char*>::iterator it = m_queries[j].bodyChunks.begin()
+					; it != m_queries[j].bodyChunks.end(); ++it)
+					delete [](*it);
+				m_clients.erase(m_queries.begin() + j);
+				break ;
+			}
 		m_fds.erase(m_fds.begin() + i);
 		m_isClient.erase(m_isClient.begin() + i);
 	}
@@ -205,9 +226,40 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 
 void Webserv::sendQuery(size_t i)
 {
-	(void)i;
+	ssize_t n;
 
+	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+		if ((*it).fd == m_fds[i].fd)
+		{
+			while ((*it).byteSent < (*it).formatedResponse.size())
+			{
+				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
+					, (*it).formatedResponse.size() - (*it).byteSent, 0);
+				if (n > 0)
+					(*it).byteSent += n;
+				else if (n == -1)
+					break ;
+				else
+				{ 
+					cleanWebserv();
+					throw std::runtime_error(std::strerror(errno));
+				}
+			}
+			if ((*it).byteSent == (*it).formatedResponse.size())
+			{
+				m_fds[i].events &= ~POLLOUT;
+				(*it).formatedResponse.clear();
+				m_queries.erase(it);
+			}
+		}
+}
 
+bool Webserv::needAResponse(size_t i)
+{
+	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+		if ((*it).fd == m_fds[i].fd && !(*it).formatedResponse.empty())
+			return (true);
+	return (false);
 }
 
 std::vector<server> Webserv::findServers() const
@@ -269,13 +321,7 @@ void Webserv::cleanWebserv()
 	m_listeners.clear();
 	for (size_t i = 0; i < m_fds.size(); ++i)
 		if (m_isClient[i])
-		{
 			close (m_fds[i].fd);
-			for (std::deque<char*>::iterator it = m_clients[i].bodyChunks.begin()
-				; it != m_clients[i].bodyChunks.end(); ++it)
-				delete [](*it);
-			m_clients[i].bodyChunks.clear();
-		}
 	m_fds.clear();
 	m_isClient.clear();
 }

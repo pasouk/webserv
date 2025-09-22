@@ -27,13 +27,14 @@ extern bool g_listening;
 struct query
 {	
 	int							fd;
+	size_t						byteSent;
 	ssize_t						bodySize;
 	uint16_t 					port;
 	std::string					host;
 	std::string					httpRequest;
 	std::deque<char*>			bodyChunks;
 	//ParerHttpRequest			parsedRequest
-	//std::string 				formatedResponse
+	std::string 				formatedResponse;
 };
 
 struct server
@@ -64,6 +65,7 @@ private:
 	size_t m_client_buffers_size[2];	//0: header, 1: body
 	std::vector<server> m_servers;		//servers list
 	std::vector<query> m_clients;		//connected clients
+	std::vector<query> m_queries;
 	std::vector<pollfd> m_fds;
 	std::vector<bool> m_isClient;
 	std::vector<const QueryListener*> m_listeners;
@@ -82,6 +84,7 @@ private:
 	char* removeChunk(char*, ssize_t);
 	bool tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
 		, void (*)(query&, Webserv*), void (*)(query&, std::vector<server>&, Webserv*));
+	bool needAResponse(size_t);
 };
 
 #endif

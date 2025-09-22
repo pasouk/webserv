@@ -16,10 +16,10 @@ void Webserv:: queryHook(std::vector<query>::iterator it
 	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
 	onQuery(*it, m_servers, this);
+	m_queries.push_back(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
-	for (size_t k = 0; k < (*it).bodyChunks.size(); ++k)
-		delete []((*it).bodyChunks[k]);
+	(*it).byteSent = 0;
 	(*it).bodyChunks.clear();
 }
 
