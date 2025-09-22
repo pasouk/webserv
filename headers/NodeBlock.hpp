@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:51 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 13:57:49 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/03 15:44:19 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,24 +14,24 @@
 # define NODEBLOCK_HPP
 
 # include "Node.hpp"
-# include "NodeDirective.hpp"
 
+class NodeDirective;
 class NodeBlock : public Node
 {
 public:
 	NodeBlock();
+	NodeBlock(const std::string&);
 	~NodeBlock();
-	void setBlock(const std::string&);
-	const std::string& getName() const;
-	const std::vector<NodeBlock*> getChilds() const;
+
+	NodeBlock& operator=(const NodeBlock&);
+
+	Node* addChild(const Directives&, const std::string&);
+	const std::vector<NodeBlock*> getBlocks() const;
 	const std::vector<NodeDirective*> getDirectives() const;
-	NodeBlock* addChild();
-	NodeDirective* addDirective(std::string);
 	
 private:
-	std::string block;
 	std::vector<NodeDirective*> directives;
-	std::vector<NodeBlock*> nodes;
+	std::vector<NodeBlock*> blocks;
 };
 
 #endif

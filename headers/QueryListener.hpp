@@ -6,7 +6,7 @@
 /*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/18 07:12:08 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/08/31 14:36:22 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,31 +24,30 @@
 # include <sys/wait.h>
 # include <sys/mman.h>
 # include <poll.h>
+# include <arpa/inet.h>
+# include "ConfigParser.hpp"
 
-# define BUFFER_SIZE 4096
-# define MAX_CLIENTS 10
-# define PORT 8080
-
-extern bool g_listening;
+//extern bool g_listening;
 
 class QueryListener
 {
 public:
+	QueryListener(uint16_t, const std::string&);
 	QueryListener();
 	~QueryListener();
 	QueryListener(const QueryListener&);
 
 	QueryListener& operator=(const QueryListener&);
+
+	int getListenFD() const;
+	const struct sockaddr_in& getServerAddress() const;
 	
 private:
-	struct sockaddr_in 	m_serverAddress;
-	struct pollfd 		m_fds[MAX_CLIENTS + 1];
+	sockaddr_in m_serverAddress;
+	int			m_listenFD;
 
 private:
-	void initListener();
-	void queriesListen();
-	void stopListening();
-	void closeFds();
+	void initListener(uint16_t = 80, const std::string& = "0.0.0.0");
 };
 
 #endif

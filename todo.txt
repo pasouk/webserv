@@ -1,4 +1,0 @@
-Requete post : restrictions de chemin
-header Allow pour method not found
-Chemin dynamique root et upload
-header connection ?

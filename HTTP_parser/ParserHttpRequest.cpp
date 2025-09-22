@@ -166,8 +166,8 @@ int ParserHttpRequest::parseHeaderLine()
 
     while (std::getline(stream, line, '\n'))
     {
-        if (!line.empty() && line.back() == '\r')
-            line.pop_back();
+        if (!line.empty() && (line[line.size() - 1] == '\r'))
+            line = line.substr(0, line.size() - 1);
 
         size_t pos = line.find(':');
         if (pos == std::string::npos)
@@ -213,7 +213,7 @@ int    ParserHttpRequest::debugParsingRequest()
     ret = parseMethodLine();
     if (ret)
         return ret;
-        std::cout << Colors::BLUE << "\n\n----------- STEP 2 : Parsing method line ----------\n" \
+    std::cout << Colors::BLUE << "\n\n----------- STEP 2 : Parsing method line ----------\n" \
      << Colors::RESET << std::endl << Colors::CYAN << "Method found: " << Colors::RESET << methods_map[getMethod()].name << std::endl \
      << Colors::RESET << Colors::CYAN << "Path found : " << Colors::RESET << getPath() << std::endl \
      << Colors::RESET << Colors::CYAN << "Version found : " << Colors::RESET << getVersion() << std::endl;

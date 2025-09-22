@@ -1,36 +1,33 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Node.hpp                                           :+:      :+:    :+:   */
+/*   NodeDirective.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/08/23 11:42:30 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/23 15:12:29 by fabricebuyl      ###   ########.fr       */
+/*   Created: 2025/08/23 11:46:16 by fabricebuyl       #+#    #+#             */
+/*   Updated: 2025/09/17 12:43:51 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef NODE_HPP
-# define NODE_HPP
+#ifndef NODEDIRECTIVE_HPP
+# define NODEDIRECTIVE_HPP
 
-# include <iostream>
+# include <stdint.h>
 # include <sstream>
+# include "Node.hpp"
 
-class Node
+class NodeBlock;
+class NodeDirective : public Node
 {
 public:
-	Node();
-	Node(const std::string);
-	virtual ~Node();
+	NodeDirective(const std::string&);
+	~NodeDirective();
 
-	virtual const std::string& getName() const = 0;
-	const std::string& getType() const;
-	const std::vector<std::string>& getArgs() const;
-	void setArgs(std::stringstream&);
-	
-protected:
-	std::string type;
-	std::vector<std::string> args;
+	NodeDirective& operator=(const NodeDirective&);
+
+	int getListenHostPort(uint16_t&, std::string&) const;
+	int getClientBufferSize(size_t& size) const;
 };
 
 #endif
