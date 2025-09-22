@@ -59,6 +59,11 @@ std::string ParserHttpRequest::getBodyLine()
     return _bodyLine;
 }
 
+std::string ParserHttpRequest::getBodyLine() const
+{
+    return _bodyLine;
+}
+
 HttpMethod ParserHttpRequest::getMethod() const
 {
     return _method;

@@ -7,6 +7,8 @@
 #include <fstream>
 #include <sstream>
 #include <ctime>
+#include <unistd.h>
+#include <fcntl.h>
 
 bool resourceExists(const std::string& path);
 bool    isFolder(std::string &path);
@@ -30,23 +32,24 @@ class   HttpResponse
 
     public:
 
-        void buildFullPath();
+        void buildFullPathGet();
 
         HttpResponse(ParserHttpRequest ParsedRequest, int parserExitCode);
 
         void HttpResponseManager();
-
+        std::string getFormatedResponse();
         int getParserExitCode() const;
         void setRoot(std::string root);
         void setUploadDir(std::string dir);
-        std::string getFullPath();
+        std::string getFullPathGet();
 
         void HttpResponseError(int code, std::string reason);
         
         std::string getContentType(const std::string &rawStr);
-        void manageHeaders();
+        void manageGetHeaders();
         void manageContentLength();
         void manageContentType();
+        void managePostHeaders();
 
         void    buildGet();
         void    buildPost();
@@ -54,8 +57,8 @@ class   HttpResponse
 
         void serialize();
 
-        std::string extractFileName(std::string str);
-        void writeUploadedFile(std::string name) ;
+        std::string extractFileName(const std::string &str) ;
+        bool writeUploadedFile(std::string name)  ;
 
         void printElements();
 
