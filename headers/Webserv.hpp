@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/19 15:32:24 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/22 12:35:48 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,6 +78,8 @@ private:
 		, void (*)(query&, std::vector<server>&, Webserv*));
 	void sendQuery(size_t);
 	void stopListening();
+	void queryHook(std::vector<query>::iterator,  void (*)(query&, std::vector<server>&, Webserv*));
+	char* removeChunk(char*, ssize_t);
 	bool tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
 		, void (*)(query&, Webserv*), void (*)(query&, std::vector<server>&, Webserv*));
 };
