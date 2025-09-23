@@ -12,6 +12,7 @@
 
 #include "Webserv.hpp"
 #include "ParserHttp.hpp"
+#include "HTTP_response/HttpResponse.hpp"
 
 bool g_listening = true;
 
@@ -41,13 +42,37 @@ void onContentLength(query& q, Webserv* server)
 	q.bodySize = 25;
 }
 
+
 void onQuery(query& q, std::vector<server>& s, Webserv* server)
 {
 	(void)s;
 	(void)q;
 	(void)server;
 
-	server->printQuery(q);
+	
+	//std::string root = s[1].root; //Normalement ceci devrait fonctionner mais j'avais mis la ligne suivante pour adapter a mon pc dans modifier ton fichier config 
+	std::string root = "/home/pasouk/webserv";
+
+	//parsing
+	ParserHttpRequest request1(q.httpRequest);
+    //int ret = request1.parseRequest();   // Attention : utiliser soit parserequest + printparsingdata soit debugparsingdata tout seul
+	std::cout << Colors::RED << "-----------Parsed data----------\n" << Colors::RESET;
+	int ret = request1.debugParsingRequest();
+	//request1.printParsedData();
+
+	//response
+    HttpResponse response1(request1, ret);
+    response1.setRoot(root);
+    response1.HttpResponseManager();
+	std::cout << Colors::RED << "\n\n\n ----------Response ----------\n" << Colors::RESET;
+    response1.printElements();
+
+	std::cout << "\n\n------------------------------------------------\n\n";
+	// FABRICE : quand ce sera pret : 
+	//q.formatedResponse = reponse1.getFormatedResponse();
+
+	//server->printQuery(q);
+
 }
 
 int main(int argc, char *argv[])
