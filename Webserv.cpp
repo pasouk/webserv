@@ -105,25 +105,14 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 				addClient(i);
 			if (m_isClient[i])
 			{
-				if (needAResponse(i))
-				{
-					std::cout << "SEND RESPONSE\n";
-					m_fds[i].events |= POLLOUT;
-				}
 				if (m_fds[i].revents & POLLIN)
 					readQuery(i, onContentLength, onQuery);
+				if (needAResponse(i))
+					m_fds[i].events |= POLLOUT;
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
 			}
 		}
-		for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
-		{
-			for (std::deque<char*>::iterator it2 = (*it).bodyChunks.begin()
-				; it2 != (*it).bodyChunks.end(); ++it2)
-				delete [](*it2);
-			(*it).bodyChunks.clear();
-		}
-		m_queries.clear();
 	}
 	cleanWebserv();
 	std::cout << "Stop listening\n";
@@ -229,6 +218,7 @@ void Webserv::sendQuery(size_t i)
 	ssize_t n;
 
 	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+	{
 		if ((*it).fd == m_fds[i].fd)
 		{
 			while ((*it).byteSent < (*it).formatedResponse.size())
@@ -247,11 +237,16 @@ void Webserv::sendQuery(size_t i)
 			}
 			if ((*it).byteSent == (*it).formatedResponse.size())
 			{
+
 				m_fds[i].events &= ~POLLOUT;
 				(*it).formatedResponse.clear();
+				for (std::deque<char*>::iterator it2 = (*it).bodyChunks.begin(); it2 != (*it).bodyChunks.end(); ++it2)
+					delete [](*it2);
 				m_queries.erase(it);
+				break;
 			}
 		}
+	}
 }
 
 bool Webserv::needAResponse(size_t i)

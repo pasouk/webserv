@@ -38,7 +38,7 @@ void onContentLength(query& q, Webserv* server)
         std::cout << Colors::GREEN << "Parsing exit code : " << ret << Colors::RESET << std::endl;
 		q.bodySize = 25; //request1.getBodySize();
 	}*/
-	q.bodySize = 25;
+	q.bodySize = 0;
 }
 
 void onQuery(query& q, std::vector<server>& s, Webserv* server)
@@ -47,6 +47,7 @@ void onQuery(query& q, std::vector<server>& s, Webserv* server)
 	(void)q;
 	(void)server;
 
+	q.formatedResponse = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello World !";
 	server->printQuery(q);
 }
 
