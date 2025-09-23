@@ -53,8 +53,11 @@ void HttpResponse::buildFullPathGet()
 
     if (!fullPath.empty() && !(_ParsedRequest.getPath().empty())) 
     {
-        if (fullPath.back() == '/' && _ParsedRequest.getPath().front() == '/')
-            fullPath.pop_back();
+        if (!fullPath.empty() && fullPath[fullPath.size() - 1] == '/' &&
+            !_ParsedRequest.getPath().empty() && _ParsedRequest.getPath()[0] == '/')
+        {
+            fullPath.erase(fullPath.size() - 1);
+        }
     }
 
     fullPath += _ParsedRequest.getPath();
@@ -256,7 +259,7 @@ void HttpResponse::buildGet()
             return;
         }
     }
-    std::ifstream file(_fullPath);
+    std::ifstream file(_fullPath.c_str());
     if (!file.is_open())
     {
         this->HttpResponseError(403, "Forbidden");
@@ -302,9 +305,12 @@ void HttpResponse::HttpResponseManager()
        case POST:
             this->buildPost();
             break;
-/*        case DELETE_:
-            buildDelete();
-            break;*/
+        case DELETE_:
+            //buildDelete();
+            break;
+        case UNKNOWN:
+            //buildDelete();
+            break;
     }
 }
 

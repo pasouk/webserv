@@ -59,6 +59,7 @@ class ParserHttpRequest
         std::string getMethodLine();
         std::string getHeaderLine();
         std::string getBodyLine();
+        std::string getBodyLine() const;
 
         HttpMethod getMethod() const;
         std::string getPath() const;

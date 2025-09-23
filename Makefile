@@ -24,20 +24,24 @@ SOURCES = QueryListener.cpp \
 	Webserv2.cpp \
 	main.cpp \
 	HTTP_parser/ParserHttpRequest.cpp\
-	HTTP_parser/ParserHttpUtils.cpp
+	HTTP_parser/ParserHttpUtils.cpp \
+	HTTP_response/HttpResponseUtils.cpp \
+	HTTP_response/HttpResponse.cpp
+
 	
 OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(NAME)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response -c $< -o $@
 
 $(NAME): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -o $(NAME) $(OBJECTS)
+	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response  -o $(NAME) $(OBJECTS)
 
 clean:
 	rm -f HTTP_parser/*.o
+	rm -f HTTP_response/*.o
 	rm -f *.o
 
 fclean: clean

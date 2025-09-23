@@ -59,6 +59,11 @@ std::string ParserHttpRequest::getBodyLine()
     return _bodyLine;
 }
 
+std::string ParserHttpRequest::getBodyLine() const
+{
+    return _bodyLine;
+}
+
 HttpMethod ParserHttpRequest::getMethod() const
 {
     return _method;
@@ -173,6 +178,11 @@ int ParserHttpRequest::parseHeaderLine()
 
         std::string key = line.substr(0, pos);
         std::string value = line.substr(pos + 1);
+        
+        while (!value.empty() && (value[0] == ' ' || value[0] == '\t'))
+            value.erase(0, 1);
+        while (!value.empty() && (value[value.size() - 1] == ' ' || value[value.size() - 1] == '\t'))
+            value.erase(value.size() - 1, 1);
 
         if (key.empty())
         {
@@ -184,11 +194,11 @@ int ParserHttpRequest::parseHeaderLine()
             std::cout << "Invalid HTTP request: Missing value in header line!\n";
             return 400;
         }
-
+        std::cout << "Inserting header => [" << key << "] = [" << value << "]\n";
         if (!_headers.insert(std::make_pair(key, value)).second)
         {
-            std::cout << "Invalid HTTP request : Duplicate header detected: " << key << "\n";
-            return 400;
+                std::cout << "Duplicate key detected: [" << key << "]\n";            
+                return 400;
         }
     }
 
