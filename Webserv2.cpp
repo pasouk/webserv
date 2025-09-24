@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/22 11:18:58 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/24 10:04:06 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,7 +116,7 @@ void Webserv::printQuery(query& query) const
               << "\033[0;36m" << std::setw(col2) << query.port << "\033[0m" << std::endl;
     std::cout << std::setw(col1) << "host:" 
               << "\033[0;36m" << std::setw(col2) << query.host << "\033[0m" << std::endl;
-	std::cout << std::setw(col1) << "http:" 
+ 	std::cout << std::setw(col1) << "http:" 
               << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "bodyChunks:" 
               << "\033[0;36m" << std::endl;

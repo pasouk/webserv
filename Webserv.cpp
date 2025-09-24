@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/22 12:36:10 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/24 10:00:45 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -277,7 +277,7 @@ std::vector<server> Webserv::findServers() const
 		_server.ports.clear();
 		_server.hosts.clear();
 		_server.server_names.clear();
-		_server.root = "";
+		_server.root = "html";
 		_listens = m_parser->getDirectives("listen", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it = _listens.begin(); it != _listens.end(); ++it)
 		{

@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/17 12:36:45 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/24 10:10:14 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,12 @@ public:
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 class ServerName : public Directives{ public: ServerName(); };
-class Root : public Directives{ public: Root(); };
+class Root : public Directives
+{
+public:
+	Root();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
 class Index : public Directives { public: Index(); };
 class Location : public Directives { public: Location(); };
 class Server : public Directives { public: Server(); };

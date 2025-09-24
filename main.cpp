@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/23 15:24:27 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/24 10:39:20 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,11 +51,14 @@ void onQuery(query& q, std::vector<server>& s, Webserv* server)
 
 	
 	//std::string root = s[1].root; //Normalement ceci devrait fonctionner mais j'avais mis la ligne suivante pour adapter a mon pc dans modifier ton fichier config 
-	std::string root = "/home/pasouk/webserv";
+	//std::string root = "/home/pasouk/webserv";
+	std::string root;
+	root = s[0].root;
+	if (q.port == 4096)
+		root = s[1].root;
 
 	//parsing
 	ParserHttpRequest request1(q.httpRequest);
-	std::cout << q.httpRequest << std::endl;
 
     //int ret = request1.parseRequest();   // Attention : utiliser soit parserequest + printparsingdata soit debugparsingdata tout seul
 	std::cout << Colors::RED << "-----------Parsed data----------\n" << Colors::RESET;
@@ -71,8 +74,7 @@ void onQuery(query& q, std::vector<server>& s, Webserv* server)
 
 	std::cout << "\n\n------------------------------------------------\n\n";
 	// FABRICE : quand ce sera pret : 
-	//q.formatedResponse = response1.getFormatedResponse();
-	q.formatedResponse = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello World !";
+	q.formatedResponse = response1.getFormatedResponse();
 
 	//server->printQuery(q);
 
