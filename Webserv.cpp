@@ -109,6 +109,11 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 					readQuery(i, onContentLength, onQuery);
 				if (needAResponse(i))
 					m_fds[i].events |= POLLOUT;
+				else
+				{
+					m_fds[i].events &= ~POLLOUT;
+					destroyClientQueries(i);
+				}
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
 			}
@@ -175,6 +180,7 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	}
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 	n = read(m_fds[i].fd, buffers, m_client_buffers_size[bBody] - 1);
+	//don't use this, use time out to deconnect client
 	if (n <= 0)
 	{
 		std::cout << "Deconnected client fd:" << m_fds[i].fd
@@ -186,15 +192,7 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 				m_clients.erase(m_clients.begin() + j);
 				break ;
 			}
-		for (size_t j = 0; j < m_queries.size(); ++j)
-			if (m_fds[i].fd == m_queries[j].fd)
-			{
-				for (std::deque<char*>::iterator it = m_queries[j].bodyChunks.begin()
-					; it != m_queries[j].bodyChunks.end(); ++it)
-					delete [](*it);
-				m_clients.erase(m_queries.begin() + j);
-				break ;
-			}
+		destroyClientQueries(i);
 		m_fds.erase(m_fds.begin() + i);
 		m_isClient.erase(m_isClient.begin() + i);
 	}
@@ -238,11 +236,7 @@ void Webserv::sendQuery(size_t i)
 			if ((*it).byteSent == (*it).formatedResponse.size())
 			{
 
-				m_fds[i].events &= ~POLLOUT;
 				(*it).formatedResponse.clear();
-				for (std::deque<char*>::iterator it2 = (*it).bodyChunks.begin(); it2 != (*it).bodyChunks.end(); ++it2)
-					delete [](*it2);
-				m_queries.erase(it);
 				break;
 			}
 		}
@@ -277,7 +271,7 @@ std::vector<server> Webserv::findServers() const
 		_server.ports.clear();
 		_server.hosts.clear();
 		_server.server_names.clear();
-		_server.root = "html";
+		_server.root = "/html";
 		_listens = m_parser->getDirectives("listen", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it = _listens.begin(); it != _listens.end(); ++it)
 		{
@@ -316,7 +310,10 @@ void Webserv::cleanWebserv()
 	m_listeners.clear();
 	for (size_t i = 0; i < m_fds.size(); ++i)
 		if (m_isClient[i])
+		{
+			destroyClientQueries(i);
 			close (m_fds[i].fd);
+		}
 	m_fds.clear();
 	m_isClient.clear();
 }

@@ -92,7 +92,7 @@ Root::Root() : Directives(false, 1, 1, "root")
 bool Root::areArgsValid(const std::vector<std::string>& args, std::string& err) const
 {
 	regex_t regex;
-	std::string pattern("^\\/(?:[A-Za-z0-9._-]+\\/?)*$");
+	std::string pattern("^/([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$");
 	
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{

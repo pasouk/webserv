@@ -80,6 +80,7 @@ private:
 		, void (*)(query&, std::vector<server>&, Webserv*));
 	void sendQuery(size_t);
 	void stopListening();
+	void destroyClientQueries(size_t);
 	void queryHook(std::vector<query>::iterator,  void (*)(query&, std::vector<server>&, Webserv*));
 	char* removeChunk(char*, ssize_t);
 	bool tcpStream(char* buffer, ssize_t, std::vector<query>::iterator

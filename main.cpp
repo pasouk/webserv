@@ -52,10 +52,14 @@ void onQuery(query& q, std::vector<server>& s, Webserv* server)
 	
 	//std::string root = s[1].root; //Normalement ceci devrait fonctionner mais j'avais mis la ligne suivante pour adapter a mon pc dans modifier ton fichier config 
 	//std::string root = "/home/pasouk/webserv";
-	std::string root;
-	root = s[0].root;
+	std::string root = s[0].root;
 	if (q.port == 4096)
 		root = s[1].root;
+
+	//MAXENCE: par defaut nginx doit contenir un chemin absolu et commencer par '/', si ce n'est pas le cas,
+	//mon parser génère une erreur, donc je le supprime après parceque ta solution fonctionne sans.
+	if (root[0] == '/')
+		root = root.substr(1, root.length() - 1);
 
 	//parsing
 	ParserHttpRequest request1(q.httpRequest);
@@ -77,7 +81,6 @@ void onQuery(query& q, std::vector<server>& s, Webserv* server)
 	q.formatedResponse = response1.getFormatedResponse();
 
 	//server->printQuery(q);
-
 }
 
 int main(int argc, char *argv[])

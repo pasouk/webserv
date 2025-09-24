@@ -155,3 +155,17 @@ void Webserv::printServers()
 		printServer(*it);
 	}
 }
+
+void Webserv::destroyClientQueries(size_t i)
+{
+	for (size_t j = 0; j < m_queries.size(); ++j)
+	{
+		if (m_queries[j].fd == m_fds[i].fd)
+		{
+			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
+				delete [](m_queries[j].bodyChunks[k]);
+			m_queries.erase(m_queries.begin() + j);
+			break ;
+		}
+	}
+}
