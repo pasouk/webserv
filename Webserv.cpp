@@ -116,6 +116,12 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 				}
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
+				if (!keepAlive(i, 75))
+				{			
+					std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
+					destroyClientQueries(i);
+					destroyClient(i);
+				}
 			}
 		}
 	}
@@ -128,7 +134,7 @@ void Webserv::addClient(size_t i)
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
 	static query query;
-	pollfd fd;
+	static pollfd fd;
 	size_t j;
 	char ip[INET_ADDRSTRLEN];
 
@@ -139,7 +145,7 @@ void Webserv::addClient(size_t i)
 		fd.fd = accept(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 		if (fd.fd < 0) 
 			continue;
-		fd.events = POLLIN;
+		fd.events |= POLLIN;
 		fd.revents = 0;
 		for (j = 0; j < m_fds.size(); ++j)
 			if (m_fds[j].fd == fd.fd)
@@ -150,6 +156,7 @@ void Webserv::addClient(size_t i)
 			m_isClient.push_back(true);
 			getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 			query.fd = fd.fd;
+			query.lifeTime = std::clock();
 			query.port = ntohs(serverAddress.sin_port);
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;
@@ -179,24 +186,9 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 		throw std::bad_alloc();
 	}
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
+	m_clients[i].lifeTime = std::clock();
 	n = read(m_fds[i].fd, buffers, m_client_buffers_size[bBody] - 1);
-	//don't use this, use time out to deconnect client
-	if (n <= 0)
-	{
-		std::cout << "Deconnected client fd:" << m_fds[i].fd
-			<< ", port:"<< ntohs(serverAddress.sin_port) << std::endl;
-		close(m_fds[i].fd);
-		for (size_t j = 0; j < m_clients.size(); ++j)
-			if (m_fds[i].fd == m_clients[j].fd)
-			{
-				m_clients.erase(m_clients.begin() + j);
-				break ;
-			}
-		destroyClientQueries(i);
-		m_fds.erase(m_fds.begin() + i);
-		m_isClient.erase(m_isClient.begin() + i);
-	}
-	else
+	if (n > 0)
 	{
 		buffers[n] = '\0';
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
@@ -221,6 +213,7 @@ void Webserv::sendQuery(size_t i)
 		{
 			while ((*it).byteSent < (*it).formatedResponse.size())
 			{
+				m_clients[i].lifeTime = std::clock();
 				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
 					, (*it).formatedResponse.size() - (*it).byteSent, 0);
 				if (n > 0)
@@ -235,7 +228,6 @@ void Webserv::sendQuery(size_t i)
 			}
 			if ((*it).byteSent == (*it).formatedResponse.size())
 			{
-
 				(*it).formatedResponse.clear();
 				break;
 			}
@@ -243,9 +235,9 @@ void Webserv::sendQuery(size_t i)
 	}
 }
 
-bool Webserv::needAResponse(size_t i)
+bool Webserv::needAResponse(size_t i) const
 {
-	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+	for (std::vector<query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 		if ((*it).fd == m_fds[i].fd && !(*it).formatedResponse.empty())
 			return (true);
 	return (false);

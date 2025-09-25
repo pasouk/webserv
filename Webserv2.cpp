@@ -169,3 +169,35 @@ void Webserv::destroyClientQueries(size_t i)
 		}
 	}
 }
+
+void Webserv::destroyClient(size_t i)
+{
+	close(m_fds[i].fd);
+	for (size_t j = 0; j < m_clients.size(); ++j)
+		if (m_fds[i].fd == m_clients[j].fd)
+		{
+			m_clients.erase(m_clients.begin() + j);
+			break ;
+		}
+	m_fds.erase(m_fds.begin() + i);
+	m_isClient.erase(m_isClient.begin() + i);
+}
+
+bool Webserv::keepAlive(size_t i, double sec) const
+{
+	size_t j;
+	double delay;
+
+	for (j = 0; j < m_clients.size(); ++j)
+		if (m_fds[i].fd == m_clients[j].fd)
+		{
+			delay = (std::clock() - m_clients[j].lifeTime) / CLOCKS_PER_SEC;
+			if ( delay >= sec)
+			{
+				std::cout << "No request for " << delay << " sec.\n";
+				return (false);
+			}
+			return (true);
+		}
+	return (true);
+}
