@@ -185,19 +185,26 @@ void Webserv::destroyClient(size_t i)
 
 bool Webserv::keepAlive(size_t i, double sec) const
 {
-	size_t j;
 	double delay;
+	query client;
 
-	for (j = 0; j < m_clients.size(); ++j)
-		if (m_fds[i].fd == m_clients[j].fd)
+	if (getClient(i, client))
+	{
+		delay = (std::time(NULL) - client.lifeTime);
+		if ( delay >= sec)
 		{
-			delay = (std::time(NULL) - m_clients[j].lifeTime);
-			if ( delay >= sec)
-			{
-				std::cout << "No request for " << delay << " sec.\n";
-				return (false);
-			}
-			return (true);
+			std::cout << "No request for " << delay << " sec.\n";
+			return (false);
 		}
+		return (true);
+	}
 	return (true);
+}
+
+bool Webserv::getClient(size_t i, query& client) const
+{
+	for (size_t j = 0; j < m_clients.size(); ++j)
+		if (m_fds[i].fd == m_clients[j].fd)
+			return (client = m_clients[j], true);
+	return (false);
 }

@@ -181,6 +181,7 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 	static char *buffers;
 	static bool bBody;
 	bool bDelete;
+	query client;
 	ssize_t n;
 	
 	bDelete = true;
@@ -191,7 +192,8 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 		throw std::bad_alloc();
 	}
 	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
-	m_clients[i].lifeTime = std::clock();
+	if(getClient(i, client))
+		client.lifeTime = std::time(NULL);
 	n = read(m_fds[i].fd, buffers, m_client_buffers_size[bBody] - 1);
 	if (n > 0)
 	{
@@ -211,6 +213,7 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 void Webserv::sendQuery(size_t i)
 {
 	ssize_t n;
+	query client;
 
 	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
@@ -218,7 +221,8 @@ void Webserv::sendQuery(size_t i)
 		{
 			while ((*it).byteSent < (*it).formatedResponse.size())
 			{
-				m_clients[i].lifeTime = std::clock();
+				if(getClient(i, client))
+					client.lifeTime = std::time(NULL);
 				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
 					, (*it).formatedResponse.size() - (*it).byteSent, 0);
 				if (n > 0)

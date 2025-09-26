@@ -91,6 +91,7 @@ private:
 		, void (*)(query&, Webserv*), void (*)(query&, std::vector<server>&, Webserv*));
 	bool needAResponse(size_t) const;
 	bool keepAlive(size_t, double) const;
+	bool getClient(size_t, query&) const;
 };
 
 #endif

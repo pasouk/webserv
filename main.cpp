@@ -43,19 +43,27 @@ void onContentLength(query& q, Webserv* server)
 }
 
 
-void onQuery(query& q, std::vector<server>& s, Webserv* server)
+void onQuery(query& q, std::vector<server>& s, Webserv* ser)
 {
 	(void)s;
 	(void)q;
-	(void)server;
+	(void)ser;
 
-	
 	//std::string root = s[1].root; //Normalement ceci devrait fonctionner mais j'avais mis la ligne suivante pour adapter a mon pc dans modifier ton fichier config 
 	//std::string root = "/home/pasouk/webserv";
-	std::string root = s[0].root;
-	if (q.port == 4096)
-		root = s[1].root;
-
+	std::string root;
+	for (std::vector<server>::const_iterator server = s.begin(); server != s.end(); ++server)
+	{
+		std::vector<uint16_t>::const_iterator port;
+		for (port = (*server).ports.begin(); port != (*server).ports.end(); ++port)
+			if (*port == q.port)
+			{
+				root = (*server).root;
+				break;
+			}
+		if (port != (*server).ports.end())
+			break;
+	}
 	//MAXENCE: par defaut nginx doit contenir un chemin absolu et commencer par '/', si ce n'est pas le cas,
 	//mon parser génère une erreur, donc je le supprime après parceque ta solution fonctionne sans.
 	if (root[0] == '/')
