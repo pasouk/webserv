@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/24 10:27:23 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/26 09:06:22 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,6 +136,13 @@ ClientBodyBufferSize::ClientBodyBufferSize() : Directives(false, 1, 1, "client_b
 }
 
 ClientHeaderBufferSize::ClientHeaderBufferSize() : Directives(false, 1, 1, "client_header_buffer_size")
+{
+	m_memberships.push_back("http");
+	//m_memberships.push_back("server");
+	//m_memberships.push_back("location");
+}
+
+KeepaliveTimeout::KeepaliveTimeout() : Directives(false, 1, 1, "keepalive_timeout")
 {
 	m_memberships.push_back("http");
 	//m_memberships.push_back("server");

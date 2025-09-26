@@ -6,19 +6,20 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/24 10:00:45 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/26 09:35:30 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
+Webserv::Webserv(ConfigParser* parser) : m_parser(parser), m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 {
 	QueryListener* ql;
 	std::vector<std::string> args;
 	std::vector<const Node*> servers;
 	std::vector<const Node*> clientBufferSize;
+	std::vector<const Node*> KeepaliveTimeout;
 	std::vector<const Node*> listens;
 	std::vector<Node*>::const_iterator it2;
 	uint16_t port;
@@ -62,8 +63,12 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser)
 	clientBufferSize = parser->getDirectives("client_header_buffer_size");
 	for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
 		static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[0]);
+	KeepaliveTimeout = parser->getDirectives("keepalive_timeout");
+	for (std::vector<const Node*>::const_iterator it = KeepaliveTimeout.begin(); it != KeepaliveTimeout.end(); ++it)
+		static_cast<const NodeDirective*>(*it)->getClientsTimeout(m_keepalive_timeout);
 	std::cout << "buffer Header_size: " << m_client_buffers_size[0] << std::endl;
 	std::cout << "buffer Body_size: " << m_client_buffers_size[1] << std::endl;
+	std::cout << "Keepalive timeout: " << m_keepalive_timeout << std::endl;
 }
 
 Webserv::~Webserv()
@@ -94,7 +99,7 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 	std::cout << "Listening...\n";
 	while (g_listening)
 	{
-		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 0) < 0)
+		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
 		{
 			g_listening = false;
 			break;
@@ -116,7 +121,7 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 				}
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
-				if (!keepAlive(i, 75))
+				if (!keepAlive(i, m_keepalive_timeout))
 				{			
 					std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
 					destroyClientQueries(i);
@@ -156,7 +161,7 @@ void Webserv::addClient(size_t i)
 			m_isClient.push_back(true);
 			getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 			query.fd = fd.fd;
-			query.lifeTime = std::clock();
+			query.lifeTime = std::time(NULL);
 			query.port = ntohs(serverAddress.sin_port);
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;

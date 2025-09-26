@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/24 10:00:42 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/26 09:30:47 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,13 +22,14 @@
 
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
+# define KEEPALIVE_TIMEOUT 65
 
 extern bool g_listening;
 
 struct query
 {	
 	int							fd;
-	clock_t						lifeTime;
+	time_t						lifeTime;
 	size_t						byteSent;
 	ssize_t						bodySize;
 	uint16_t 					port;
@@ -63,6 +64,7 @@ public:
 
 private:
 	ConfigParser* m_parser;
+	size_t m_keepalive_timeout;
 	size_t m_client_buffers_size[2];	//0: header, 1: body
 	std::vector<server> m_servers;		//servers list
 	std::vector<query> m_clients;		//connected clients

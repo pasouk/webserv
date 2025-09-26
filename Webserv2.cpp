@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/24 10:04:06 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/26 08:49:28 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -191,7 +191,7 @@ bool Webserv::keepAlive(size_t i, double sec) const
 	for (j = 0; j < m_clients.size(); ++j)
 		if (m_fds[i].fd == m_clients[j].fd)
 		{
-			delay = (std::clock() - m_clients[j].lifeTime) / CLOCKS_PER_SEC;
+			delay = (std::time(NULL) - m_clients[j].lifeTime);
 			if ( delay >= sec)
 			{
 				std::cout << "No request for " << delay << " sec.\n";

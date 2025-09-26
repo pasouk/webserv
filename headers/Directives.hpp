@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/24 10:10:14 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/26 09:04:51 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,5 +59,6 @@ class Server : public Directives { public: Server(); };
 class Http : public Directives { public: Http(); };
 class ClientBodyBufferSize : public Directives { public: ClientBodyBufferSize(); };
 class ClientHeaderBufferSize : public Directives { public: ClientHeaderBufferSize(); };
+class KeepaliveTimeout : public Directives { public: KeepaliveTimeout(); };
 
 #endif
