@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/26 09:35:30 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/27 11:36:35 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,8 +76,7 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
-	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
+void Webserv::startListening(void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
 	pollfd fd;
 	static rlimit limit;
@@ -111,7 +110,7 @@ void Webserv::startListening(void (*onContentLength)(query&, Webserv*)
 			if (m_isClient[i])
 			{
 				if (m_fds[i].revents & POLLIN)
-					readQuery(i, onContentLength, onQuery);
+					readQuery(i, onQuery);
 				if (needAResponse(i))
 					m_fds[i].events |= POLLOUT;
 				else
@@ -173,8 +172,7 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
-	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
+void Webserv::readQuery(size_t i, void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
@@ -201,7 +199,7 @@ void Webserv::readQuery(size_t i, void (*onContentLength)(query&, Webserv*)
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 			if (m_fds[i].fd == (*it).fd)
 			{
-				bDelete = tcpStream(buffers, n, it, onContentLength, onQuery);
+				bDelete = tcpStream(buffers, n, it, onQuery);
 				(*it).bodySize ? bBody = true : bBody = false;
 				break;
 			}

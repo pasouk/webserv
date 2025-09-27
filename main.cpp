@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/24 10:39:20 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/27 13:25:35 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,27 +21,6 @@ void handle_sigint(int sig)
 	(void)sig;
 	g_listening = false;
 }
-
-void onContentLength(query& q, Webserv* server)
-{
-	(void)q;
-	(void)server;
-
-    /*ParserHttpRequest request1(q.httpRequest);
-   	int ret = request1.parseRequest();
-	if(ret)
-    {
-        std::cout << Colors::RED << "Parsing exit code : " << ret << Colors::RESET << std::endl;
-		q.bodySize = 25; //request1.getBodySize();
-	}
-    else
-	{
-        std::cout << Colors::GREEN << "Parsing exit code : " << ret << Colors::RESET << std::endl;
-		q.bodySize = 25; //request1.getBodySize();
-	}*/
-	q.bodySize = 0;
-}
-
 
 void onQuery(query& q, std::vector<server>& s, Webserv* ser)
 {
@@ -88,7 +67,7 @@ void onQuery(query& q, std::vector<server>& s, Webserv* ser)
 	// FABRICE : quand ce sera pret : 
 	q.formatedResponse = response1.getFormatedResponse();
 
-	//server->printQuery(q);
+	//ser->printQuery(q);
 }
 
 int main(int argc, char *argv[])
@@ -124,7 +103,7 @@ int main(int argc, char *argv[])
 	{
 		Webserv	webserv(cp);
 		webserv.printServers();
-		webserv.startListening(onContentLength, onQuery);
+		webserv.startListening(onQuery);
 	}
 	catch(const std::exception& e)
 	{

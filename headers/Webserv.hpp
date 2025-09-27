@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/26 09:30:47 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/27 11:37:12 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,8 +57,7 @@ public:
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening(void (*)(query&, Webserv*)
-		, void (*)(query&, std::vector<server>&, Webserv*));
+	void startListening(void (*)(query&, std::vector<server>&, Webserv*));
 	void printServers();
 	void printQuery(query&) const;
 
@@ -79,19 +78,18 @@ private:
 	void cleanWebserv();
 	void printServer(server&) const;
 	void addClient(size_t);
-	void readQuery(size_t, void (*)(query&, Webserv*)
-		, void (*)(query&, std::vector<server>&, Webserv*));
+	void readQuery(size_t, void (*)(query&, std::vector<server>&, Webserv*));
 	void sendQuery(size_t);
 	void stopListening();
 	void destroyClient(size_t);
 	void destroyClientQueries(size_t);
 	void queryHook(std::vector<query>::iterator,  void (*)(query&, std::vector<server>&, Webserv*));
 	char* removeChunk(char*, ssize_t);
-	bool tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
-		, void (*)(query&, Webserv*), void (*)(query&, std::vector<server>&, Webserv*));
+	bool tcpStream(char* buffer, ssize_t, std::vector<query>::iterator, void (*)(query&, std::vector<server>&, Webserv*));
 	bool needAResponse(size_t) const;
 	bool keepAlive(size_t, double) const;
 	bool getClient(size_t, query&) const;
+	ssize_t checkForContentLength(query&) const;
 };
 
 #endif

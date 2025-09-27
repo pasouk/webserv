@@ -5,16 +5,16 @@ Content-Length: 25
 
 {"name":"Alice","age":25}POST /api HTTP/1.1
 Content-Type: application/json
-Content-Length: 25
+Content-Length: 33
 
-{"name":"Alice","age":00}POST /api HTTP/1.1
+{"name":"Jean-Francois","age":00}POST /api HTTP/1.1
 Host: quiqui.com
 Content-Type: application/json
-Content-Length: 25
+Content-Length: 23
 
-{"name":"Alain","age":99}POST /api HTTP/1.1
+{"name":"Zac","age":99}POST /api HTTP/1.1
 Host: GoldorakGO.com
 Content-Type: application/json
-Content-Length: 25
+Content-Length: 24
 
-{"name":"Andre","age":87}
+{"name":"Andre","age":8}

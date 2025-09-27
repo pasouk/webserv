@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/26 08:49:28 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/27 12:27:33 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ char* Webserv::removeChunk(char* stream, ssize_t size)
 }
 
 bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
-	, void (*onContentLength)(query&, Webserv*), void (*onQuery)(query&, std::vector<server>&, Webserv*))
+	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
 	ssize_t i = 0;
 	bool bDelete = true;
@@ -71,7 +71,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 		{
 			if (i < n)
 			{
-				onContentLength(*it, this);
+				(*it).bodySize = checkForContentLength(*it);
 				if ((*it).bodySize > 0)
 				{
 					if (++i < n)
@@ -103,57 +103,6 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 		++i;
 	}
 	return (bDelete);
-}
-
-void Webserv::printQuery(query& query) const
-{
-    int col1 = 11;
-    int col2 = 20;
-
-    std::cout << std::setw(col1) << "fd:" 
-              << "\033[0;36m" << std::setw(col2) << query.fd << "\033[0m" << std::endl;
-   	std::cout << std::setw(col1) << "port:" 
-              << "\033[0;36m" << std::setw(col2) << query.port << "\033[0m" << std::endl;
-    std::cout << std::setw(col1) << "host:" 
-              << "\033[0;36m" << std::setw(col2) << query.host << "\033[0m" << std::endl;
- 	std::cout << std::setw(col1) << "http:" 
-              << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
-	std::cout << std::setw(col1) << "bodyChunks:" 
-              << "\033[0;36m" << std::endl;
-	for (std::deque<char*>::iterator it = query.bodyChunks.begin(); it != query.bodyChunks.end()
-		; ++it)
-		std::cout << *it << std::endl;
-	std::cout << "\033[0m" << ", num chunck: " << query.bodyChunks.size() << std::endl;
-}
-
-void Webserv::printServer(server& server) const
-{
-    int col1 = 15;
-    int col2 = 15;
-
-	std::cout << std::setw(col1) << "server_name:" << "\033[0;36m";
-	for (std::vector<std::string>::iterator it = server.server_names.begin(); it != server.server_names.end(); ++it)
-		std::cout << std::setw(col2) << *it << " ";
-	std::cout << "\033[0m" << std::endl;
-	std::cout << std::setw(col1) << "port:" << "\033[0;36m";
-	for (std::vector<uint16_t>::iterator it = server.ports.begin(); it != server.ports.end(); ++it)
-		std::cout << std::setw(col2) << *it << " ";
-	std::cout << "\033[0m" << std::endl;
-	std::cout << std::setw(col1) << "host:" << "\033[0;36m";
-	for (std::vector<std::string>::iterator it = server.hosts.begin(); it != server.hosts.end(); ++it)
-		std::cout << std::setw(col2) << *it << " ";
-	std::cout << "\033[0m" << std::endl;
-	std::cout << std::setw(col1) << "root:" 
-        << "\033[0;36m" << std::setw(col2 + 5) << server.root << "\033[0m" << std::endl;
-}
-
-void Webserv::printServers()
-{
-	for (std::vector<server>::iterator it = m_servers.begin(); it != m_servers.end(); ++it)
-	{
-		std::cout << "SERVER:\n";
-		printServer(*it);
-	}
 }
 
 void Webserv::destroyClientQueries(size_t i)
@@ -207,4 +156,78 @@ bool Webserv::getClient(size_t i, query& client) const
 		if (m_fds[i].fd == m_clients[j].fd)
 			return (client = m_clients[j], true);
 	return (false);
+}
+
+ssize_t Webserv::checkForContentLength(query& query) const
+{
+	std::stringstream ss;
+	std::string len;
+	size_t pos, end;
+	ssize_t	ssl;
+
+	pos = query.httpRequest.find("Content-Length:");
+	if (pos != std::string::npos)
+	{
+		pos += std::strlen("Content-Length:");
+		end = query.httpRequest.find("\r\n", pos);
+		if (end != std::string::npos)
+		{
+			len = query.httpRequest.substr(pos, end - pos);
+			ss << len;
+			ss >> ssl;
+			return (ssl);
+		}
+	}
+	return (0);
+}
+
+void Webserv::printQuery(query& query) const
+{
+    int col1 = 11;
+    int col2 = 20;
+
+    std::cout << std::setw(col1) << "fd:" 
+              << "\033[0;36m" << std::setw(col2) << query.fd << "\033[0m" << std::endl;
+   	std::cout << std::setw(col1) << "port:" 
+              << "\033[0;36m" << std::setw(col2) << query.port << "\033[0m" << std::endl;
+    std::cout << std::setw(col1) << "host:" 
+              << "\033[0;36m" << std::setw(col2) << query.host << "\033[0m" << std::endl;
+ 	std::cout << std::setw(col1) << "http:" 
+              << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
+	std::cout << std::setw(col1) << "bodyChunks:" 
+              << "\033[0;36m" << std::endl;
+	for (std::deque<char*>::iterator it = query.bodyChunks.begin(); it != query.bodyChunks.end()
+		; ++it)
+		std::cout << *it << std::endl;
+	std::cout << "\033[0m" << ", num chunck: " << query.bodyChunks.size() << std::endl;
+}
+
+void Webserv::printServer(server& server) const
+{
+    int col1 = 15;
+    int col2 = 15;
+
+	std::cout << std::setw(col1) << "server_name:" << "\033[0;36m";
+	for (std::vector<std::string>::iterator it = server.server_names.begin(); it != server.server_names.end(); ++it)
+		std::cout << std::setw(col2) << *it << " ";
+	std::cout << "\033[0m" << std::endl;
+	std::cout << std::setw(col1) << "port:" << "\033[0;36m";
+	for (std::vector<uint16_t>::iterator it = server.ports.begin(); it != server.ports.end(); ++it)
+		std::cout << std::setw(col2) << *it << " ";
+	std::cout << "\033[0m" << std::endl;
+	std::cout << std::setw(col1) << "host:" << "\033[0;36m";
+	for (std::vector<std::string>::iterator it = server.hosts.begin(); it != server.hosts.end(); ++it)
+		std::cout << std::setw(col2) << *it << " ";
+	std::cout << "\033[0m" << std::endl;
+	std::cout << std::setw(col1) << "root:" 
+        << "\033[0;36m" << std::setw(col2 + 5) << server.root << "\033[0m" << std::endl;
+}
+
+void Webserv::printServers()
+{
+	for (std::vector<server>::iterator it = m_servers.begin(); it != m_servers.end(); ++it)
+	{
+		std::cout << "SERVER:\n";
+		printServer(*it);
+	}
 }
