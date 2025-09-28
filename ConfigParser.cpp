@@ -67,7 +67,14 @@ void ConfigParser::getFormat(NodeBlock &node)
 		else if (c == '{')
 			buildNode(true, node, block);
 		else if (c == '}')
+		{			
+			if (!block.empty())
+			{
+			}
+			//std::cout << "NOT WELL CLOSED " << node.getName() << std::endl;
+			//std::cout << "BLOCK: " << block << std::endl;
 			return ;
+		}
 		else if (c == ';')
 			buildNode(false, node, block);
 		else
@@ -86,6 +93,9 @@ void ConfigParser::buildNode(bool bblock, NodeBlock &node, std::string& block)
 	ss.clear();
 	ss.str(block);
 	ss >> name;
+
+	//std::cout << name << std::endl;
+
 	args.clear();
 	while (ss >> arg)
 		args.push_back(arg);

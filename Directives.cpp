@@ -84,9 +84,9 @@ ServerName::ServerName() : Directives(false, 0, MAX_ARGS, "server_name")
 
 Root::Root() : Directives(false, 1, 1, "root")
 {
-	//m_memberships.push_back("http");
+	m_memberships.push_back("http");
 	m_memberships.push_back("server");
-	//m_memberships.push_back("location");
+	m_memberships.push_back("location");
 }
 
 bool Root::areArgsValid(const std::vector<std::string>& args, std::string& err) const

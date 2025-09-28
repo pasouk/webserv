@@ -263,6 +263,14 @@ std::vector<server> Webserv::findServers() const
 	std::string _host;
 	server _server;
 
+
+	/*_roots = m_parser->getDirectives("root");
+	for (std::vector<const Node*>::const_iterator it = _roots.begin(); it != _roots.end(); ++it)
+	{
+		std::cout << (*it)->getArgs()[0] << std::endl;
+	}*/
+
+
 	_servers = m_parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
@@ -287,7 +295,7 @@ std::vector<server> Webserv::findServers() const
 		{
 			args = (*it)->getArgs();
 			for (std::vector<std::string>::iterator it = args.begin(); it != args.end(); ++it)
-				_server.root = *it;		
+				_server.root = *it;
 		}
 		_server_names = m_parser->getDirectives("server_name", static_cast<const NodeBlock*>(*current_server));
 		for (std::vector<const Node*>::const_iterator it = _server_names.begin(); it != _server_names.end(); ++it)
