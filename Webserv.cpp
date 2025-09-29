@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/27 11:36:35 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/29 13:00:03 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,9 +27,14 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser), m_keepalive_timeout(K
 
 	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
 	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
+
 	if (parser == NULL)
 		throw std::runtime_error("No configuration.");
-	m_servers = findServers();
+	
+	//build servers structures
+	m_servers = createServers();
+
+	//buld listeners
 	servers = parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = servers.begin(); it != servers.end(); ++it)
 	{
@@ -57,6 +62,8 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser), m_keepalive_timeout(K
 			}
 		}
 	}
+
+	//define global varaibles server
 	clientBufferSize = parser->getDirectives("client_body_buffer_size");
 	for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
 		static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[1]);
@@ -250,7 +257,7 @@ bool Webserv::needAResponse(size_t i) const
 	return (false);
 }
 
-std::vector<server> Webserv::findServers() const
+std::vector<server> Webserv::createServers() const
 {
 	std::vector<const Node*> _servers;
 	std::vector<const Node*> _listens;
@@ -262,14 +269,6 @@ std::vector<server> Webserv::findServers() const
 	uint16_t _port;
 	std::string _host;
 	server _server;
-
-
-	/*_roots = m_parser->getDirectives("root");
-	for (std::vector<const Node*>::const_iterator it = _roots.begin(); it != _roots.end(); ++it)
-	{
-		std::cout << (*it)->getArgs()[0] << std::endl;
-	}*/
-
 
 	_servers = m_parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
@@ -295,7 +294,10 @@ std::vector<server> Webserv::findServers() const
 		{
 			args = (*it)->getArgs();
 			for (std::vector<std::string>::iterator it = args.begin(); it != args.end(); ++it)
+			{
 				_server.root = *it;
+				std::cout << *it << std::endl;
+			}
 		}
 		_server_names = m_parser->getDirectives("server_name", static_cast<const NodeBlock*>(*current_server));
 		for (std::vector<const Node*>::const_iterator it = _server_names.begin(); it != _server_names.end(); ++it)

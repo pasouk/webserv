@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/27 11:37:12 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/29 12:56:29 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,7 +74,7 @@ private:
 
 private:
 	QueryListener* createListener(u_int16_t, const std::string&);
-	std::vector<server> findServers() const;
+	std::vector<server> createServers() const;
 	void cleanWebserv();
 	void printServer(server&) const;
 	void addClient(size_t);
