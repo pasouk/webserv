@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/26 09:09:46 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/29 10:21:50 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,6 +57,7 @@ void ConfigParser::openFile(const std::string& file)
 
 void ConfigParser::getFormat(NodeBlock &node)
 {
+	std::ostringstream 	oss;
 	std::string 		block;
 	char				c;
 	
@@ -70,9 +71,15 @@ void ConfigParser::getFormat(NodeBlock &node)
 		{			
 			if (!block.empty())
 			{
+				for (size_t i = 0; i < block.length(); ++i)
+					if (!std::isspace(block[i]))
+					{
+						cleanParser();
+						oss << m_line;
+						throw std::runtime_error("error: block is not terminated by a directive \e[0;34min\e[0m "
+							+ m_file + ":" + oss.str());
+					}
 			}
-			//std::cout << "NOT WELL CLOSED " << node.getName() << std::endl;
-			//std::cout << "BLOCK: " << block << std::endl;
 			return ;
 		}
 		else if (c == ';')
@@ -93,9 +100,6 @@ void ConfigParser::buildNode(bool bblock, NodeBlock &node, std::string& block)
 	ss.clear();
 	ss.str(block);
 	ss >> name;
-
-	//std::cout << name << std::endl;
-
 	args.clear();
 	while (ss >> arg)
 		args.push_back(arg);
@@ -155,10 +159,10 @@ const Directives& ConfigParser::checkDirective(const std::vector<std::string>& a
 			}
 			else if (block != (*it)->isBlock())
 			{
-				cleanParser();
 				c =";";
 				if ((*it)->isBlock())
-					c = "{";
+					c = "}";
+				cleanParser();
 				throw std::runtime_error("error: \e[0;32m\"" + name
 					+ "\"\e[0m directive is not terminated by \e[0;32m\""
 					+ c + "\" \e[0;34min\e[0m "
