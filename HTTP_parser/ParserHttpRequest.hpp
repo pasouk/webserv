@@ -33,7 +33,7 @@ enum parsingState
     FINISHED
 };
 
-parsingState operator++(parsingState &state, int);
+//parsingState operator++(parsingState &state, int);
 
 
 

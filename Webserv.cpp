@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/29 13:00:03 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/30 08:50:35 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,15 +15,8 @@
 
 Webserv::Webserv(ConfigParser* parser) : m_parser(parser), m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 {
-	QueryListener* ql;
-	std::vector<std::string> args;
-	std::vector<const Node*> servers;
 	std::vector<const Node*> clientBufferSize;
 	std::vector<const Node*> KeepaliveTimeout;
-	std::vector<const Node*> listens;
-	std::vector<Node*>::const_iterator it2;
-	uint16_t port;
-	std::string host;
 
 	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
 	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
@@ -31,39 +24,10 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser), m_keepalive_timeout(K
 	if (parser == NULL)
 		throw std::runtime_error("No configuration.");
 	
-	//build servers structures
+	//build servers structures instances
 	m_servers = createServers();
 
-	//buld listeners
-	servers = parser->getDirectives("server");
-	for (std::vector<const Node*>::const_iterator it = servers.begin(); it != servers.end(); ++it)
-	{
-		port = 80;
-		host = "0.0.0.0";
-		listens = parser->getDirectives("listen", static_cast<const NodeBlock*>(*it));
-		if (listens.size() == 0)
-		{
-			ql = createListener(port, host);
-			if (ql)
-				m_listeners.push_back(ql);
-		}
-		else
-		{
-			for (std::vector<const Node*>::const_iterator it = listens.begin(); it != listens.end(); ++it)
-			{
-				port = 80;
-				host = "0.0.0.0";
-				if (!static_cast<const NodeDirective*>(*it)->getListenHostPort(port, host))
-				{
-					ql = createListener(port, host);
-					if (ql)
-						m_listeners.push_back(ql);
-				}
-			}
-		}
-	}
-
-	//define global varaibles server
+	//define global variables server
 	clientBufferSize = parser->getDirectives("client_body_buffer_size");
 	for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
 		static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[1]);
@@ -257,49 +221,54 @@ bool Webserv::needAResponse(size_t i) const
 	return (false);
 }
 
-std::vector<server> Webserv::createServers() const
+std::vector<server> Webserv::createServers()
 {
 	std::vector<const Node*> _servers;
 	std::vector<const Node*> _listens;
 	std::vector<const Node*> _roots;
 	std::vector<const Node*> _server_names;
-	std::vector<const Node*>::const_iterator current_server;
 	std::vector<server> servers;
 	std::vector<std::string> args;
-	uint16_t _port;
 	std::string _host;
+	QueryListener* ql;
+	uint16_t _port;
 	server _server;
 
 	_servers = m_parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
-		current_server = it;
 		_server.ports.clear();
 		_server.hosts.clear();
 		_server.server_names.clear();
 		_server.root = "/html";
+		_port = 80;
+		_host = "0.0.0.0";
+
 		_listens = m_parser->getDirectives("listen", static_cast<const NodeBlock*>(*it));
-		for (std::vector<const Node*>::const_iterator it = _listens.begin(); it != _listens.end(); ++it)
+		if (_listens.size() == 0)
 		{
-			_port = 80;
-			_host = "0.0.0.0";
-			if (!static_cast<const NodeDirective*>(*it)->getListenHostPort(_port, _host))
-			{
-				_server.ports.push_back(_port);
-				_server.hosts.push_back(_host);
-			}
+			ql = createListener(_port, _host);
+			if (ql)
+				m_listeners.push_back(ql);
 		}
-		_roots = m_parser->getDirectives("root", static_cast<const NodeBlock*>(*current_server));
+		else
+			for (std::vector<const Node*>::const_iterator it = _listens.begin(); it != _listens.end(); ++it)
+			{
+				_port = 80;
+				_host = "0.0.0.0";
+				if (!static_cast<const NodeDirective*>(*it)->getListenHostPort(_port, _host))
+				{
+					_server.ports.push_back(_port);
+					_server.hosts.push_back(_host);
+					ql = createListener(_port, _host);
+					if (ql)
+						m_listeners.push_back(ql);
+				}
+			}
+		_roots = m_parser->getDirectives("root", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it = _roots.begin(); it != _roots.end(); ++it)
-		{
-			args = (*it)->getArgs();
-			for (std::vector<std::string>::iterator it = args.begin(); it != args.end(); ++it)
-			{
-				_server.root = *it;
-				std::cout << *it << std::endl;
-			}
-		}
-		_server_names = m_parser->getDirectives("server_name", static_cast<const NodeBlock*>(*current_server));
+			_server.root = (*it)->getArgs()[0];
+		_server_names = m_parser->getDirectives("server_name", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it = _server_names.begin(); it != _server_names.end(); ++it)
 		{
 			args = (*it)->getArgs();

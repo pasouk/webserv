@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   NodeBlock.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:51 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/03 15:44:19 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/30 07:26:17 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ class NodeBlock : public Node
 {
 public:
 	NodeBlock();
-	NodeBlock(const std::string&);
+	NodeBlock(const std::string&, const std::string&);
 	~NodeBlock();
 
 	NodeBlock& operator=(const NodeBlock&);
@@ -30,8 +30,8 @@ public:
 	const std::vector<NodeDirective*> getDirectives() const;
 	
 private:
-	std::vector<NodeDirective*> directives;
-	std::vector<NodeBlock*> blocks;
+	std::vector<NodeDirective*> m_directives;
+	std::vector<NodeBlock*> m_blocks;
 };
 
 #endif

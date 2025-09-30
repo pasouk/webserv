@@ -30,18 +30,18 @@ int    ParserHttpRequest::basicChecks()
         return 400;
     return 0;
 }
-
+/*
 parsingState operator++(parsingState &state, int)
 {
     parsingState old = state;
     if (state != FINISHED)
         state = static_cast<parsingState>(state + 1);
     return old;
-}
+}*/
 
 ParserHttpRequest::ParserHttpRequest(std::string rawRequest) : _rawRequest(rawRequest)
 {
-    _state++;
+//    / _state++;
 }
 
 std::string ParserHttpRequest::getMethodLine()
@@ -194,7 +194,7 @@ int ParserHttpRequest::parseHeaderLine()
             std::cout << "Invalid HTTP request: Missing value in header line!\n";
             return 400;
         }
-        std::cout << "Inserting header => [" << key << "] = [" << value << "]\n";
+        //std::cout << "Inserting header => [" << key << "] = [" << value << "]\n";
         if (!_headers.insert(std::make_pair(key, value)).second)
         {
                 std::cout << "Duplicate key detected: [" << key << "]\n";            

@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   NodeDirective.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:14 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/26 09:19:32 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/09/30 07:27:31 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "NodeDirective.hpp"
 #include "NodeBlock.hpp"
 
-NodeDirective::NodeDirective(const std::string& name) : Node(name) {}
+NodeDirective::NodeDirective(const std::string& name, const std::string& parent) : Node(name, parent) {}
 
 NodeDirective::~NodeDirective() {}
 
@@ -25,7 +25,7 @@ int NodeDirective::getListenHostPort(uint16_t& port, std::string& host) const
 	std::stringstream ss;
 	std::istringstream iss;
 
-	if (name != "listen")
+	if (m_name != "listen")
 		return (1);
 	args = getArgs();
 	for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
@@ -68,7 +68,7 @@ int NodeDirective::getClientBufferSize(size_t& size) const
 {
 	std::stringstream ss;
 
-	if (name != "client_body_buffer_size" && name != "client_header_buffer_size")
+	if (m_name != "client_body_buffer_size" && m_name != "client_header_buffer_size")
 		return (1);
 	ss << getArgs()[0];
 	ss >> size;
@@ -79,7 +79,7 @@ int NodeDirective::getClientsTimeout(size_t& size) const
 {
 	std::stringstream ss;
 
-	if (name != "keepalive_timeout")
+	if (m_name != "keepalive_timeout")
 		return (1);
 	ss << getArgs()[0];
 	ss >> size;
