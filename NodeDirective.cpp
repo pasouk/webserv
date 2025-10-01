@@ -3,17 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   NodeDirective.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:14 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 07:27:31 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/30 14:50:08 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "NodeDirective.hpp"
 #include "NodeBlock.hpp"
 
-NodeDirective::NodeDirective(const std::string& name, const std::string& parent) : Node(name, parent) {}
+NodeDirective::NodeDirective(const std::string& name, Node* parent, int deep)
+	: Node(name, parent, deep) {}
 
 NodeDirective::~NodeDirective() {}
 

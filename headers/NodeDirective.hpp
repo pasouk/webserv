@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   NodeDirective.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 07:10:42 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/30 15:10:40 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ class NodeBlock;
 class NodeDirective : public Node
 {
 public:
-	NodeDirective(const std::string&, const std::string&);
+	NodeDirective(const std::string&, Node*, int);
 	~NodeDirective();
 
 	NodeDirective& operator=(const NodeDirective&);

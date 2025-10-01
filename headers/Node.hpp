@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Node.hpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:42:30 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 07:28:15 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/30 14:48:35 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,20 +22,22 @@ class Node
 {
 public:
 	Node();
-	Node(const std::string&, const std::string&);
+	Node(const std::string&, Node*, int);
 	virtual ~Node();
 
 	Node& operator=(const Node&);
 
+	Node* getParent() const;
+	int getDeep() const;
 	const std::string& getName() const;
-	const std::string& getParent() const;
 	const std::vector<std::string>& getArgs() const;
 	void setArgs(std::vector<std::string>&);
 	
 protected:
-	Directives m_block;
 	std::string m_name;
-	std::string m_parent;
+	Node* m_parent;
+	int	m_deep;
+	Directives m_block;
 	std::vector<std::string> m_args;
 };
 

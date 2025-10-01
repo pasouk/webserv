@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   NodeBlock.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:51 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 07:26:17 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/30 14:47:12 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ class NodeBlock : public Node
 {
 public:
 	NodeBlock();
-	NodeBlock(const std::string&, const std::string&);
+	NodeBlock(const std::string&, Node*, int);
 	~NodeBlock();
 
 	NodeBlock& operator=(const NodeBlock&);

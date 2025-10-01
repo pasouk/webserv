@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 08:50:35 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/01 12:16:35 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -234,6 +234,11 @@ std::vector<server> Webserv::createServers()
 	uint16_t _port;
 	server _server;
 
+	_roots = m_parser->getDirectives("root");
+	for (std::vector<const Node*>::const_iterator it = _roots.begin(); it != _roots.end(); ++it)
+		std::cout << (*it)->getName() << ": " << (*it)->getArgs()[0] << ", level: " << (*it)->getDeep() << std::endl;
+	_roots.clear();
+
 	_servers = m_parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
@@ -278,6 +283,35 @@ std::vector<server> Webserv::createServers()
 		servers.push_back(_server);
 	}
 	return (servers);
+}
+
+const std::vector<std::string> Webserv::getDeeperValue(const Node* in, const std::vector<const Node*> list) const
+{
+	std::vector<std::string> args;
+	int currentDeep = 0;
+
+	for (std::vector<const Node*>::const_iterator it = list.begin(); it != list.end(); ++it)
+	{
+		if ((*it)->getDeep() > in->getDeep())
+			for (Node *ptr = (*it)->getParent(); ptr != NULL; ptr = (*it)->getParent())
+			{
+				if (ptr == in && currentDeep < (*it)->getDeep())
+				{
+					currentDeep = (*it)->getDeep();
+					args = (*it)->getArgs();
+				}
+			}
+		else
+			for (Node *ptr = (*it)->getParent(); ptr != NULL; ptr = (*it)->getParent())
+			{
+				if (currentDeep < (*it)->getDeep())
+				{
+					currentDeep = (*it)->getDeep();
+					args = (*it)->getArgs();
+				}
+			}			
+	}
+	return (args);
 }
 
 void Webserv::cleanWebserv()

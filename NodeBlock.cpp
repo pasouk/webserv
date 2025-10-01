@@ -3,19 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   NodeBlock.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:49 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 07:28:28 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/09/30 15:11:23 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "NodeBlock.hpp"
 #include "NodeDirective.hpp"
 
-NodeBlock::NodeBlock() : Node("ASP", "none") {}
+NodeBlock::NodeBlock() : Node("ASP", NULL, 0) {}
 
-NodeBlock::NodeBlock(const std::string& name, const std::string& parent) : Node(name, parent) {}
+NodeBlock::NodeBlock(const std::string& name, Node* parent, int deep)
+	: Node(name, parent, deep) {}
 
 NodeBlock::~NodeBlock()
 {
@@ -42,9 +43,9 @@ Node* NodeBlock::addChild(const Directives& directive, const std::string& name)
 	m_block = directive;
 	if (directive.isBlock())
 	{
-		node = new (std::nothrow) NodeBlock(name, m_parent);
+		node = new (std::nothrow) NodeBlock(name, m_parent, m_deep + 1);
 		return (m_blocks.push_back(static_cast<NodeBlock*>(node)), node);
 	}
-	node = new (std::nothrow) NodeDirective(name, m_parent);
+	node = new (std::nothrow) NodeDirective(name, m_parent, m_deep);
 	return (m_directives.push_back(static_cast<NodeDirective*>(node)), node);
 }
