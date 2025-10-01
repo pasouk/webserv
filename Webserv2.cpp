@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/27 12:27:33 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/01 16:13:40 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,7 +208,7 @@ void Webserv::printServer(server& server) const
     int col2 = 15;
 
 	std::cout << std::setw(col1) << "server_name:" << "\033[0;36m";
-	for (std::vector<std::string>::iterator it = server.server_names.begin(); it != server.server_names.end(); ++it)
+	for (std::vector<std::string>::const_iterator it = server.server_names.begin(); it != server.server_names.end(); ++it)
 		std::cout << std::setw(col2) << *it << " ";
 	std::cout << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "port:" << "\033[0;36m";

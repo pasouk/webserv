@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/01 12:16:48 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/01 16:17:17 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,16 +35,17 @@ struct query
 	uint16_t 					port;
 	std::string					host;
 	std::string					httpRequest;
-	std::deque<char*>			bodyChunks;
 	std::string 				formatedResponse;
+	std::deque<char*>			bodyChunks;
 };
 
 struct server
 {
-	std::vector<std::string>	server_names;
-	std::vector<uint16_t> 		ports;
-	std::vector<std::string>	hosts;
-	std::string					root;	
+	std::map<std::string, std::string>	locations;
+	std::vector<std::string>		server_names;
+	std::vector<uint16_t> 			ports;
+	std::vector<std::string>		hosts;
+	std::string						root;	
 };
 
 class Webserv

@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/26 09:06:22 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/01 15:21:06 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,7 +113,7 @@ Index::Index() : Directives(false, 1, MAX_ARGS, "index")
 Location::Location() : Directives(true, 1, 1, "location")
 {
 	// If childs, parent must be a regular expression 
-	m_memberships.push_back("location");
+	//m_memberships.push_back("location");
 	m_memberships.push_back("server");
 }
 
