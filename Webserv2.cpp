@@ -15,7 +15,13 @@
 void Webserv:: queryHook(std::vector<query>::iterator it
 	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
+	std::string header;
+
 	onQuery(*it, m_servers, this);
+	header = getHttpHeaderValue(*it, "Connection");
+	(*it).closeClient = false;
+	if (header == "close")
+		(*it).closeClient = true;
 	m_queries.push_back(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
@@ -41,7 +47,9 @@ char* Webserv::removeChunk(char* stream, ssize_t size)
 bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
 {
+	std::stringstream ss;
 	ssize_t i = 0;
+	std::string header;
 	bool bDelete = true;
 	char *chunk = NULL;
 
@@ -71,7 +79,14 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 		{
 			if (i < n)
 			{
-				(*it).bodySize = checkForContentLength(*it);
+				header = getHttpHeaderValue(*it, "Content-Length");
+				(*it).bodySize = 0;
+				if (!header.empty())
+				{
+					ss.clear();
+					ss << header;
+					ss >> (*it).bodySize;
+				}
 				if ((*it).bodySize > 0)
 				{
 					if (++i < n)
@@ -80,7 +95,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 						{
 							chunk = removeChunk(&buffer[i], (*it).bodySize);
 							(*it).bodyChunks.push_back(chunk);
-							i += (*it).bodySize;
+							i += (*it).bodySize - 1;
 							queryHook(it, onQuery);
 						}
 						else
@@ -101,7 +116,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 				queryHook(it, onQuery);
 		}
 		++i;
-	}
+	}			
 	return (bDelete);
 }
 
@@ -139,10 +154,15 @@ bool Webserv::keepAlive(size_t i, double sec) const
 
 	if (getClient(i, client))
 	{
+		if (client.closeClient)
+		{
+			std::cout << "Client fd:" << client.fd << ", ask to close connexion.\n";
+			return (false);
+		}
 		delay = (std::time(NULL) - client.lifeTime);
 		if ( delay >= sec)
 		{
-			std::cout << "No request for " << delay << " sec.\n";
+			std::cout << "Client fd:" << client.fd << ", no request for " << delay << " sec.\n";
 			return (false);
 		}
 		return (true);
@@ -158,27 +178,21 @@ bool Webserv::getClient(size_t i, query& client) const
 	return (false);
 }
 
-ssize_t Webserv::checkForContentLength(query& query) const
+std::string Webserv::getHttpHeaderValue(query& query, std::string header) const
 {
-	std::stringstream ss;
-	std::string len;
+	std::string ret;
 	size_t pos, end;
-	ssize_t	ssl;
 
-	pos = query.httpRequest.find("Content-Length:");
+	header = header + ":";
+	pos = query.httpRequest.find(header);
 	if (pos != std::string::npos)
 	{
-		pos += std::strlen("Content-Length:");
+		pos += std::strlen(header.c_str()) + 1;
 		end = query.httpRequest.find("\r\n", pos);
 		if (end != std::string::npos)
-		{
-			len = query.httpRequest.substr(pos, end - pos);
-			ss << len;
-			ss >> ssl;
-			return (ssl);
-		}
+			return (ret = query.httpRequest.substr(pos, end - pos), ret);
 	}
-	return (0);
+	return (ret);
 }
 
 void Webserv::printQuery(query& query) const

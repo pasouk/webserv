@@ -18,6 +18,7 @@
 # include <iomanip>
 # include <algorithm>
 # include <deque>
+# include <map>
 # include <ctime>
 
 # define HEADER_BUFFER_SIZE 1024
@@ -29,6 +30,7 @@ extern bool g_listening;
 struct query
 {	
 	int							fd;
+	bool						closeClient;
 	time_t						lifeTime;
 	size_t						byteSent;
 	ssize_t						bodySize;
@@ -91,7 +93,7 @@ private:
 	bool getClient(size_t, query&) const;
 	char* removeChunk(char*, ssize_t);
 	const std::vector<std::string> getDeeperValue(const Node*, const std::vector<const Node*>) const;
-	ssize_t checkForContentLength(query&) const;
+	std::string getHttpHeaderValue(query&, std::string) const;
 };
 
 #endif

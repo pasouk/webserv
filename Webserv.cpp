@@ -131,6 +131,7 @@ void Webserv::addClient(size_t i)
 			m_isClient.push_back(true);
 			getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 			query.fd = fd.fd;
+			query.closeClient = false;
 			query.lifeTime = std::time(NULL);
 			query.port = ntohs(serverAddress.sin_port);
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
@@ -226,6 +227,7 @@ std::vector<server> Webserv::createServers()
 	std::vector<const Node*> _servers;
 	std::vector<const Node*> _listens;
 	std::vector<const Node*> _roots;
+	std::vector<const Node*> _alias;
 	std::vector<const Node*> _server_names;
 	std::vector<const Node*> _location;
 	std::vector<server> servers;
@@ -242,6 +244,7 @@ std::vector<server> Webserv::createServers()
 		_server.ports.clear();
 		_server.hosts.clear();
 		_server.server_names.clear();
+		_server.locations.clear();
 		_port = 80;
 		_host = "0.0.0.0";
 
@@ -278,15 +281,15 @@ std::vector<server> Webserv::createServers()
 			for (std::vector<std::string>::iterator it = args.begin(); it != args.end(); ++it)
 				_server.server_names.push_back(*it);
 		}
-		_location = m_parser->getDirectives("locations", static_cast<const NodeBlock*>(*it));
+		_location = m_parser->getDirectives("location", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it = _location.begin(); it != _location.end(); ++it)
 		{
 			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
-				if ((*it2)->getParent()->getName() == "location")
-				{
-					_server.locations[(*it)->getArgs()[0]] = (*it2)->getParent()->getArgs()[0];
-					break ;
-				}
+				if ((*it2)->getParent() == *it)
+					_server.locations[(*it)->getArgs()[0]] = (*it2)->getArgs()[0];
+			_alias = m_parser->getDirectives("alias", static_cast<const NodeBlock*>(*it));
+			if (_alias.size())
+				_server.locations[(*it)->getArgs()[0]] = _alias[0]->getArgs()[0];
 		}
 		servers.push_back(_server);
 	}

@@ -38,6 +38,9 @@ void onQuery(query& q, std::vector<server>& s, Webserv* ser)
 			if (*port == q.port)
 			{
 				root = (*server).root;
+				/*for (std::map<std::string, std::string>::const_iterator loc = (*server).locations.begin()
+					; loc != (*server).locations.end(); ++loc)
+					std::cout << (*loc).first << ": " << (*loc).second << std::endl;*/
 				break;
 			}
 		if (port != (*server).ports.end())
@@ -63,7 +66,7 @@ void onQuery(query& q, std::vector<server>& s, Webserv* ser)
 	//std::cout << Colors::RED << "\n\n\n ----------Response ----------\n" << Colors::RESET;
     //response1.printElements();
 
-//	std::cout << "\n\n------------------------------------------------\n\n";
+	//std::cout << "\n\n------------------------------------------------\n\n";
 	// FABRICE : quand ce sera pret : 
 	q.formatedResponse = response1.getFormatedResponse();
 
