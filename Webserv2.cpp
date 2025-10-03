@@ -6,22 +6,16 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/01 16:13:40 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/03 14:50:45 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
 void Webserv:: queryHook(std::vector<query>::iterator it
-	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
+	, void (*onQuery)(query&, server&, Webserv*))
 {
-	std::string header;
-
-	onQuery(*it, m_servers, this);
-	header = getHttpHeaderValue(*it, "Connection");
-	(*it).closeClient = false;
-	if (header == "close")
-		(*it).closeClient = true;
+	onQuery(*it, getRightServer(*it), this);
 	m_queries.push_back(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
@@ -45,7 +39,7 @@ char* Webserv::removeChunk(char* stream, ssize_t size)
 }
 
 bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
-	, void (*onQuery)(query&, std::vector<server>&, Webserv*))
+	, void (*onQuery)(query&, server&, Webserv*))
 {
 	std::stringstream ss;
 	ssize_t i = 0;
@@ -154,11 +148,6 @@ bool Webserv::keepAlive(size_t i, double sec) const
 
 	if (getClient(i, client))
 	{
-		if (client.closeClient)
-		{
-			std::cout << "Client fd:" << client.fd << ", ask to close connexion.\n";
-			return (false);
-		}
 		delay = (std::time(NULL) - client.lifeTime);
 		if ( delay >= sec)
 		{
@@ -168,6 +157,22 @@ bool Webserv::keepAlive(size_t i, double sec) const
 		return (true);
 	}
 	return (true);
+}
+
+bool Webserv::clientAsksClose(size_t i)
+{
+	query client;
+	
+	if (getClient(i, client))
+	{
+		std::string header = getHttpHeaderValue(client, "Connection");
+		if (header == "close")
+		{
+			std::cout << "Client fd:" << client.fd << ", asked to close connexion.\n";
+			return (true);
+		}
+	}
+	return (false);
 }
 
 bool Webserv::getClient(size_t i, query& client) const
@@ -191,6 +196,25 @@ std::string Webserv::getHttpHeaderValue(query& query, std::string header) const
 		end = query.httpRequest.find("\r\n", pos);
 		if (end != std::string::npos)
 			return (ret = query.httpRequest.substr(pos, end - pos), ret);
+	}
+	return (ret);
+}
+
+server& Webserv::getRightServer(query& q)
+{
+	server& ret = m_servers[0];
+
+	for (std::vector<server>::const_iterator server = m_servers.begin(); server != m_servers.end(); ++server)
+	{
+		for (size_t i = 0; i < (*server).hosts.size(); ++i)
+			if ((*server).hosts[i] == q.host && (*server).ports[i] == q.port)
+			{
+				ret = *server;
+				for (std::vector<std::string>::const_iterator ser_name = (*server).server_names.begin()
+					; ser_name != (*server).server_names.end(); ++ser_name)
+					if (*ser_name == getHttpHeaderValue(q, "Host"))
+						return (ret);
+			}
 	}
 	return (ret);
 }

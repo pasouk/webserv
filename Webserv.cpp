@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/01 16:31:07 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/03 14:52:15 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onQuery)(query&, std::vector<server>&, Webserv*))
+void Webserv::startListening(void (*onQuery)(query&, server&, Webserv*))
 {
 	pollfd fd;
 	static rlimit limit;
@@ -82,21 +82,20 @@ void Webserv::startListening(void (*onQuery)(query&, std::vector<server>&, Webse
 			{
 				if (m_fds[i].revents & POLLIN)
 					readQuery(i, onQuery);
-				if (needAResponse(i))
+				if (clientNeedsAnswer(i))
 					m_fds[i].events |= POLLOUT;
 				else
 				{
 					m_fds[i].events &= ~POLLOUT;
 					destroyClientQueries(i);
+					if (!keepAlive(i, m_keepalive_timeout) || clientAsksClose(i))
+					{			
+						std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
+						destroyClient(i);
+					}			
 				}
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
-				if (!keepAlive(i, m_keepalive_timeout))
-				{			
-					std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
-					destroyClientQueries(i);
-					destroyClient(i);
-				}
 			}
 		}
 	}
@@ -131,7 +130,6 @@ void Webserv::addClient(size_t i)
 			m_isClient.push_back(true);
 			getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 			query.fd = fd.fd;
-			query.closeClient = false;
 			query.lifeTime = std::time(NULL);
 			query.port = ntohs(serverAddress.sin_port);
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
@@ -144,7 +142,7 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::readQuery(size_t i, void (*onQuery)(query&, std::vector<server>&, Webserv*))
+void Webserv::readQuery(size_t i, void (*onQuery)(query&, server&, Webserv*))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
@@ -214,7 +212,7 @@ void Webserv::sendQuery(size_t i)
 	}
 }
 
-bool Webserv::needAResponse(size_t i) const
+bool Webserv::clientNeedsAnswer(size_t i) const
 {
 	for (std::vector<query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 		if ((*it).fd == m_fds[i].fd && !(*it).formatedResponse.empty())
@@ -233,6 +231,7 @@ std::vector<server> Webserv::createServers()
 	std::vector<server> servers;
 	std::vector<std::string> args;
 	std::string _host;
+	location loc;
 	QueryListener* ql;
 	uint16_t _port;
 	server _server;
@@ -286,10 +285,18 @@ std::vector<server> Webserv::createServers()
 		{
 			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
 				if ((*it2)->getParent() == *it)
-					_server.locations[(*it)->getArgs()[0]] = (*it2)->getArgs()[0];
+				{
+					loc.type = ROOT;
+					loc.path = (*it2)->getArgs()[0];
+					_server.locations[(*it)->getArgs()[0]] = loc;
+				}
 			_alias = m_parser->getDirectives("alias", static_cast<const NodeBlock*>(*it));
 			if (_alias.size())
-				_server.locations[(*it)->getArgs()[0]] = _alias[0]->getArgs()[0];
+			{
+				loc.type = ALIAS;
+				loc.path = _alias[0]->getArgs()[0];
+				_server.locations[(*it)->getArgs()[0]] = loc;	
+			}
 		}
 		servers.push_back(_server);
 	}

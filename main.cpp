@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 10:14:33 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/03 15:01:05 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,32 +22,17 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onQuery(query& q, std::vector<server>& s, Webserv* ser)
+void onQuery(query& q, server& s, Webserv* ser)
 {
 	(void)s;
 	(void)q;
 	(void)ser;
 
-	//std::string root = s[1].root; //Normalement ceci devrait fonctionner mais j'avais mis la ligne suivante pour adapter a mon pc dans modifier ton fichier config 
 	//std::string root = "/home/pasouk/webserv";
-	std::string root;
-	for (std::vector<server>::const_iterator server = s.begin(); server != s.end(); ++server)
-	{
-		std::vector<uint16_t>::const_iterator port;
-		for (port = (*server).ports.begin(); port != (*server).ports.end(); ++port)
-			if (*port == q.port)
-			{
-				root = (*server).root;
-				/*for (std::map<std::string, std::string>::const_iterator loc = (*server).locations.begin()
-					; loc != (*server).locations.end(); ++loc)
-					std::cout << (*loc).first << ": " << (*loc).second << std::endl;*/
-				break;
-			}
-		if (port != (*server).ports.end())
-			break;
-	}
+	
 	//MAXENCE: par defaut nginx doit contenir un chemin absolu et commencer par '/', si ce n'est pas le cas,
 	//mon parser génère une erreur, donc je le supprime après parceque ta solution fonctionne sans.
+	std::string root = s.root;
 	if (root[0] == '/')
 		root = root.substr(1, root.length() - 1);
 
@@ -70,7 +55,7 @@ void onQuery(query& q, std::vector<server>& s, Webserv* ser)
 	// FABRICE : quand ce sera pret : 
 	q.formatedResponse = response1.getFormatedResponse();
 
-	//ser->printQuery(q);
+	ser->printQuery(q);
 }
 
 int main(int argc, char *argv[])
