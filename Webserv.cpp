@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/03 14:52:15 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/05 09:54:10 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onQuery)(query&, server&, Webserv*))
+void Webserv::startListening(void (*onQuery)(query&, const server&, Webserv*))
 {
 	pollfd fd;
 	static rlimit limit;
@@ -142,7 +142,7 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::readQuery(size_t i, void (*onQuery)(query&, server&, Webserv*))
+void Webserv::readQuery(size_t i, void (*onQuery)(query&, const server&, Webserv*))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;

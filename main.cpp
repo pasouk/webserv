@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/03 15:01:05 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/05 10:39:37 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onQuery(query& q, server& s, Webserv* ser)
+void onQuery(query& q, const server& s, Webserv* ser)
 {
 	(void)s;
 	(void)q;
@@ -33,6 +33,7 @@ void onQuery(query& q, server& s, Webserv* ser)
 	//MAXENCE: par defaut nginx doit contenir un chemin absolu et commencer par '/', si ce n'est pas le cas,
 	//mon parser génère une erreur, donc je le supprime après parceque ta solution fonctionne sans.
 	std::string root = s.root;
+
 	if (root[0] == '/')
 		root = root.substr(1, root.length() - 1);
 
@@ -55,7 +56,7 @@ void onQuery(query& q, server& s, Webserv* ser)
 	// FABRICE : quand ce sera pret : 
 	q.formatedResponse = response1.getFormatedResponse();
 
-	ser->printQuery(q);
+	//ser->printQuery(q);
 }
 
 int main(int argc, char *argv[])

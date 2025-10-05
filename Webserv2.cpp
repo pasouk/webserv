@@ -6,14 +6,14 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/03 14:50:45 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/05 15:09:59 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
 void Webserv:: queryHook(std::vector<query>::iterator it
-	, void (*onQuery)(query&, server&, Webserv*))
+	, void (*onQuery)(query&, const server&, Webserv*))
 {
 	onQuery(*it, getRightServer(*it), this);
 	m_queries.push_back(*it);
@@ -39,7 +39,7 @@ char* Webserv::removeChunk(char* stream, ssize_t size)
 }
 
 bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
-	, void (*onQuery)(query&, server&, Webserv*))
+	, void (*onQuery)(query&, const server&, Webserv*))
 {
 	std::stringstream ss;
 	ssize_t i = 0;
@@ -123,7 +123,7 @@ void Webserv::destroyClientQueries(size_t i)
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
 				delete [](m_queries[j].bodyChunks[k]);
 			m_queries.erase(m_queries.begin() + j);
-			break ;
+			//break ;
 		}
 	}
 }
@@ -183,7 +183,7 @@ bool Webserv::getClient(size_t i, query& client) const
 	return (false);
 }
 
-std::string Webserv::getHttpHeaderValue(query& query, std::string header) const
+const std::string Webserv::getHttpHeaderValue(query& query, std::string header) const
 {
 	std::string ret;
 	size_t pos, end;
@@ -200,23 +200,47 @@ std::string Webserv::getHttpHeaderValue(query& query, std::string header) const
 	return (ret);
 }
 
-server& Webserv::getRightServer(query& q)
+const server& Webserv::getRightServer(query& q) const
 {
-	server& ret = m_servers[0];
+	const server* ret = &m_servers[0];
 
-	for (std::vector<server>::const_iterator server = m_servers.begin(); server != m_servers.end(); ++server)
+	for (std::vector<server>::const_iterator s = m_servers.begin(); s != m_servers.end(); ++s)
 	{
-		for (size_t i = 0; i < (*server).hosts.size(); ++i)
-			if ((*server).hosts[i] == q.host && (*server).ports[i] == q.port)
+		for (size_t i = 0; i < (*s).hosts.size(); ++i)
+			if ((*s).hosts[i] == q.host && (*s).ports[i] == q.port)
 			{
-				ret = *server;
-				for (std::vector<std::string>::const_iterator ser_name = (*server).server_names.begin()
-					; ser_name != (*server).server_names.end(); ++ser_name)
-					if (*ser_name == getHttpHeaderValue(q, "Host"))
-						return (ret);
+				ret = &*s;
+				for (std::vector<std::string>::const_iterator ser_name = (*s).server_names.begin()
+					; ser_name != (*s).server_names.end(); ++ser_name)
+				{
+					if (matchServerName(getHttpHeaderValue(q, "Host"), *ser_name))
+						return (*ret);
+				}
 			}
 	}
-	return (ret);
+	return (*ret);
+}
+
+bool Webserv::matchServerName(const std::string& host, const std::string& ser) const
+{
+	(void)ser;
+	size_t pos;
+	std::string _host;
+	std::string _ser;
+
+	_host = host;
+	_ser = ser;
+	pos = host.find(":");
+	if (pos != std::string::npos)
+		_host = host.substr(0, pos);
+	for (std::string::iterator c = _host.begin(); c != _host.end(); ++c)
+		*c = std::tolower(*c);
+	for (std::string::iterator c = _ser.begin(); c != _ser.end(); ++c)
+		*c = std::tolower(*c);
+	std::cout << "SERVER: " <<ser << " -> " << "HOST: " << _host << std::endl;	
+	if (_host == _ser)
+		return (std::cout << "YEAH !\n", true);
+	return (false);
 }
 
 void Webserv::printQuery(query& query) const
