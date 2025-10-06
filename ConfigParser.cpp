@@ -21,6 +21,8 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 	m_directives.push_back(new Http());
 	m_directives.push_back(new Server());
 	m_directives.push_back(new Location());
+	m_directives.push_back(new Events());
+	m_directives.push_back(new LimitExcept());
 
 	//directives
 	m_directives.push_back(new Alias());
@@ -31,6 +33,8 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 	m_directives.push_back(new ClientBodyBufferSize());
 	m_directives.push_back(new ClientHeaderBufferSize());
 	m_directives.push_back(new KeepaliveTimeout());
+	m_directives.push_back(new WorkerConnections());
+	m_directives.push_back(new Deny());
 	
 	//if fail -> exception
 	openFile(file);

@@ -17,6 +17,7 @@
 # include <iostream>
 # include <vector>
 # include <regex.h> //not boost or external library, it's a standard POSIX library
+# include "ParserHttpRequest.hpp"
 
 class Directives
 {
@@ -71,5 +72,19 @@ class Http : public Directives { public: Http(); };
 class ClientBodyBufferSize : public Directives { public: ClientBodyBufferSize(); };
 class ClientHeaderBufferSize : public Directives { public: ClientHeaderBufferSize(); };
 class KeepaliveTimeout : public Directives { public: KeepaliveTimeout(); };
+class Events : public Directives { public: Events(); }; //not use, only for nginx tests
+class WorkerConnections : public Directives //not use, only for nginx tests
+{
+public: 
+	WorkerConnections(); 
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
+class LimitExcept : public Directives { public: LimitExcept(); };
+class Deny : public Directives //only "all" argument is valid for now
+{ 
+public:
+	Deny();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
 
 #endif

@@ -237,9 +237,8 @@ bool Webserv::matchServerName(const std::string& host, const std::string& ser) c
 		*c = std::tolower(*c);
 	for (std::string::iterator c = _ser.begin(); c != _ser.end(); ++c)
 		*c = std::tolower(*c);
-	std::cout << "SERVER: " <<ser << " -> " << "HOST: " << _host << std::endl;	
 	if (_host == _ser)
-		return (std::cout << "YEAH !\n", true);
+		return (true);
 	return (false);
 }
 

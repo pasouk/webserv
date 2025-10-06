@@ -174,6 +174,11 @@ void Webserv::readQuery(size_t i, void (*onQuery)(query&, const server&, Webserv
 				break;
 			}
 	}
+	else if (n == -1)
+	{
+		cleanWebserv();
+		throw std::runtime_error(std::strerror(errno));
+	}
 	if (bDelete)
 		delete [](buffers);
 }
@@ -196,8 +201,6 @@ void Webserv::sendQuery(size_t i)
 				if (n > 0)
 					(*it).byteSent += n;
 				else if (n == -1)
-					break ;
-				else
 				{ 
 					cleanWebserv();
 					throw std::runtime_error(std::strerror(errno));
