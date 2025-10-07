@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/07 10:44:54 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/07 13:33:47 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,8 +159,7 @@ void Webserv::readQuery(size_t i, void (*onQuery)(query&, const server&, Webserv
 		cleanWebserv();
 		throw std::bad_alloc();
 	}
-	getsockname(m_fds[i].fd, (struct sockaddr*)&//Here we assume that arguments (getArgs) parsing has passed !
-serverAddress, &serverlen);
+	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 	if(getClient(i, client))
 		client.lifeTime = std::time(NULL);
 	n = read(m_fds[i].fd, buffers, m_client_buffers_size[bBody] - 1);
@@ -176,10 +175,7 @@ serverAddress, &serverlen);
 			}
 	}
 	else if (n == -1)
-	{
-		cleanWebserv();
-		throw std::runtime_error(std::strerror(errno));
-	}
+		std::cerr << "read: " << std::strerror(errno) << std::endl;
 	if (bDelete)
 		delete [](buffers);
 }
@@ -202,6 +198,11 @@ void Webserv::sendQuery(size_t i)
 				if (n > 0)
 					(*it).byteSent += n;
 				else if (n == -1)
+				{
+					std::cerr << "send: " << std::strerror(errno) << std::endl;
+					break ;
+				}
+				else
 				{ 
 					cleanWebserv();
 					throw std::runtime_error(std::strerror(errno));
