@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:49:49 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 15:11:23 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/01 13:22:41 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,9 +43,9 @@ Node* NodeBlock::addChild(const Directives& directive, const std::string& name)
 	m_block = directive;
 	if (directive.isBlock())
 	{
-		node = new (std::nothrow) NodeBlock(name, m_parent, m_deep + 1);
+		node = new (std::nothrow) NodeBlock(name, this, m_deep + 1);
 		return (m_blocks.push_back(static_cast<NodeBlock*>(node)), node);
 	}
-	node = new (std::nothrow) NodeDirective(name, m_parent, m_deep);
+	node = new (std::nothrow) NodeDirective(name, this, m_deep);
 	return (m_directives.push_back(static_cast<NodeDirective*>(node)), node);
 }

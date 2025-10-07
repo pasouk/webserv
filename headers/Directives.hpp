@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/26 09:04:51 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/05 12:51:13 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,18 @@ public:
 	Listen(); 
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
-class ServerName : public Directives{ public: ServerName(); };
+class ServerName : public Directives
+{
+public:
+	ServerName();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
+class Alias : public Directives
+{
+public:
+	Alias();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
 class Root : public Directives
 {
 public:
@@ -54,7 +65,7 @@ public:
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 class Index : public Directives { public: Index(); };
-class Location : public Directives { public: Location(); };
+class Location : public Directives{ public: Location(); };
 class Server : public Directives { public: Server(); };
 class Http : public Directives { public: Http(); };
 class ClientBodyBufferSize : public Directives { public: ClientBodyBufferSize(); };

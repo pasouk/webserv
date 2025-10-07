@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/26 09:06:22 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/05 14:05:23 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -82,6 +82,39 @@ ServerName::ServerName() : Directives(false, 0, MAX_ARGS, "server_name")
 	m_memberships.push_back("server");
 }
 
+bool ServerName::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^(\\*\\.)?([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
+}
+
+Alias::Alias() : Directives(false, 1, 1, "alias")
+{
+	m_memberships.push_back("location");
+}
+
+bool Alias::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^/([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
+}
+
 Root::Root() : Directives(false, 1, 1, "root")
 {
 	m_memberships.push_back("http");
@@ -113,7 +146,7 @@ Index::Index() : Directives(false, 1, MAX_ARGS, "index")
 Location::Location() : Directives(true, 1, 1, "location")
 {
 	// If childs, parent must be a regular expression 
-	m_memberships.push_back("location");
+	//m_memberships.push_back("location");
 	m_memberships.push_back("server");
 }
 

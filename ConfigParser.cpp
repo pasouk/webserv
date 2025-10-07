@@ -23,6 +23,7 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 	m_directives.push_back(new Location());
 
 	//directives
+	m_directives.push_back(new Alias());
 	m_directives.push_back(new Root());
 	m_directives.push_back(new ServerName());
 	m_directives.push_back(new Listen());

@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/01 12:16:35 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/05 09:54:10 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onQuery)(query&, std::vector<server>&, Webserv*))
+void Webserv::startListening(void (*onQuery)(query&, const server&, Webserv*))
 {
 	pollfd fd;
 	static rlimit limit;
@@ -82,21 +82,20 @@ void Webserv::startListening(void (*onQuery)(query&, std::vector<server>&, Webse
 			{
 				if (m_fds[i].revents & POLLIN)
 					readQuery(i, onQuery);
-				if (needAResponse(i))
+				if (clientNeedsAnswer(i))
 					m_fds[i].events |= POLLOUT;
 				else
 				{
 					m_fds[i].events &= ~POLLOUT;
 					destroyClientQueries(i);
+					if (!keepAlive(i, m_keepalive_timeout) || clientAsksClose(i))
+					{			
+						std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
+						destroyClient(i);
+					}			
 				}
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
-				if (!keepAlive(i, m_keepalive_timeout))
-				{			
-					std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
-					destroyClientQueries(i);
-					destroyClient(i);
-				}
 			}
 		}
 	}
@@ -143,7 +142,7 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::readQuery(size_t i, void (*onQuery)(query&, std::vector<server>&, Webserv*))
+void Webserv::readQuery(size_t i, void (*onQuery)(query&, const server&, Webserv*))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
@@ -213,7 +212,7 @@ void Webserv::sendQuery(size_t i)
 	}
 }
 
-bool Webserv::needAResponse(size_t i) const
+bool Webserv::clientNeedsAnswer(size_t i) const
 {
 	for (std::vector<query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 		if ((*it).fd == m_fds[i].fd && !(*it).formatedResponse.empty())
@@ -226,29 +225,33 @@ std::vector<server> Webserv::createServers()
 	std::vector<const Node*> _servers;
 	std::vector<const Node*> _listens;
 	std::vector<const Node*> _roots;
+	std::vector<const Node*> _alias;
 	std::vector<const Node*> _server_names;
+	std::vector<const Node*> _location;
 	std::vector<server> servers;
 	std::vector<std::string> args;
 	std::string _host;
+	location loc;
 	QueryListener* ql;
 	uint16_t _port;
 	server _server;
 
 	_roots = m_parser->getDirectives("root");
-	for (std::vector<const Node*>::const_iterator it = _roots.begin(); it != _roots.end(); ++it)
-		std::cout << (*it)->getName() << ": " << (*it)->getArgs()[0] << ", level: " << (*it)->getDeep() << std::endl;
-	_roots.clear();
-
 	_servers = m_parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
 		_server.ports.clear();
 		_server.hosts.clear();
 		_server.server_names.clear();
-		_server.root = "/html";
+		_server.locations.clear();
 		_port = 80;
 		_host = "0.0.0.0";
 
+		args = getDeeperValue(*it, _roots);
+		if (args.empty())
+			_server.root = "/html";
+		else
+			_server.root = args[0];
 		_listens = m_parser->getDirectives("listen", static_cast<const NodeBlock*>(*it));
 		if (_listens.size() == 0)
 		{
@@ -270,9 +273,6 @@ std::vector<server> Webserv::createServers()
 						m_listeners.push_back(ql);
 				}
 			}
-		_roots = m_parser->getDirectives("root", static_cast<const NodeBlock*>(*it));
-		for (std::vector<const Node*>::const_iterator it = _roots.begin(); it != _roots.end(); ++it)
-			_server.root = (*it)->getArgs()[0];
 		_server_names = m_parser->getDirectives("server_name", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it = _server_names.begin(); it != _server_names.end(); ++it)
 		{
@@ -280,36 +280,53 @@ std::vector<server> Webserv::createServers()
 			for (std::vector<std::string>::iterator it = args.begin(); it != args.end(); ++it)
 				_server.server_names.push_back(*it);
 		}
+		_location = m_parser->getDirectives("location", static_cast<const NodeBlock*>(*it));
+		for (std::vector<const Node*>::const_iterator it = _location.begin(); it != _location.end(); ++it)
+		{
+			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
+				if ((*it2)->getParent() == *it)
+				{
+					loc.type = ROOT;
+					loc.path = (*it2)->getArgs()[0];
+					_server.locations[(*it)->getArgs()[0]] = loc;
+				}
+			_alias = m_parser->getDirectives("alias", static_cast<const NodeBlock*>(*it));
+			if (_alias.size())
+			{
+				loc.type = ALIAS;
+				loc.path = _alias[0]->getArgs()[0];
+				_server.locations[(*it)->getArgs()[0]] = loc;	
+			}
+		}
 		servers.push_back(_server);
 	}
 	return (servers);
 }
 
-const std::vector<std::string> Webserv::getDeeperValue(const Node* in, const std::vector<const Node*> list) const
+const std::vector<std::string> Webserv::getDeeperValue(const Node* server, const std::vector<const Node*> list) const
 {
 	std::vector<std::string> args;
 	int currentDeep = 0;
 
-	for (std::vector<const Node*>::const_iterator it = list.begin(); it != list.end(); ++it)
+	for (std::vector<const Node*>::const_iterator directive = list.begin(); directive != list.end(); ++directive)
 	{
-		if ((*it)->getDeep() > in->getDeep())
-			for (Node *ptr = (*it)->getParent(); ptr != NULL; ptr = (*it)->getParent())
-			{
-				if (ptr == in && currentDeep < (*it)->getDeep())
+		if ((*directive)->getDeep() >= server->getDeep())
+		{
+			for (Node* ptr = (*directive)->getParent(); ptr != NULL; ptr = ptr->getParent())
+				if (ptr == server && currentDeep <= (*directive)->getDeep())
 				{
-					currentDeep = (*it)->getDeep();
-					args = (*it)->getArgs();
+					currentDeep = (*directive)->getDeep();
+					args = (*directive)->getArgs();
 				}
-			}
+		}
 		else
-			for (Node *ptr = (*it)->getParent(); ptr != NULL; ptr = (*it)->getParent())
+		{
+			if (currentDeep < (*directive)->getDeep())
 			{
-				if (currentDeep < (*it)->getDeep())
-				{
-					currentDeep = (*it)->getDeep();
-					args = (*it)->getArgs();
-				}
-			}			
+				currentDeep = (*directive)->getDeep();
+				args = (*directive)->getArgs();
+			}
+		}
 	}
 	return (args);
 }

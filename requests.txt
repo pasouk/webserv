@@ -16,5 +16,6 @@ Content-Length: 23
 Host: GoldorakGO.com
 Content-Type: application/json
 Content-Length: 24
+Connection: close
 
 {"name":"Andre","age":8}
