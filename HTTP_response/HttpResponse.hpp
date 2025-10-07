@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <vector>
 
 bool resourceExists(const std::string& path);
 std::string urlDecode(const std::string& str);
@@ -52,7 +53,6 @@ class   HttpResponse
         void manageContentLength();
         void manageContentType();
         void managePostHeaders();
-        void handleMultipartPost();
 
         void    buildGet();
         void    buildPost();
@@ -64,7 +64,8 @@ class   HttpResponse
         bool writeUploadedFile(std::string name)  ;
 
         void printElements();
-
+        void handleMultipartPost();
+        std::vector<std::string> cutMultipartPost(const std::string& rawBody, const std::string& boundary);
 };
 
 

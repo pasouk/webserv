@@ -40,11 +40,11 @@ void onQuery(query& q, const server& s, Webserv* ser)
 	//parsing
 	ParserHttpRequest request1(q.httpRequest, q.bodyChunks);
 	//std::cout << "\n\n in request 1 : " << request1.getBodyLine() << std::endl; 
-    //int ret = request1.parseRequest();   // Attention : utiliser soit parserequest + printparsingdata soit debugparsingdata tout seul
+    int ret = request1.parseRequest();   // Attention : utiliser soit parserequest + printparsingdata soit debugparsingdata tout seul
 		//std::cout << "\n\n in request 1 after parse : " << request1.getBodyLine() << std::endl; 
 
 	//std::cout << Colors::RED << "-----------Parsed data----------\n" << Colors::RESET;
-	int ret = request1.debugParsingRequest();
+	//int ret = request1.debugParsingRequest();
 	//std::cout << std::endl << q.bodyChunks[0] << std::endl;
 	//request1.printParsedData();
 
@@ -52,7 +52,7 @@ void onQuery(query& q, const server& s, Webserv* ser)
     HttpResponse response1(request1, ret);
     response1.setRoot(root);
     response1.HttpResponseManager();
-	std::cout << Colors::RED << "\n\n\n ----------Response ----------\n" << Colors::RESET;
+	//std::cout << Colors::RED << "\n\n\n ----------Response ----------\n" << Colors::RESET;
     //response1.printElements();
 
 	//std::cout << "\n\n------------------------------------------------\n\n";

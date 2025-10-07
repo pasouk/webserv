@@ -1,5 +1,6 @@
 #include "HttpResponse.hpp"
 
+
 // constructeurs et getteurs
 
 HttpResponse::HttpResponse(ParserHttpRequest ParsedRequest, int parserExitCode) : _ParsedRequest(ParsedRequest), _ParserExitCode(parserExitCode), _status_code(-1), _reason_phrase("Unprecised")
@@ -135,7 +136,9 @@ bool HttpResponse::writeUploadedFile(std::string name)
     int fd = open(fullName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1) {
         HttpResponseError(500, "Internal Server Error (opening/creating file)");
-        perror("open failed");
+        std::cout << Colors::RED << fullName << "doesnt exist\n" << Colors::RESET;
+        perror("Open failed");
+        
         return false;
     }
 
@@ -212,19 +215,56 @@ std::string getHeaderValue(const std::string &key, const std::map<std::string, s
     return "";
 }
 
-void HttpReponse::handleMultipartPost()
+std::vector<std::string> HttpResponse::cutMultipartPost(const std::string& rawBody, const std::string& boundary)
 {
-    std::string contentType = getHeaderValue("Content-Type", _ParsedRequest.getHeaders());
+    std::vector<std::string> sections;
 
-    size_t pos = contentType.find("boundary=");
-    if (pos == std::string::npos)
-        return;
+    std::string sep = "--" + boundary;
+    std::string endSep = sep + "--";
+    size_t pos = 0;
 
-    std::string boundary = contentType.substr(pos + 9);
+    while (true)
+    {
+        size_t begin = rawBody.find(sep, pos);
+        if (begin == std::string::npos)
+            break;
+        size_t sectionStart = begin + sep.size();
+
+        size_t end = rawBody.find(sep, sectionStart);
+        size_t endLast = rawBody.find(endSep, sectionStart);
+        bool last = false;
+
+        if (endLast != std::string::npos && (endLast < end || end == std::string::npos))
+        {
+            end = endLast;
+            last = true;
+        }
+
+        if (end != std::string::npos && sectionStart < end)
+        {
+            std::string section = rawBody.substr(sectionStart, end - sectionStart);
+
+            while (!section.empty() && (section[0] == '\r' || section[0] == '\n'))
+                section.erase(0, 1);
+            while (!section.empty() && (section[section.size() - 1] == '\r' || section[section.size() - 1] == '\n'))
+                section.erase(section.size() - 1);
+
+            sections.push_back(section);
+        }
+
+        if (last)
+            break;
+
+        pos = end;
+    }
+
+    return sections;
 }
 
-//fonctions principales par méthode 
-void HttpResponse::buildPost()
+
+
+    //fonctions principales par méthode 
+    void HttpResponse::buildPost()
 {
     std::string ctype = getHeaderValue("Content-Type", _ParsedRequest.getHeaders());
     if (ctype.find("multipart/form-data") != std::string::npos) 
@@ -232,7 +272,6 @@ void HttpResponse::buildPost()
         handleMultipartPost();
         return;
     }   
-        // std::cout << "\n\nTEST DEBUG  : " << _ParsedRequest.getBodyLine() << "\n\n";
     std::string contentLen = getHeaderValue("Content-Length", _ParsedRequest.getHeaders());
     std::string contentVal = getHeaderValue("Content-Disposition", _ParsedRequest.getHeaders());
     std::string fileName;
@@ -309,7 +348,19 @@ void HttpResponse::buildGet()
     serialize();
 }
 
+void HttpResponse::handleMultipartPost()
+{
+    std::string contentType = getHeaderValue("Content-Type", _ParsedRequest.getHeaders());
 
+    size_t pos = contentType.find("boundary=");
+    if (pos == std::string::npos)
+        return;
+
+    std::string boundary = contentType.substr(pos + 9);
+    std::vector<std::string> devidedBody = cutMultipartPost(_ParsedRequest.getBodyLine(), boundary);
+
+    //std::cout << _ParsedRequest.getBodyLine();
+}
 //fonction principale
 
 void HttpResponse::HttpResponseManager() 
