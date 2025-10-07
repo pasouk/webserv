@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/05 15:09:59 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/07 08:15:31 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,7 +123,6 @@ void Webserv::destroyClientQueries(size_t i)
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
 				delete [](m_queries[j].bodyChunks[k]);
 			m_queries.erase(m_queries.begin() + j);
-			//break ;
 		}
 	}
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/05 09:54:10 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/07 10:44:54 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,7 +159,8 @@ void Webserv::readQuery(size_t i, void (*onQuery)(query&, const server&, Webserv
 		cleanWebserv();
 		throw std::bad_alloc();
 	}
-	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
+	getsockname(m_fds[i].fd, (struct sockaddr*)&//Here we assume that arguments (getArgs) parsing has passed !
+serverAddress, &serverlen);
 	if(getClient(i, client))
 		client.lifeTime = std::time(NULL);
 	n = read(m_fds[i].fd, buffers, m_client_buffers_size[bBody] - 1);
@@ -231,6 +232,7 @@ std::vector<server> Webserv::createServers()
 	std::vector<const Node*> _alias;
 	std::vector<const Node*> _server_names;
 	std::vector<const Node*> _location;
+	std::vector<const Node*> _limit_except;
 	std::vector<server> servers;
 	std::vector<std::string> args;
 	std::string _host;
@@ -263,11 +265,11 @@ std::vector<server> Webserv::createServers()
 				m_listeners.push_back(ql);
 		}
 		else
-			for (std::vector<const Node*>::const_iterator it = _listens.begin(); it != _listens.end(); ++it)
+			for (std::vector<const Node*>::const_iterator it1 = _listens.begin(); it1 != _listens.end(); ++it1)
 			{
 				_port = 80;
 				_host = "0.0.0.0";
-				if (!static_cast<const NodeDirective*>(*it)->getListenHostPort(_port, _host))
+				if (!static_cast<const NodeDirective*>(*it1)->getListenHostPort(_port, _host))
 				{
 					_server.ports.push_back(_port);
 					_server.hosts.push_back(_host);
@@ -277,29 +279,37 @@ std::vector<server> Webserv::createServers()
 				}
 			}
 		_server_names = m_parser->getDirectives("server_name", static_cast<const NodeBlock*>(*it));
-		for (std::vector<const Node*>::const_iterator it = _server_names.begin(); it != _server_names.end(); ++it)
+		for (std::vector<const Node*>::const_iterator it1 = _server_names.begin(); it1 != _server_names.end(); ++it1)
 		{
-			args = (*it)->getArgs();
-			for (std::vector<std::string>::iterator it = args.begin(); it != args.end(); ++it)
-				_server.server_names.push_back(*it);
+			args = (*it1)->getArgs();
+			for (std::vector<std::string>::iterator it1 = args.begin(); it1 != args.end(); ++it1)
+				_server.server_names.push_back(*it1);
 		}
 		_location = m_parser->getDirectives("location", static_cast<const NodeBlock*>(*it));
-		for (std::vector<const Node*>::const_iterator it = _location.begin(); it != _location.end(); ++it)
+		for (std::vector<const Node*>::const_iterator it1 = _location.begin(); it1 != _location.end(); ++it1)
 		{
 			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
-				if ((*it2)->getParent() == *it)
+				if ((*it2)->getParent() == *it1)
 				{
 					loc.type = ROOT;
 					loc.path = (*it2)->getArgs()[0];
-					_server.locations[(*it)->getArgs()[0]] = loc;
+					_server.locations[(*it1)->getArgs()[0]] = loc;
 				}
-			_alias = m_parser->getDirectives("alias", static_cast<const NodeBlock*>(*it));
+			_alias = m_parser->getDirectives("alias", static_cast<const NodeBlock*>(*it1));
 			if (_alias.size())
 			{
 				loc.type = ALIAS;
 				loc.path = _alias[0]->getArgs()[0];
-				_server.locations[(*it)->getArgs()[0]] = loc;	
+				_server.locations[(*it1)->getArgs()[0]] = loc;	
 			}
+			_limit_except = m_parser->getDirectives("limit_except", static_cast<const NodeBlock*>(*it1));
+			if (_limit_except.size())
+				for (size_t i = 0; i < _limit_except[0]->getArgs().size(); ++i)
+				{
+					HttpMethod method;
+					if (static_cast<const NodeDirective*>(_limit_except[0])->getHttpMethod(i, method))
+						_server.httpMethodsAllowed.push_back(method);
+				}
 		}
 		servers.push_back(_server);
 	}

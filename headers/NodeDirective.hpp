@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   NodeDirective.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/30 15:10:40 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/07 10:06:01 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ public:
 	int getListenHostPort(uint16_t&, std::string&) const;
 	int getClientBufferSize(size_t&) const;
 	int getClientsTimeout(size_t&) const;
+	int getHttpMethod(size_t, HttpMethod&) const;
 };
 
 #endif

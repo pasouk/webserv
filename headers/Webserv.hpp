@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/05 12:42:50 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/07 09:49:41 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 # include <deque>
 # include <map>
 # include <ctime>
+# include "ParserHttp.hpp"
 
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
@@ -58,6 +59,7 @@ struct query
 struct server
 {
 	std::map<std::string, location>	locations;
+	std::vector<HttpMethod>			httpMethodsAllowed;
 	std::vector<std::string>		server_names;
 	std::vector<uint16_t> 			ports;
 	std::vector<std::string>		hosts;

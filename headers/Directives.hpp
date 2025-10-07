@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Directives.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/05 12:51:13 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/07 09:20:39 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,7 +80,7 @@ public:
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 class LimitExcept : public Directives { public: LimitExcept(); };
-class Deny : public Directives //only "all" argument is valid for now
+class Deny : public Directives //only "all" argument is valid for now, not use, only for nginx tests
 { 
 public:
 	Deny();

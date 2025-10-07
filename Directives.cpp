@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Directives.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/05 14:05:23 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/07 10:43:19 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -202,7 +202,7 @@ LimitExcept::LimitExcept() : Directives(true, 1, 10, "limit_except")
 	m_memberships.push_back("location");
 }
 
-Deny::Deny() : Directives(false, 1, 1, "Deny")
+Deny::Deny() : Directives(false, 1, 1, "deny")
 {
 	m_memberships.push_back("limit_except");
 }
