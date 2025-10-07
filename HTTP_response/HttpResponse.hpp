@@ -9,8 +9,10 @@
 #include <ctime>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 bool resourceExists(const std::string& path);
+std::string urlDecode(const std::string& str);
 bool    isFolder(std::string &path);
 std::string toString(size_t n);
 
@@ -50,6 +52,7 @@ class   HttpResponse
         void manageContentLength();
         void manageContentType();
         void managePostHeaders();
+        void handleMultipartPost();
 
         void    buildGet();
         void    buildPost();

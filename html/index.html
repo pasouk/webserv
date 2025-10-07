@@ -1,1 +1,65 @@
-ceci n'est pas une pipe
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Webserv</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black text-gray-100">
+
+  <div class="text-center space-y-6 p-8 rounded-2xl bg-gray-800/50 shadow-xl backdrop-blur w-96">
+    <h1 class="text-3xl font-bold">42 - WEBSERV 🌐</h1>
+
+    <!-- Sélecteur pour GET -->
+    <div class="space-y-3">
+      <select id="getTarget" 
+              class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <option value="/monimage.png">Image (monimage.png)</option>
+        <option value="/other.html">Page (other.html)</option>
+        <option value="/data.json">Données (data.json)</option>
+      </select>
+      <button onclick="sendGet()" 
+              class="w-full py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition">
+        Send GET request
+      </button>
+    </div>
+
+    <!-- Formulaire POST -->
+    <form action="/test_post" method="POST" class="space-y-4">
+      <input type="text" 
+             name="message" 
+             placeholder="type message" 
+             class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <button type="submit" 
+              class="w-full py-2 px-4 rounded-xl bg-green-600 hover:bg-green-500 transition">
+        Send POST request
+      </button>
+    </form>
+
+    <!-- Requête avec JavaScript -->
+    <button onclick="sendDelete()" 
+            class="w-full py-2 px-4 rounded-xl bg-red-600 hover:bg-red-500 transition">
+      Send DELETE request
+    </button>
+  </div>
+
+  <!-- Footer en bas de page -->
+  <h3 class="absolute bottom-4 w-full text-center text-sm text-gray-400">
+    fbuyl & magillet
+  </h3>
+
+  <script>
+    function sendGet() {
+      const target = document.getElementById("getTarget").value;
+      window.location.href = target; // redirige vers la ressource choisie
+    }
+
+    function sendDelete() {
+      fetch('/test_delete', { method: 'DELETE' })
+        .then(res => res.text())
+        .then(txt => alert('Réponse: ' + txt));
+    }
+  </script>
+
+</body>
+</html>

@@ -27,3 +27,28 @@ std::string toString(size_t n)
     oss << n;
     return oss.str();
 }
+
+std::string urlDecode(const std::string& str) 
+{
+    std::string ret;
+    char hex[3] = {0};
+    for (size_t i = 0; i < str.size(); ++i) 
+    {
+        if (str[i] == '+') 
+        {
+            ret += ' ';
+        } 
+        else if (str[i] == '%' && i + 2 < str.size())
+        {
+            hex[0] = str[i+1];
+            hex[1] = str[i+2];
+            ret += static_cast<char>(strtol(hex, NULL, 16));
+            i += 2;
+        } 
+        else 
+        {
+            ret += str[i];
+        }
+    }
+    return ret;
+}

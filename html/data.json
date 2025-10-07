@@ -1,0 +1,1 @@
+{ "server": "webserv", "status": "running", "port": 8080, "features": [ "GET", "POST", "DELETE" ], "timestamp": "2025-10-06T15:00:00Z" }
