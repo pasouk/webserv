@@ -3,23 +3,25 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/07 08:15:31 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/08 13:57:07 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-void Webserv:: queryHook(std::vector<query>::iterator it
-	, void (*onQuery)(query&, const server&, Webserv*))
+void Webserv:: responseHook(std::vector<query>::iterator it
+	, void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
 {
-	onQuery(*it, getRightServer(*it), this);
+	(*it).httpParser->setBodyLine((*it).bodyChunks);
+	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
 	(*it).byteSent = 0;
+	(*it).httpParser = NULL;
 	(*it).bodyChunks.clear();
 }
 
@@ -39,7 +41,7 @@ char* Webserv::removeChunk(char* stream, ssize_t size)
 }
 
 bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
-	, void (*onQuery)(query&, const server&, Webserv*))
+	, void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
 {
 	std::stringstream ss;
 	ssize_t i = 0;
@@ -54,7 +56,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 			chunk = removeChunk(&buffer[i], (*it).bodySize);
 			(*it).bodyChunks.push_back(chunk);
 			i += (*it).bodySize;
-			queryHook(it, onQuery);
+			responseHook(it, onResponse);
 		}
 		else
 		{
@@ -62,7 +64,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 			bDelete = false;
 			(*it).bodySize -= n;
 			if ((*it).bodySize == 0)
-				queryHook(it, onQuery);
+				responseHook(it, onResponse);
 			i += n;
 		}
 	}
@@ -73,7 +75,13 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 		{
 			if (i < n)
 			{
-				header = getHttpHeaderValue(*it, "Content-Length");
+				(*it).httpParser = new (std::nothrow)ParserHttpRequest((*it).httpRequest);
+				if ((*it).httpParser == NULL)
+				{
+					cleanWebserv();
+					throw std::bad_alloc();
+				}
+				header = (*it).httpParser->getHeaders().find("Content-Length")->second;
 				(*it).bodySize = 0;
 				if (!header.empty())
 				{
@@ -90,7 +98,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 							chunk = removeChunk(&buffer[i], (*it).bodySize);
 							(*it).bodyChunks.push_back(chunk);
 							i += (*it).bodySize - 1;
-							queryHook(it, onQuery);
+							responseHook(it, onResponse);
 						}
 						else
 						{
@@ -98,16 +106,16 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 							(*it).bodyChunks.push_back(chunk);
 							(*it).bodySize -= n - i;
 							if ((*it).bodySize == 0)
-								queryHook(it, onQuery);
+								responseHook(it, onResponse);
 							i = n;
 						}
 					}
 				}
 				else
-					queryHook(it, onQuery);
+					responseHook(it, onResponse);
 			}
 			else
-				queryHook(it, onQuery);
+				responseHook(it, onResponse);
 		}
 		++i;
 	}			
@@ -122,6 +130,7 @@ void Webserv::destroyClientQueries(size_t i)
 		{
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
 				delete [](m_queries[j].bodyChunks[k]);
+			delete (m_queries[j].httpParser);
 			m_queries.erase(m_queries.begin() + j);
 		}
 	}
@@ -160,11 +169,12 @@ bool Webserv::keepAlive(size_t i, double sec) const
 
 bool Webserv::clientAsksClose(size_t i)
 {
+	std::string header;
 	query client;
 	
-	if (getClient(i, client))
+	if (getClient(i, client) && client.httpParser != NULL)
 	{
-		std::string header = getHttpHeaderValue(client, "Connection");
+		header = client.httpParser->getHeaders().find("Connection")->second;
 		if (header == "close")
 		{
 			std::cout << "Client fd:" << client.fd << ", asked to close connexion.\n";
@@ -182,23 +192,6 @@ bool Webserv::getClient(size_t i, query& client) const
 	return (false);
 }
 
-const std::string Webserv::getHttpHeaderValue(query& query, std::string header) const
-{
-	std::string ret;
-	size_t pos, end;
-
-	header = header + ":";
-	pos = query.httpRequest.find(header);
-	if (pos != std::string::npos)
-	{
-		pos += std::strlen(header.c_str()) + 1;
-		end = query.httpRequest.find("\r\n", pos);
-		if (end != std::string::npos)
-			return (ret = query.httpRequest.substr(pos, end - pos), ret);
-	}
-	return (ret);
-}
-
 const server& Webserv::getRightServer(query& q) const
 {
 	const server* ret = &m_servers[0];
@@ -212,7 +205,7 @@ const server& Webserv::getRightServer(query& q) const
 				for (std::vector<std::string>::const_iterator ser_name = (*s).server_names.begin()
 					; ser_name != (*s).server_names.end(); ++ser_name)
 				{
-					if (matchServerName(getHttpHeaderValue(q, "Host"), *ser_name))
+					if (matchServerName(q.httpParser->getHeaders().find("Host")->second, *ser_name))
 						return (*ret);
 				}
 			}

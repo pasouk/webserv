@@ -9,8 +9,11 @@
 #include <ctime>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <vector>
 
 bool resourceExists(const std::string& path);
+std::string urlDecode(const std::string& str);
 bool    isFolder(std::string &path);
 std::string toString(size_t n);
 
@@ -61,7 +64,8 @@ class   HttpResponse
         bool writeUploadedFile(std::string name)  ;
 
         void printElements();
-
+        void handleMultipartPost();
+        std::vector<std::string> cutMultipartPost(const std::string& rawBody, const std::string& boundary);
 };
 
 

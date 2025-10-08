@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/07 13:15:25 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/08 14:40:09 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,14 +22,11 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onQuery(query& q, const server& s, Webserv* ser)
+void onResponse(std::string& response, ParserHttpRequest& r, const server& s)
 {
 	(void)s;
-	(void)q;
-	(void)ser;
 
 	//std::string root = "/home/pasouk/webserv";
-	
 	//MAXENCE: par defaut nginx doit contenir un chemin absolu et commencer par '/', si ce n'est pas le cas,
 	//mon parser génère une erreur, donc je le supprime après parceque ta solution fonctionne sans.
 	std::string root = s.root;
@@ -38,15 +35,19 @@ void onQuery(query& q, const server& s, Webserv* ser)
 		root = root.substr(1, root.length() - 1);
 
 	//parsing
-	ParserHttpRequest request1(q.httpRequest);
+	//ParserHttpRequest request1(q.httpRequest, q.bodyChunks);
+	//std::cout << "\n\n in request 1 : " << request1.getBodyLine() << std::endl; 
+	//int ret = r.parseRequest();
+	//int ret = request1.parseRequest();   // Attention : utiliser soit parserequest + printparsingdata soit debugparsingdata tout seul
+		//std::cout << "\n\n in request 1 after parse : " << request1.getBodyLine() << std::endl; 
 
-    int ret = request1.parseRequest();   // Attention : utiliser soit parserequest + printparsingdata soit debugparsingdata tout seul
 	//std::cout << Colors::RED << "-----------Parsed data----------\n" << Colors::RESET;
 	//int ret = request1.debugParsingRequest();
+	//std::cout << std::endl << q.bodyChunks[0] << std::endl;
 	//request1.printParsedData();
 
 	//response
-    HttpResponse response1(request1, ret);
+    HttpResponse response1(r, r.getError());
     response1.setRoot(root);
     response1.HttpResponseManager();
 	//std::cout << Colors::RED << "\n\n\n ----------Response ----------\n" << Colors::RESET;
@@ -54,9 +55,8 @@ void onQuery(query& q, const server& s, Webserv* ser)
 
 	//std::cout << "\n\n------------------------------------------------\n\n";
 	// FABRICE : quand ce sera pret : 
-	q.formatedResponse = response1.getFormatedResponse();
-
-	//ser->printQuery(q);
+	//q.formatedResponse = response1.getFormatedResponse();
+	response = response1.getFormatedResponse();
 }
 
 int main(int argc, char *argv[])
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 	{
 		Webserv	webserv(cp);
 		webserv.printServers();
-		webserv.startListening(onQuery);
+		webserv.startListening(onResponse);
 	}
 	catch(const std::exception& e)
 	{

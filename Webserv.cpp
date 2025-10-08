@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/07 13:33:47 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/08 14:43:41 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onQuery)(query&, const server&, Webserv*))
+void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
 {
 	pollfd fd;
 	static rlimit limit;
@@ -81,18 +81,16 @@ void Webserv::startListening(void (*onQuery)(query&, const server&, Webserv*))
 			if (m_isClient[i])
 			{
 				if (m_fds[i].revents & POLLIN)
-					readQuery(i, onQuery);
+					readQuery(i, onResponse);
 				if (clientNeedsAnswer(i))
 					m_fds[i].events |= POLLOUT;
 				else
-				{
 					m_fds[i].events &= ~POLLOUT;
+				if (!keepAlive(i, m_keepalive_timeout) || clientAsksClose(i))
+				{
+					std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
 					destroyClientQueries(i);
-					if (!keepAlive(i, m_keepalive_timeout) || clientAsksClose(i))
-					{			
-						std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
-						destroyClient(i);
-					}			
+					destroyClient(i);
 				}
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
@@ -142,7 +140,7 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::readQuery(size_t i, void (*onQuery)(query&, const server&, Webserv*))
+void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
@@ -169,7 +167,7 @@ void Webserv::readQuery(size_t i, void (*onQuery)(query&, const server&, Webserv
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 			if (m_fds[i].fd == (*it).fd)
 			{
-				bDelete = tcpStream(buffers, n, it, onQuery);
+				bDelete = tcpStream(buffers, n, it, onResponse);
 				(*it).bodySize ? bBody = true : bBody = false;
 				break;
 			}

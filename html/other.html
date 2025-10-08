@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Webserv</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black text-gray-100">
+
+  <div class="text-center space-y-6 p-8 rounded-2xl bg-gray-800/50 shadow-xl backdrop-blur w-96">
+    <h1 class="text-3xl font-bold">Other 🌐</h1>
+
+    <!-- Sélecteur pour GET -->
+    <div class="space-y-3">
+    <a href="index.html" 
+        class="w-full block py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition text-center">
+        Return to index
+    </a>
+    </div>
+
+    <!-- Requête avec JavaScript -->
+  </div>
+
+  <!-- Footer en bas de page -->
+  <h3 class="absolute bottom-4 w-full text-center text-sm text-gray-400">
+    fbuyl & magillet
+  </h3>
+
+  <script>
+    function sendGet() 
+    {
+      const target = document.getElementById("getTarget").value;
+      window.location.href = target; // redirige vers la ressource choisie
+    }
+  </script>
+
+</body>
+</html>
