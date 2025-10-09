@@ -17,6 +17,7 @@ void Webserv:: responseHook(std::vector<query>::iterator it
 {
 	(*it).httpParser->setBodyLine((*it).bodyChunks);
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
+	printQuery(*it);
 	m_queries.push_back(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
@@ -43,6 +44,7 @@ char* Webserv::removeChunk(char* stream, ssize_t size)
 bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 	, void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
 {
+	std::map<std::string, std::string> headers;
 	std::stringstream ss;
 	ssize_t i = 0;
 	std::string header;
@@ -81,7 +83,8 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 					cleanWebserv();
 					throw std::bad_alloc();
 				}
-				header = (*it).httpParser->getHeaders().find("Content-Length")->second;
+				headers = (*it).httpParser->getHeaders();
+				header = headers["Content-Length"];
 				(*it).bodySize = 0;
 				if (!header.empty())
 				{
@@ -142,6 +145,9 @@ void Webserv::destroyClient(size_t i)
 	for (size_t j = 0; j < m_clients.size(); ++j)
 		if (m_fds[i].fd == m_clients[j].fd)
 		{
+			for (size_t k = 0; k < m_clients[j].bodyChunks.size(); ++k)
+				delete [](m_clients[j].bodyChunks[k]);
+			delete (m_clients[j].httpParser);
 			m_clients.erase(m_clients.begin() + j);
 			break ;
 		}
@@ -167,23 +173,6 @@ bool Webserv::keepAlive(size_t i, double sec) const
 	return (true);
 }
 
-bool Webserv::clientAsksClose(size_t i)
-{
-	std::string header;
-	query client;
-	
-	if (getClient(i, client) && client.httpParser != NULL)
-	{
-		header = client.httpParser->getHeaders().find("Connection")->second;
-		if (header == "close")
-		{
-			std::cout << "Client fd:" << client.fd << ", asked to close connexion.\n";
-			return (true);
-		}
-	}
-	return (false);
-}
-
 bool Webserv::getClient(size_t i, query& client) const
 {
 	for (size_t j = 0; j < m_clients.size(); ++j)
@@ -194,6 +183,7 @@ bool Webserv::getClient(size_t i, query& client) const
 
 const server& Webserv::getRightServer(query& q) const
 {
+	std::map<std::string, std::string> headers;
 	const server* ret = &m_servers[0];
 
 	for (std::vector<server>::const_iterator s = m_servers.begin(); s != m_servers.end(); ++s)
@@ -205,7 +195,8 @@ const server& Webserv::getRightServer(query& q) const
 				for (std::vector<std::string>::const_iterator ser_name = (*s).server_names.begin()
 					; ser_name != (*s).server_names.end(); ++ser_name)
 				{
-					if (matchServerName(q.httpParser->getHeaders().find("Host")->second, *ser_name))
+					headers = q.httpParser->getHeaders();
+					if (matchServerName(headers["Host"], *ser_name))
 						return (*ret);
 				}
 			}

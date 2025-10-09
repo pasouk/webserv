@@ -85,8 +85,11 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				if (clientNeedsAnswer(i))
 					m_fds[i].events |= POLLOUT;
 				else
+				{
 					m_fds[i].events &= ~POLLOUT;
-				if (!keepAlive(i, m_keepalive_timeout) || clientAsksClose(i))
+					destroyClientQueries(i);
+				}
+				if (!keepAlive(i, m_keepalive_timeout))
 				{
 					std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
 					destroyClientQueries(i);

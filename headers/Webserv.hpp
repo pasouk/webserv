@@ -108,7 +108,6 @@ private:
 		, void (*)(std::string&, ParserHttpRequest&, const server&));
 	bool clientNeedsAnswer(size_t) const;
 	bool keepAlive(size_t, double) const;
-	bool clientAsksClose(size_t);
 	bool getClient(size_t, query&) const;
 	char* removeChunk(char*, ssize_t);
 	const std::vector<std::string> getDeeperValue(const Node*, const std::vector<const Node*>) const;
