@@ -22,40 +22,41 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onResponse(std::string& response, ParserHttpRequest& r, const server& s)
+void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 {
-	(void)s;
-
-	//std::string root = "/home/pasouk/webserv";
-	//MAXENCE: par defaut nginx doit contenir un chemin absolu et commencer par '/', si ce n'est pas le cas,
-	//mon parser génère une erreur, donc je le supprime après parceque ta solution fonctionne sans.
 	std::string root = s.root;
+	location l;
+
+	//aurorisd http methods
+	if (s.httpMethodsAllowed.size() == 0)
+		std::cout << "ALL HTTP METHODS ARE ALLOWED.\n";
+	else
+	{
+		std::cout << "ONLY ALLOWED METHOD(S) ON SERVER: ";
+		for (size_t i = 0; i < s.httpMethodsAllowed.size(); ++i)
+			std::cout << methods_map[s.httpMethodsAllowed[i]].name << " ";
+		std::cout << std::endl;
+	}
+	//alias/root location
+	if (s.locations.size())
+	{
+		for (size_t i = 0; i < s.locations.size(); ++i)
+			if (s.locations[i].type == ROOT)
+				std::cout << "IN PATH, CONCAT " << s.locations[i].concatOrReplace << " BY " << s.locations[i].by << std::endl;
+			else if (s.locations[i].type == ALIAS)
+				std::cout << "IN PATH, REPLACE " << s.locations[i].concatOrReplace << " BY " << s.locations[i].by << std::endl;
+	}
+
 
 	if (root[0] == '/')
 		root = root.substr(1, root.length() - 1);
 
-	//parsing
-	//ParserHttpRequest request1(q.httpRequest, q.bodyChunks);
-	//std::cout << "\n\n in request 1 : " << request1.getBodyLine() << std::endl; 
-	//int ret = r.parseRequest();
-	//int ret = request1.parseRequest();   // Attention : utiliser soit parserequest + printparsingdata soit debugparsingdata tout seul
-		//std::cout << "\n\n in request 1 after parse : " << request1.getBodyLine() << std::endl; 
-
-	//std::cout << Colors::RED << "-----------Parsed data----------\n" << Colors::RESET;
-	//int ret = request1.debugParsingRequest();
-	//std::cout << std::endl << q.bodyChunks[0] << std::endl;
-	//request1.printParsedData();
-
+	
 	//response
     HttpResponse response1(r, r.getError());
     response1.setRoot(root);
     response1.HttpResponseManager();
-	//std::cout << Colors::RED << "\n\n\n ----------Response ----------\n" << Colors::RESET;
-    //response1.printElements();
 
-	//std::cout << "\n\n------------------------------------------------\n\n";
-	// FABRICE : quand ce sera pret : 
-	//q.formatedResponse = response1.getFormatedResponse();
 	response = response1.getFormatedResponse();
 }
 

@@ -47,7 +47,7 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
+void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	pollfd fd;
 	static rlimit limit;
@@ -143,7 +143,7 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
+void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
@@ -290,28 +290,31 @@ std::vector<server> Webserv::createServers()
 		_location = m_parser->getDirectives("location", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it1 = _location.begin(); it1 != _location.end(); ++it1)
 		{
+			loc.concatOrReplace = (*it1)->getArgs()[0];
 			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
 				if ((*it2)->getParent() == *it1)
 				{
 					loc.type = ROOT;
-					loc.path = (*it2)->getArgs()[0];
-					_server.locations[(*it1)->getArgs()[0]] = loc;
+					loc.by = (*it2)->getArgs()[0];
+					_server.locations.push_back(loc);
 				}
 			_alias = m_parser->getDirectives("alias", static_cast<const NodeBlock*>(*it1));
 			if (_alias.size())
 			{
 				loc.type = ALIAS;
-				loc.path = _alias[0]->getArgs()[0];
-				_server.locations[(*it1)->getArgs()[0]] = loc;	
+				loc.by = _alias[0]->getArgs()[0];
+				_server.locations.push_back(loc);	
 			}
 			_limit_except = m_parser->getDirectives("limit_except", static_cast<const NodeBlock*>(*it1));
 			if (_limit_except.size())
+			{
 				for (size_t i = 0; i < _limit_except[0]->getArgs().size(); ++i)
 				{
 					HttpMethod method;
-					if (static_cast<const NodeDirective*>(_limit_except[0])->getHttpMethod(i, method))
+					if (static_cast<const NodeDirective*>(_limit_except[0])->getHttpMethod(i, method) == 0)
 						_server.httpMethodsAllowed.push_back(method);
 				}
+			}
 		}
 		servers.push_back(_server);
 	}

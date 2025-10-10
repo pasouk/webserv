@@ -89,21 +89,14 @@ int NodeDirective::getClientsTimeout(size_t& size) const
 
 int NodeDirective::getHttpMethod(size_t i, HttpMethod& m) const
 {
-	std::stringstream ss;
-	int _int;
+	std::map<std::string, HttpMethod> met;
 
 	if (m_name != "limit_except" || i >= getArgs().size())
 		return (1);
-	ss << getArgs()[i];
-	ss >> _int;
+
 	for (int method = GET; method != UNKNOWN; ++method)
-	{
-		if (_int == method)
-		{
-			m = static_cast<HttpMethod>(_int);
-			break ;
-		}
-	}
+		met[methods_map[method].name] = methods_map[method].value;
+	m = met[getArgs()[i]];
 	return (0);	
 }
 

@@ -13,11 +13,10 @@
 #include "Webserv.hpp"
 
 void Webserv:: responseHook(std::vector<query>::iterator it
-	, void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
+	, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	(*it).httpParser->setBodyLine((*it).bodyChunks);
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
-	printQuery(*it);
 	m_queries.push_back(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
@@ -42,7 +41,7 @@ char* Webserv::removeChunk(char* stream, ssize_t size)
 }
 
 bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
-	, void (*onResponse)(std::string&, ParserHttpRequest&, const server&))
+	, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	std::map<std::string, std::string> headers;
 	std::stringstream ss;
@@ -165,7 +164,7 @@ bool Webserv::keepAlive(size_t i, double sec) const
 		delay = (std::time(NULL) - client.lifeTime);
 		if ( delay >= sec)
 		{
-			std::cout << "Client fd:" << client.fd << ", no request for " << delay << " sec.\n";
+			std::cout << "Client fd:" << client.fd << ", no request for " << delay << " sec ...\n";
 			return (false);
 		}
 		return (true);
@@ -181,18 +180,18 @@ bool Webserv::getClient(size_t i, query& client) const
 	return (false);
 }
 
-const server& Webserv::getRightServer(query& q) const
+server& Webserv::getRightServer(query& q)
 {
 	std::map<std::string, std::string> headers;
-	const server* ret = &m_servers[0];
+	server* ret = &m_servers[0];
 
-	for (std::vector<server>::const_iterator s = m_servers.begin(); s != m_servers.end(); ++s)
+	for (std::vector<server>::iterator s = m_servers.begin(); s != m_servers.end(); ++s)
 	{
 		for (size_t i = 0; i < (*s).hosts.size(); ++i)
 			if ((*s).hosts[i] == q.host && (*s).ports[i] == q.port)
 			{
 				ret = &*s;
-				for (std::vector<std::string>::const_iterator ser_name = (*s).server_names.begin()
+				for (std::vector<std::string>::iterator ser_name = (*s).server_names.begin()
 					; ser_name != (*s).server_names.end(); ++ser_name)
 				{
 					headers = q.httpParser->getHeaders();
