@@ -46,7 +46,7 @@ void HttpResponse::buildFullPathGet()
 {
     if (_root.empty()) 
     {
-        _fullPath = _ParsedRequest.getPath(); 
+        _fullPath = _ParsedRequest.getPath();
         return;
     }
 

@@ -66,7 +66,12 @@ public:
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 class Index : public Directives { public: Index(); };
-class Location : public Directives{ public: Location(); };
+class Location : public Directives
+{
+public:
+	Location();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
 class Server : public Directives { public: Server(); };
 class Http : public Directives { public: Http(); };
 class ClientBodyBufferSize : public Directives { public: ClientBodyBufferSize(); };

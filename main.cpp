@@ -53,7 +53,7 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 
 	//alias/root location -> update path.
 	root = s.root;
-	if (root[0] == '/')
+	if (root[0] == '/') //to get a relative path to the project.
 		root = root.substr(1, root.length() - 1);
 	if (s.locations.size())
 	{
@@ -74,7 +74,10 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 					path.replace(pos, s.locations[i].concatOrReplace.size(), s.locations[i].by);
 					std::cout << "ALIAS: " << path << std::endl;
 				}
+				if (path[0] == '/') //to get a relative path to the project.
+					path = path.substr(1, path.length() - 1);
 				r.setPath(path);
+				root = "";
 			}
 			else
 				std::cout << "NOT FIND\n";

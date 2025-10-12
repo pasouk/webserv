@@ -148,6 +148,20 @@ Location::Location() : Directives(true, 1, 1, "location")
 	m_memberships.push_back("server");
 }
 
+bool Location::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^/([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
+}
+
 Server::Server() : Directives(true, 0, 0, "server")
 {
 	m_memberships.push_back("http"); //HTTP/HTTPS

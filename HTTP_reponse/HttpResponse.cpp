@@ -285,6 +285,7 @@ void HttpResponse::HttpResponseManager()
         return;
     }
 
+
     if (_ParsedRequest.getMethod() == UNKNOWN) 
     {
         this->HttpResponseError(405, "Method Not Allowed");
@@ -294,7 +295,6 @@ void HttpResponse::HttpResponseManager()
 
 
 
-    
     switch (_ParsedRequest.getMethod()) {
         case GET:
             this->buildGet();
