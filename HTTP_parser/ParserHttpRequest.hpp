@@ -68,6 +68,7 @@ class ParserHttpRequest
         HttpMethod getMethod() const;
         std::string getPath() const;
         std::string getVersion() const;
+        void setPath(std::string);
         const std::map<std::string, std::string>& getHeaders() const;
         
 

@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/08 13:57:07 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/12 10:09:28 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ void Webserv:: responseHook(std::vector<query>::iterator it
 	(*it).httpParser->setBodyLine((*it).bodyChunks);
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);
+	printQuery(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
 	(*it).byteSent = 0;

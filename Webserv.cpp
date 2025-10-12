@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/08 14:43:41 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/11 13:35:31 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -254,7 +254,7 @@ std::vector<server> Webserv::createServers()
 		_port = 80;
 		_host = "0.0.0.0";
 
-		args = getDeeperValue(*it, _roots);
+		args = getRoot(*it, _roots);
 		if (args.empty())
 			_server.root = "/html";
 		else
@@ -321,14 +321,14 @@ std::vector<server> Webserv::createServers()
 	return (servers);
 }
 
-const std::vector<std::string> Webserv::getDeeperValue(const Node* server, const std::vector<const Node*> list) const
+const std::vector<std::string> Webserv::getRoot(const Node* server, const std::vector<const Node*> list) const
 {
 	std::vector<std::string> args;
 	int currentDeep = 0;
 
 	for (std::vector<const Node*>::const_iterator directive = list.begin(); directive != list.end(); ++directive)
 	{
-		if ((*directive)->getDeep() >= server->getDeep())
+		if ((*directive)->getDeep() == server->getDeep())
 		{
 			for (Node* ptr = (*directive)->getParent(); ptr != NULL; ptr = ptr->getParent())
 				if (ptr == server && currentDeep <= (*directive)->getDeep())
@@ -337,7 +337,7 @@ const std::vector<std::string> Webserv::getDeeperValue(const Node* server, const
 					args = (*directive)->getArgs();
 				}
 		}
-		else
+		else if ((*directive)->getDeep() < server->getDeep())
 		{
 			if (currentDeep < (*directive)->getDeep())
 			{

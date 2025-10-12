@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/08 13:02:58 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/11 13:35:31 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,7 +111,7 @@ private:
 	bool keepAlive(size_t, double) const;
 	bool getClient(size_t, query&) const;
 	char* removeChunk(char*, ssize_t);
-	const std::vector<std::string> getDeeperValue(const Node*, const std::vector<const Node*>) const;
+	const std::vector<std::string> getRoot(const Node*, const std::vector<const Node*>) const;
 	server& getRightServer(query&);
 	bool matchServerName(const std::string&, const std::string&) const;
 };

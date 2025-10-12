@@ -85,6 +85,11 @@ std::string ParserHttpRequest::getPath() const
     return _path;
 }
 
+void ParserHttpRequest::setPath(std::string path)
+{
+    _path = path;
+}
+
 std::string ParserHttpRequest::getVersion() const
 {
     return _version;
