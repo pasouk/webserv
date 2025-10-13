@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/11 13:35:31 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/13 14:26:18 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser), m_keepalive_timeout(K
 {
 	std::vector<const Node*> clientBufferSize;
 	std::vector<const Node*> KeepaliveTimeout;
+	std::ostringstream oss;
 
 	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
 	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
@@ -37,9 +38,12 @@ Webserv::Webserv(ConfigParser* parser) : m_parser(parser), m_keepalive_timeout(K
 	KeepaliveTimeout = parser->getDirectives("keepalive_timeout");
 	for (std::vector<const Node*>::const_iterator it = KeepaliveTimeout.begin(); it != KeepaliveTimeout.end(); ++it)
 		static_cast<const NodeDirective*>(*it)->getClientsTimeout(m_keepalive_timeout);
-	std::cout << "buffer Header_size: " << m_client_buffers_size[0] << std::endl;
-	std::cout << "buffer Body_size: " << m_client_buffers_size[1] << std::endl;
-	std::cout << "Keepalive timeout: " << m_keepalive_timeout << std::endl;
+	oss << "buffer Header_size: " << m_client_buffers_size[0];
+	logMessage(oss);
+	oss << "buffer Body_size: " << m_client_buffers_size[1];
+	logMessage(oss);
+	oss << "Keepalive timeout: " << m_keepalive_timeout;
+	logMessage(oss);
 }
 
 Webserv::~Webserv()
@@ -51,6 +55,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 {
 	pollfd fd;
 	static rlimit limit;
+	std::ostringstream oss;
 
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
@@ -66,7 +71,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		m_fds.push_back(fd);
 		m_isClient.push_back(false);
 	}
-	std::cout << "Listening...\n";
+	oss << "Listening...";
+	logMessage(oss);
 	while (g_listening)
 	{
 		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
@@ -91,7 +97,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				}
 				if (!keepAlive(i, m_keepalive_timeout))
 				{
-					std::cout << "Deconnected client fd:" << m_fds[i].fd << std::endl;
+					oss << "Deconnected client fd:" << m_fds[i].fd;
+					logMessage(oss);
 					destroyClientQueries(i);
 					destroyClient(i);
 				}
@@ -101,7 +108,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		}
 	}
 	cleanWebserv();
-	std::cout << "Stop listening\n";
+	oss << "Stop listening";
+	logMessage(oss);
 }
 
 void Webserv::addClient(size_t i)
@@ -110,6 +118,7 @@ void Webserv::addClient(size_t i)
 	static socklen_t serverlen;
 	static query query;
 	static pollfd fd;
+	std::ostringstream oss;
 	size_t j;
 	char ip[INET_ADDRSTRLEN];
 
@@ -136,8 +145,9 @@ void Webserv::addClient(size_t i)
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;
 			m_clients.push_back(query);
-			std::cout << "New client connected: fd:" << fd.fd
-				<< ", port:"<< ntohs(serverAddress.sin_port) << std::endl;
+			oss << "New client connected: fd:" << fd.fd
+				<< ", port:"<< ntohs(serverAddress.sin_port);
+			logMessage(oss);
 		}
 		break;
 	}
@@ -149,6 +159,7 @@ void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpReq
 	static socklen_t serverlen;
 	static char *buffers;
 	static bool bBody;
+	std::ostringstream oss;
 	bool bDelete;
 	query client;
 	ssize_t n;
@@ -176,7 +187,10 @@ void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpReq
 			}
 	}
 	else if (n == -1)
-		std::cerr << "read: " << std::strerror(errno) << std::endl;
+	{
+		oss << "read: " << std::strerror(errno);
+		logMessage(oss);
+	}
 	if (bDelete)
 		delete [](buffers);
 }
@@ -185,6 +199,7 @@ void Webserv::sendQuery(size_t i)
 {
 	ssize_t n;
 	query client;
+	std::ostringstream oss;
 
 	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
@@ -200,7 +215,8 @@ void Webserv::sendQuery(size_t i)
 					(*it).byteSent += n;
 				else if (n == -1)
 				{
-					std::cerr << "send: " << std::strerror(errno) << std::endl;
+					oss << "send: " << std::strerror(errno);
+					logMessage(oss);
 					break ;
 				}
 				else

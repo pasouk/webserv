@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+         #
+#    By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/09/22 10:52:18 by fabricebuyl      ###   ########.fr        #
+#    Updated: 2025/10/13 13:34:08 by fabrice          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -26,7 +26,8 @@ SOURCES = QueryListener.cpp \
 	HTTP_parser/ParserHttpRequest.cpp\
 	HTTP_parser/ParserHttpUtils.cpp \
 	HTTP_response/HttpResponseUtils.cpp \
-	HTTP_response/HttpResponse.cpp
+	HTTP_response/HttpResponse.cpp \
+	logtime.cpp
 
 	
 OBJECTS = $(SOURCES:.cpp=.o)

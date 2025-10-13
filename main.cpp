@@ -27,7 +27,6 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 	std::string path;
 	std::string root;
 	size_t pos;
-	location l;
 
 	//MAXENCE: dans s.httpMethodsAllowed, tu as les methodes HTTP autorisée par les server.
 	//2 posibilités:

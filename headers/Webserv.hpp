@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/11 13:35:31 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/13 14:00:02 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 # include <map>
 # include <ctime>
 # include "ParserHttp.hpp"
+# include "logtime.hpp"
 
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
