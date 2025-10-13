@@ -1,6 +1,5 @@
 #include "HttpResponse.hpp"
 
-
 // constructeurs et getteurs
 
 HttpResponse::HttpResponse(ParserHttpRequest ParsedRequest, int parserExitCode) : _ParsedRequest(ParsedRequest), _ParserExitCode(parserExitCode), _status_code(-1), _reason_phrase("Unprecised")
@@ -46,7 +45,7 @@ void HttpResponse::buildFullPathGet()
 {
     if (_root.empty()) 
     {
-        _fullPath = _ParsedRequest.getPath();
+        _fullPath = _ParsedRequest.getPath(); 
         return;
     }
 
@@ -54,11 +53,8 @@ void HttpResponse::buildFullPathGet()
 
     if (!fullPath.empty() && !(_ParsedRequest.getPath().empty())) 
     {
-        if (!fullPath.empty() && fullPath[fullPath.size() - 1] == '/' &&
-            !_ParsedRequest.getPath().empty() && _ParsedRequest.getPath()[0] == '/')
-        {
-            fullPath.erase(fullPath.size() - 1);
-        }
+        if (fullPath.back() == '/' && _ParsedRequest.getPath().front() == '/')
+            fullPath.pop_back();
     }
 
     fullPath += _ParsedRequest.getPath();
@@ -121,41 +117,24 @@ std::string generateUploadedFileName()
 
 bool HttpResponse::writeUploadedFile(std::string name) 
 {
-    // Construction du chemin complet
-    std::string fullName;
-    if (!_uploads_dir.empty() && _uploads_dir[_uploads_dir.size()-1] != '/')
-        fullName = _uploads_dir + "/" + name;
-    else
-        fullName = _uploads_dir + name;
-
-    // Décodage du body
-    std::string body = urlDecode(_ParsedRequest.getBodyLine());
-
-
-    // Création / ouverture du fichier
+    std::string fullName = _uploads_dir + name;
     int fd = open(fullName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd == -1) {
-        HttpResponseError(500, "Internal Server Error (opening/creating file)");
-        std::cout << Colors::RED << fullName << "doesnt exist\n" << Colors::RESET;
-        perror("Open failed");
-        
+    if (fd == -1) 
+    {
+        HttpResponseError(500, "Internal Server Error (writing file)");
         return false;
     }
 
-    // Écriture dans le fichier
-    if (write(fd, body.c_str(), body.size()) == -1) {
+    if (write(fd, _ParsedRequest.getBodyLine().c_str(), _ParsedRequest.getBodyLine().size()) == -1) 
+    {
         close(fd);
         HttpResponseError(500, "Internal Server Error (writing file)");
-        perror("write failed");
         return false;
     }
 
     close(fd);
-
-    // Mettre à jour la réponse HTTP
-    _status_code = 201;           // Created
     _reason_phrase = "Created";
-
+    _status_code = 25;
     return true;
 }
 
@@ -191,7 +170,7 @@ void HttpResponse::manageGetHeaders()
          it != headers.end();
          ++it) 
     {
-      //  std::cout << "\n\ndebug \n\n";
+        std::cout << "\n\ndebug \n\n";
         if (it->first == "Content-Length") 
         {
             _headers["Content-Length"] = toString(_body.size());
@@ -207,63 +186,18 @@ void HttpResponse::manageGetHeaders()
     }
 }
 
-std::vector<std::string> HttpResponse::cutMultipartPost(const std::string& rawBody, const std::string& boundary)
+std::string getHeaderValue(const std::string &key, const std::map<std::string, std::string> &headers)
 {
-    std::vector<std::string> sections;
-
-    std::string sep = "--" + boundary;
-    std::string endSep = sep + "--";
-    size_t pos = 0;
-
-    while (true)
-    {
-        size_t begin = rawBody.find(sep, pos);
-        if (begin == std::string::npos)
-            break;
-        size_t sectionStart = begin + sep.size();
-
-        size_t end = rawBody.find(sep, sectionStart);
-        size_t endLast = rawBody.find(endSep, sectionStart);
-        bool last = false;
-
-        if (endLast != std::string::npos && (endLast < end || end == std::string::npos))
-        {
-            end = endLast;
-            last = true;
-        }
-
-        if (end != std::string::npos && sectionStart < end)
-        {
-            std::string section = rawBody.substr(sectionStart, end - sectionStart);
-
-            while (!section.empty() && (section[0] == '\r' || section[0] == '\n'))
-                section.erase(0, 1);
-            while (!section.empty() && (section[section.size() - 1] == '\r' || section[section.size() - 1] == '\n'))
-                section.erase(section.size() - 1);
-
-            sections.push_back(section);
-        }
-
-        if (last)
-            break;
-
-        pos = end;
-    }
-
-    return sections;
+    std::map<std::string, std::string>::const_iterator it = headers.find(key);
+    if (it != headers.end())
+        return it->second;
+    return "";
 }
 
+//fonctions principales par méthode 
 
-
-    //fonctions principales par méthode 
-    void HttpResponse::buildPost()
+void HttpResponse::buildPost()
 {
-    std::string ctype = getHeaderValue("Content-Type", _ParsedRequest.getHeaders());
-    if (ctype.find("multipart/form-data") != std::string::npos) 
-    {
-        handleMultipartPost();
-        return;
-    }   
     std::string contentLen = getHeaderValue("Content-Length", _ParsedRequest.getHeaders());
     std::string contentVal = getHeaderValue("Content-Disposition", _ParsedRequest.getHeaders());
     std::string fileName;
@@ -322,7 +256,7 @@ void HttpResponse::buildGet()
             return;
         }
     }
-    std::ifstream file(_fullPath.c_str());
+    std::ifstream file(_fullPath);
     if (!file.is_open())
     {
         this->HttpResponseError(403, "Forbidden");
@@ -341,78 +275,6 @@ void HttpResponse::buildGet()
 }
 
 
-
-void HttpResponse::handleFileSubPart(const SubPartRequest &sub, const std::string &str)
-{
-    // Récupération du nom de fichier
-    size_t start = str.find("filename=\"");
-    if (start == std::string::npos)
-    {
-        std::cout << "No filename found in Content-Disposition.\n";
-        return;
-    }
-    start += 10;
-    size_t end = str.find("\"", start);
-    std::string filename = str.substr(start, end - start);
-
-    _uploads_dir = "uploads";
-    // Préparation du chemin complet
-    std::string fullName = _uploads_dir + "/" + filename;
-
-    // Ouverture du fichier
-    int fd = open(fullName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd == -1)
-    {
-        std::cout << "Error opening file " << filename << " (check rights / path)\n";
-        perror("open");
-        return;
-    }
-
-    // Nettoyage du body (supprime \r\n final)
-    std::string body = sub.getBodyLine();
-    if (body.size() >= 2 && body.substr(body.size() - 2) == "\r\n")
-        body = body.substr(0, body.size() - 2);
-
-    // Écriture dans le fichier
-    ssize_t written = write(fd, body.c_str(), body.size());
-    if (written == -1)
-        perror("write");
-
-    close(fd);
-    _status_code = 201; 
-    _reason_phrase = "Created";
-    _body = "File uploaded successfully";
-    _headers["Content-Length"] = toString(_body.size());
-    _headers["Content-Type"] = "text/plain";
-    serialize();
-}
-
-void HttpResponse::handleMultipartPost()
-{
-    std::string contentType = getHeaderValue("Content-Type", _ParsedRequest.getHeaders());
-
-    size_t pos = contentType.find("boundary=");
-    if (pos == std::string::npos)
-        return;
-
-    std::string boundary = contentType.substr(pos + 9);
-    std::vector<std::string> devidedBody = cutMultipartPost(_ParsedRequest.getBodyLine(), boundary);
-
-    for(long unsigned int i = 0; i < devidedBody.size(); i++)
-    {
-        SubPartRequest sub(devidedBody[i]);
-        sub.devideRequest();
-        sub.parseHeaderLine();  
-        std::string cd = getHeaderValue("Content-Disposition", sub.getHeaders());
-        if (cd.find("filename=") != std::string::npos)
-        {
-            handleFileSubPart(sub, cd);
-        }
-        sub.printParsedData();
-    }
-        
-    //std::cout << _ParsedRequest.getBodyLine();
-}
 //fonction principale
 
 void HttpResponse::HttpResponseManager() 
@@ -423,17 +285,16 @@ void HttpResponse::HttpResponseManager()
         return;
     }
 
+
     if (_ParsedRequest.getMethod() == UNKNOWN) 
     {
         this->HttpResponseError(405, "Method Not Allowed");
         _headers["Allow"] = "GET, POST, DELETE";
-        serialize();
         return;
     }
 
 
 
-    
     switch (_ParsedRequest.getMethod()) {
         case GET:
             this->buildGet();
@@ -441,12 +302,9 @@ void HttpResponse::HttpResponseManager()
        case POST:
             this->buildPost();
             break;
-        case DELETE_:
-            //buildDelete();
-            break;
-        case UNKNOWN:
-            //buildDelete();
-            break;
+/*        case DELETE_:
+            buildDelete();
+            break;*/
     }
 }
 

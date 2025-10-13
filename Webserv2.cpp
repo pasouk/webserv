@@ -6,46 +6,51 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/05 15:09:59 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/12 10:09:28 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-void Webserv:: queryHook(std::vector<query>::iterator it
-	, void (*onQuery)(query&, const server&, Webserv*))
+void Webserv:: responseHook(std::vector<query>::iterator it
+	, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
-	onQuery(*it, getRightServer(*it), this);
+	(*it).httpParser->setBodyLine((*it).bodyChunks);
+	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);
+	printQuery(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
 	(*it).byteSent = 0;
+	(*it).httpParser = NULL;
 	(*it).bodyChunks.clear();
 }
 
-char* Webserv::removeChunk(char* stream, ssize_t size)
+std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 {
-	char* chunk;
+	std::pair<char*, ssize_t> chunk;
 
-	chunk = new (std::nothrow) char[size + 1];
-	if (chunk == NULL)
+	chunk.first = new (std::nothrow) char[size + 1];
+	if (chunk.first == NULL)
 	{
 		cleanWebserv();
 		throw std::bad_alloc();
 	}
-	memcpy(chunk, stream, size);
-	chunk[size] = '\0';
+	memcpy(chunk.first, stream, size);
+	chunk.first[size] = '\0';
+	chunk.second = size;
 	return (chunk);
 }
 
 bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
-	, void (*onQuery)(query&, const server&, Webserv*))
+	, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
+	std::map<std::string, std::string> headers;
 	std::stringstream ss;
 	ssize_t i = 0;
 	std::string header;
 	bool bDelete = true;
-	char *chunk = NULL;
+	std::pair<char*, ssize_t> chunk;
 
 	if ((*it).bodySize)
 	{
@@ -54,15 +59,17 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 			chunk = removeChunk(&buffer[i], (*it).bodySize);
 			(*it).bodyChunks.push_back(chunk);
 			i += (*it).bodySize;
-			queryHook(it, onQuery);
+			responseHook(it, onResponse);
 		}
 		else
 		{
-			(*it).bodyChunks.push_back(buffer);
+			chunk.second = n;
+			chunk.first = buffer;
+			(*it).bodyChunks.push_back(chunk);
 			bDelete = false;
 			(*it).bodySize -= n;
 			if ((*it).bodySize == 0)
-				queryHook(it, onQuery);
+				responseHook(it, onResponse);
 			i += n;
 		}
 	}
@@ -73,7 +80,14 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 		{
 			if (i < n)
 			{
-				header = getHttpHeaderValue(*it, "Content-Length");
+				(*it).httpParser = new (std::nothrow)ParserHttpRequest((*it).httpRequest);
+				if ((*it).httpParser == NULL)
+				{
+					cleanWebserv();
+					throw std::bad_alloc();
+				}
+				headers = (*it).httpParser->getHeaders();
+				header = headers["Content-Length"];
 				(*it).bodySize = 0;
 				if (!header.empty())
 				{
@@ -90,7 +104,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 							chunk = removeChunk(&buffer[i], (*it).bodySize);
 							(*it).bodyChunks.push_back(chunk);
 							i += (*it).bodySize - 1;
-							queryHook(it, onQuery);
+							responseHook(it, onResponse);
 						}
 						else
 						{
@@ -98,16 +112,16 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 							(*it).bodyChunks.push_back(chunk);
 							(*it).bodySize -= n - i;
 							if ((*it).bodySize == 0)
-								queryHook(it, onQuery);
+								responseHook(it, onResponse);
 							i = n;
 						}
 					}
 				}
 				else
-					queryHook(it, onQuery);
+					responseHook(it, onResponse);
 			}
 			else
-				queryHook(it, onQuery);
+				responseHook(it, onResponse);
 		}
 		++i;
 	}			
@@ -121,9 +135,9 @@ void Webserv::destroyClientQueries(size_t i)
 		if (m_queries[j].fd == m_fds[i].fd)
 		{
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
-				delete [](m_queries[j].bodyChunks[k]);
+				delete [](m_queries[j].bodyChunks[k].first);
+			delete (m_queries[j].httpParser);
 			m_queries.erase(m_queries.begin() + j);
-			//break ;
 		}
 	}
 }
@@ -134,6 +148,9 @@ void Webserv::destroyClient(size_t i)
 	for (size_t j = 0; j < m_clients.size(); ++j)
 		if (m_fds[i].fd == m_clients[j].fd)
 		{
+			for (size_t k = 0; k < m_clients[j].bodyChunks.size(); ++k)
+				delete [](m_clients[j].bodyChunks[k].first);
+			delete (m_clients[j].httpParser);
 			m_clients.erase(m_clients.begin() + j);
 			break ;
 		}
@@ -151,28 +168,12 @@ bool Webserv::keepAlive(size_t i, double sec) const
 		delay = (std::time(NULL) - client.lifeTime);
 		if ( delay >= sec)
 		{
-			std::cout << "Client fd:" << client.fd << ", no request for " << delay << " sec.\n";
+			std::cout << "Client fd:" << client.fd << ", no request for " << delay << " sec ...\n";
 			return (false);
 		}
 		return (true);
 	}
 	return (true);
-}
-
-bool Webserv::clientAsksClose(size_t i)
-{
-	query client;
-	
-	if (getClient(i, client))
-	{
-		std::string header = getHttpHeaderValue(client, "Connection");
-		if (header == "close")
-		{
-			std::cout << "Client fd:" << client.fd << ", asked to close connexion.\n";
-			return (true);
-		}
-	}
-	return (false);
 }
 
 bool Webserv::getClient(size_t i, query& client) const
@@ -183,37 +184,22 @@ bool Webserv::getClient(size_t i, query& client) const
 	return (false);
 }
 
-const std::string Webserv::getHttpHeaderValue(query& query, std::string header) const
+server& Webserv::getRightServer(query& q)
 {
-	std::string ret;
-	size_t pos, end;
+	std::map<std::string, std::string> headers;
+	server* ret = &m_servers[0];
 
-	header = header + ":";
-	pos = query.httpRequest.find(header);
-	if (pos != std::string::npos)
-	{
-		pos += std::strlen(header.c_str()) + 1;
-		end = query.httpRequest.find("\r\n", pos);
-		if (end != std::string::npos)
-			return (ret = query.httpRequest.substr(pos, end - pos), ret);
-	}
-	return (ret);
-}
-
-const server& Webserv::getRightServer(query& q) const
-{
-	const server* ret = &m_servers[0];
-
-	for (std::vector<server>::const_iterator s = m_servers.begin(); s != m_servers.end(); ++s)
+	for (std::vector<server>::iterator s = m_servers.begin(); s != m_servers.end(); ++s)
 	{
 		for (size_t i = 0; i < (*s).hosts.size(); ++i)
 			if ((*s).hosts[i] == q.host && (*s).ports[i] == q.port)
 			{
 				ret = &*s;
-				for (std::vector<std::string>::const_iterator ser_name = (*s).server_names.begin()
+				for (std::vector<std::string>::iterator ser_name = (*s).server_names.begin()
 					; ser_name != (*s).server_names.end(); ++ser_name)
 				{
-					if (matchServerName(getHttpHeaderValue(q, "Host"), *ser_name))
+					headers = q.httpParser->getHeaders();
+					if (matchServerName(headers["Host"], *ser_name))
 						return (*ret);
 				}
 			}
@@ -237,9 +223,8 @@ bool Webserv::matchServerName(const std::string& host, const std::string& ser) c
 		*c = std::tolower(*c);
 	for (std::string::iterator c = _ser.begin(); c != _ser.end(); ++c)
 		*c = std::tolower(*c);
-	std::cout << "SERVER: " <<ser << " -> " << "HOST: " << _host << std::endl;	
 	if (_host == _ser)
-		return (std::cout << "YEAH !\n", true);
+		return (true);
 	return (false);
 }
 
@@ -258,9 +243,9 @@ void Webserv::printQuery(query& query) const
               << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "bodyChunks:" 
               << "\033[0;36m" << std::endl;
-	for (std::deque<char*>::iterator it = query.bodyChunks.begin(); it != query.bodyChunks.end()
+	for (std::deque<std::pair<char*, ssize_t> >::iterator it = query.bodyChunks.begin(); it != query.bodyChunks.end()
 		; ++it)
-		std::cout << *it << std::endl;
+		std::cout << (*it).first << ", size of: " << (*it).second << std::endl;
 	std::cout << "\033[0m" << ", num chunck: " << query.bodyChunks.size() << std::endl;
 }
 

@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/05 12:42:50 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/11 13:35:31 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 # include <deque>
 # include <map>
 # include <ctime>
+# include "ParserHttp.hpp"
 
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
@@ -37,8 +38,9 @@ enum locationType
 struct location
 {
 public:
+	std::string		concatOrReplace;
 	locationType	type;
-	std::string		path;
+	std::string		by;
 };
 
 struct query
@@ -52,12 +54,14 @@ struct query
 	std::string					hostName;
 	std::string					httpRequest;
 	std::string 				formatedResponse;
-	std::deque<char*>			bodyChunks;
+	ParserHttpRequest*			httpParser;
+	std::deque<std::pair<char*, ssize_t> >	bodyChunks;
 };
 
 struct server
 {
-	std::map<std::string, location>	locations;
+	std::vector<location>			locations;
+	std::vector<HttpMethod>			httpMethodsAllowed;
 	std::vector<std::string>		server_names;
 	std::vector<uint16_t> 			ports;
 	std::vector<std::string>		hosts;
@@ -74,7 +78,7 @@ public:
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening(void (*)(query&, const server&, Webserv*));
+	void startListening(void (*)(std::string&, ParserHttpRequest&, server&));
 	void printServers();
 	void printQuery(query&) const;
 
@@ -95,22 +99,20 @@ private:
 	void cleanWebserv();
 	void printServer(server&) const;
 	void addClient(size_t);
-	void readQuery(size_t, void (*)(query&, const server&, Webserv*));
+	void readQuery(size_t, void (*)(std::string&, ParserHttpRequest&, server&));
 	void sendQuery(size_t);
 	void stopListening();
 	void destroyClient(size_t);
 	void destroyClientQueries(size_t);
-	void queryHook(std::vector<query>::iterator,  void (*)(query&, const server&, Webserv*));
+	void responseHook(std::vector<query>::iterator,  void (*)(std::string&, ParserHttpRequest&, server&));
 	bool tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
-		, void (*)(query&, const server&, Webserv*));
+		, void (*)(std::string&, ParserHttpRequest&, server&));
 	bool clientNeedsAnswer(size_t) const;
 	bool keepAlive(size_t, double) const;
-	bool clientAsksClose(size_t);
 	bool getClient(size_t, query&) const;
-	char* removeChunk(char*, ssize_t);
-	const std::vector<std::string> getDeeperValue(const Node*, const std::vector<const Node*>) const;
-	const std::string getHttpHeaderValue(query&, std::string) const;
-	const server& getRightServer(query&) const;
+	std::pair<char*, ssize_t> removeChunk(char*, ssize_t);
+	const std::vector<std::string> getRoot(const Node*, const std::vector<const Node*>) const;
+	server& getRightServer(query&);
 	bool matchServerName(const std::string&, const std::string&) const;
 };
 
