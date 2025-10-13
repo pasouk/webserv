@@ -8,6 +8,7 @@
 #include <cstring>
 #include "ParserHttp.hpp"
 #include <deque>
+#include <sys/types.h>
 
 //ATTENTION A MODIFIER LE TABLEAU METHOD_MAP DANS LE .CPP SI ON MODIFIE L ENUM
 enum HttpMethod
@@ -57,7 +58,7 @@ class ParserHttpRequest
     public:
         ParserHttpRequest();
         ParserHttpRequest(std::string rawRequest);
-        ParserHttpRequest(std::string rawRequest, const std::deque<char*> &bodyChunks);
+        ParserHttpRequest(std::string rawRequest, const std::deque<std::pair<char*, ssize_t> > &bodyChunks);
 
         std::string getMethodLine();
         std::string getHeaderLine();
@@ -91,7 +92,7 @@ class ParserHttpRequest
         int     parseRequest();
         void    sanitize();
         void    printParsedData();
-        void    setBodyLine(const std::deque<char*> &bodyChunks);
+        void    setBodyLine(const std::deque<std::pair<char*, ssize_t> > &bodyChunks);
 };
 
 

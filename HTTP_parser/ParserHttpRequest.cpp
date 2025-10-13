@@ -44,7 +44,7 @@ ParserHttpRequest::ParserHttpRequest(std::string rawRequest) : _rawRequest(rawRe
     _error = parseRequest();
 }
 
-ParserHttpRequest::ParserHttpRequest(std::string rawRequest, const std::deque<char*> &bodyChunks) : _rawRequest(rawRequest)
+ParserHttpRequest::ParserHttpRequest(std::string rawRequest, const std::deque<std::pair<char*, ssize_t> > &bodyChunks) : _rawRequest(rawRequest)
 {
     setBodyLine(bodyChunks);
 //    / _state++;
@@ -264,9 +264,10 @@ void ParserHttpRequest::printParsedData()
     }
 }
 
-void ParserHttpRequest::setBodyLine(const std::deque<char*>& bodyChunks)
+void ParserHttpRequest::setBodyLine(const std::deque<std::pair<char*, ssize_t> >& bodyChunks)
 {
-    _bodyLine.clear();
+    (void)bodyChunks;
+    /*_bodyLine.clear();
 
     for (std::deque<char*>::const_iterator it = bodyChunks.begin();
          it != bodyChunks.end();
@@ -274,7 +275,7 @@ void ParserHttpRequest::setBodyLine(const std::deque<char*>& bodyChunks)
     {
         if (*it)
             _bodyLine += *it; 
-    }
+    }*/
 }
 
 int ParserHttpRequest::parseRequest()

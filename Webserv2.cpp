@@ -26,18 +26,19 @@ void Webserv:: responseHook(std::vector<query>::iterator it
 	(*it).bodyChunks.clear();
 }
 
-char* Webserv::removeChunk(char* stream, ssize_t size)
+std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 {
-	char* chunk;
+	std::pair<char*, ssize_t> chunk;
 
-	chunk = new (std::nothrow) char[size + 1];
-	if (chunk == NULL)
+	chunk.first = new (std::nothrow) char[size + 1];
+	if (chunk.first == NULL)
 	{
 		cleanWebserv();
 		throw std::bad_alloc();
 	}
-	memcpy(chunk, stream, size);
-	chunk[size] = '\0';
+	memcpy(chunk.first, stream, size);
+	chunk.first[size] = '\0';
+	chunk.second = size;
 	return (chunk);
 }
 
@@ -49,7 +50,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 	ssize_t i = 0;
 	std::string header;
 	bool bDelete = true;
-	char *chunk = NULL;
+	std::pair<char*, ssize_t> chunk;
 
 	if ((*it).bodySize)
 	{
@@ -62,7 +63,9 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 		}
 		else
 		{
-			(*it).bodyChunks.push_back(buffer);
+			chunk.second = n;
+			chunk.first = buffer;
+			(*it).bodyChunks.push_back(chunk);
 			bDelete = false;
 			(*it).bodySize -= n;
 			if ((*it).bodySize == 0)
@@ -132,7 +135,7 @@ void Webserv::destroyClientQueries(size_t i)
 		if (m_queries[j].fd == m_fds[i].fd)
 		{
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
-				delete [](m_queries[j].bodyChunks[k]);
+				delete [](m_queries[j].bodyChunks[k].first);
 			delete (m_queries[j].httpParser);
 			m_queries.erase(m_queries.begin() + j);
 		}
@@ -146,7 +149,7 @@ void Webserv::destroyClient(size_t i)
 		if (m_fds[i].fd == m_clients[j].fd)
 		{
 			for (size_t k = 0; k < m_clients[j].bodyChunks.size(); ++k)
-				delete [](m_clients[j].bodyChunks[k]);
+				delete [](m_clients[j].bodyChunks[k].first);
 			delete (m_clients[j].httpParser);
 			m_clients.erase(m_clients.begin() + j);
 			break ;
@@ -240,9 +243,9 @@ void Webserv::printQuery(query& query) const
               << "\033[0;36m" << std::endl << query.httpRequest << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "bodyChunks:" 
               << "\033[0;36m" << std::endl;
-	for (std::deque<char*>::iterator it = query.bodyChunks.begin(); it != query.bodyChunks.end()
+	for (std::deque<std::pair<char*, ssize_t> >::iterator it = query.bodyChunks.begin(); it != query.bodyChunks.end()
 		; ++it)
-		std::cout << *it << std::endl;
+		std::cout << (*it).first << ", size of: " << (*it).second << std::endl;
 	std::cout << "\033[0m" << ", num chunck: " << query.bodyChunks.size() << std::endl;
 }
 

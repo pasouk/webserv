@@ -54,8 +54,8 @@ struct query
 	std::string					hostName;
 	std::string					httpRequest;
 	std::string 				formatedResponse;
-	std::deque<char*>			bodyChunks;
 	ParserHttpRequest*			httpParser;
+	std::deque<std::pair<char*, ssize_t> >	bodyChunks;
 };
 
 struct server
@@ -110,7 +110,7 @@ private:
 	bool clientNeedsAnswer(size_t) const;
 	bool keepAlive(size_t, double) const;
 	bool getClient(size_t, query&) const;
-	char* removeChunk(char*, ssize_t);
+	std::pair<char*, ssize_t> removeChunk(char*, ssize_t);
 	const std::vector<std::string> getRoot(const Node*, const std::vector<const Node*>) const;
 	server& getRightServer(query&);
 	bool matchServerName(const std::string&, const std::string&) const;
