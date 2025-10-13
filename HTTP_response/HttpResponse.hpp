@@ -3,6 +3,7 @@
 
 #include "../HTTP_parser/ParserHttp.hpp"
 #include "../HTTP_parser/ParserHttpRequest.hpp"
+#include "HttpMultipartRequest.hpp"
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
@@ -12,10 +13,14 @@
 #include <stdlib.h>
 #include <vector>
 
+class SubPartRequest;
+
 bool resourceExists(const std::string& path);
 std::string urlDecode(const std::string& str);
 bool    isFolder(std::string &path);
 std::string toString(size_t n);
+std::string getHeaderValue(const std::string &key, const std::map<std::string, std::string> &headers);
+
 
 class   HttpResponse 
 {
@@ -65,6 +70,8 @@ class   HttpResponse
 
         void printElements();
         void handleMultipartPost();
+                void    handleFileSubPart(const SubPartRequest &sub, const std::string &str);
+
         std::vector<std::string> cutMultipartPost(const std::string& rawBody, const std::string& boundary);
 };
 

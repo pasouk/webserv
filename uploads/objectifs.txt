@@ -1,0 +1,3 @@
+- Vitrine pour l'entreprise (page d'accueil qui décrit l'entreprise)
+- Communiquer les infos importantes du moment ( fermetures, dernières sorties, évènements, promos...) -> Accueil ? Bannière ? Pop-up? Blog ?
+- Catalogue : Montrer les produits en vente --> mettre en place un système de recherche simple, clair et facile à utiliser pour tous les clients (catégories, sous-menus, recherche par marque)

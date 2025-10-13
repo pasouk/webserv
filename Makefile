@@ -26,7 +26,8 @@ SOURCES = QueryListener.cpp \
 	HTTP_parser/ParserHttpRequest.cpp\
 	HTTP_parser/ParserHttpUtils.cpp \
 	HTTP_response/HttpResponseUtils.cpp \
-	HTTP_response/HttpResponse.cpp
+	HTTP_response/HttpResponse.cpp \
+	HTTP_response/HttpMultipartRequest.cpp
 
 	
 OBJECTS = $(SOURCES:.cpp=.o)
