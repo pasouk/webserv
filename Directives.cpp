@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Directives.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/07 10:43:19 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/14 09:24:43 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -190,25 +190,6 @@ KeepaliveTimeout::KeepaliveTimeout() : Directives(false, 1, 1, "keepalive_timeou
 Events::Events() : Directives(true, 0, 0, "events")
 {
 	m_memberships.push_back("ASP");
-}
-
-WorkerConnections::WorkerConnections() : Directives(false, 1, 1, "worker_connections")
-{
-	m_memberships.push_back("events");
-}
-
-bool WorkerConnections::areArgsValid(const std::vector<std::string>& args, std::string& err) const
-{
-	regex_t regex;
-	std::string pattern("|(^(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4][0-9]{3}|[1-5][0-9]{4}|[0-9]{1,4})$)");
-	
-	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
-	{
-		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
-			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
-				return (err = (*it), regfree(&regex), false);
-	}
-	return (regfree(&regex), true);
 }
 
 LimitExcept::LimitExcept() : Directives(true, 1, 10, "limit_except")

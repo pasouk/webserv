@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/15 10:58:50 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/14 15:29:07 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,9 +21,11 @@ QueryListener::QueryListener(uint16_t port, const std::string& host)
 //release socker
 QueryListener::~QueryListener()
 {
+	std::ostringstream oss;
+
 	close(m_listenFD);
-	std::cout << "Deconnected server\n";
-	std::cout << "Destructor called\n";
+	oss << "Deconnected server";
+	logMessage(oss);
 }
 
 int QueryListener::getListenFD() const

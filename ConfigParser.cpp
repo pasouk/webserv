@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/09/29 10:21:50 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/14 14:47:34 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 {
 	//use new to ovoid "objects slicing" (polymorphism failed !!)
 	//instead passing by value ! 
-	
 	//block
 	m_directives.push_back(new Http());
 	m_directives.push_back(new Server());
@@ -33,7 +32,6 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 	m_directives.push_back(new ClientBodyBufferSize());
 	m_directives.push_back(new ClientHeaderBufferSize());
 	m_directives.push_back(new KeepaliveTimeout());
-	m_directives.push_back(new WorkerConnections());
 	m_directives.push_back(new Deny());
 	
 	//if fail -> exception
@@ -49,10 +47,11 @@ ConfigParser::~ConfigParser()
 
 void ConfigParser::openFile(const std::string& file)
 {
-	m_config_file.exceptions(std::ifstream::badbit);
 	try
 	{
+		m_config_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 		m_config_file.open(file.c_str(), std::ifstream::in);
+		m_config_file.exceptions(std::ifstream::badbit); //to avoid EOF exception
 	}
 	catch(const std::ios_base::failure& e)
 	{

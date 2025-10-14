@@ -6,7 +6,7 @@
 /*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/12 10:48:07 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/14 14:47:31 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,11 +93,11 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 
 int main(int argc, char *argv[])
 {
-	ConfigParser *cp;
+	ConfigParser *cp = NULL;
 
-	if (argc != 2)
+	if (argc > 2)
 	{
-		std::cout << "Usage: <configuration file>" << std::endl;
+		std::cout << "Usage: [configuration file]" << std::endl;
 		return (0);
 	}
 
@@ -110,7 +110,8 @@ int main(int argc, char *argv[])
 	//Config file parsing
 	try
 	{
-		cp = new ConfigParser(argv[1]);
+		if (argc == 2)
+			cp = new ConfigParser(argv[1]);
 	}
 	catch(const std::exception& e)
 	{

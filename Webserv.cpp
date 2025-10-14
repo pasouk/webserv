@@ -3,41 +3,54 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/13 14:26:18 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/14 15:24:57 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser) : m_parser(parser), m_keepalive_timeout(KEEPALIVE_TIMEOUT)
+Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 {
 	std::vector<const Node*> clientBufferSize;
 	std::vector<const Node*> KeepaliveTimeout;
 	std::ostringstream oss;
+	QueryListener* ql;
+	server server;
 
 	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
 	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
 
-	if (parser == NULL)
-		throw std::runtime_error("No configuration.");
-	
-	//build servers structures instances
-	m_servers = createServers();
-
-	//define global variables server
-	clientBufferSize = parser->getDirectives("client_body_buffer_size");
-	for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
-		static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[1]);
-	clientBufferSize = parser->getDirectives("client_header_buffer_size");
-	for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
-		static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[0]);
-	KeepaliveTimeout = parser->getDirectives("keepalive_timeout");
-	for (std::vector<const Node*>::const_iterator it = KeepaliveTimeout.begin(); it != KeepaliveTimeout.end(); ++it)
-		static_cast<const NodeDirective*>(*it)->getClientsTimeout(m_keepalive_timeout);
+	if (parser != NULL)
+	{
+		//build servers structures instances
+		m_servers = createServers(parser);
+		//define global variables server
+		clientBufferSize = parser->getDirectives("client_body_buffer_size");
+		for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
+			static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[1]);
+		clientBufferSize = parser->getDirectives("client_header_buffer_size");
+		for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
+			static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[0]);
+		KeepaliveTimeout = parser->getDirectives("keepalive_timeout");
+		for (std::vector<const Node*>::const_iterator it = KeepaliveTimeout.begin(); it != KeepaliveTimeout.end(); ++it)
+			static_cast<const NodeDirective*>(*it)->getClientsTimeout(m_keepalive_timeout);
+	}
+	else
+	{
+		//build a default server
+		server.ports.push_back(80);
+		server.hosts.push_back("0.0.0.0");
+		server.root = "/html";
+		m_servers.push_back(server);
+		ql = createListener(server.ports[0], server.hosts[0]);
+		if (ql)
+			m_listeners.push_back(ql);
+		//throw std::runtime_error("No configuration.");
+	}
 	oss << "buffer Header_size: " << m_client_buffers_size[0];
 	logMessage(oss);
 	oss << "buffer Body_size: " << m_client_buffers_size[1];
@@ -242,7 +255,7 @@ bool Webserv::clientNeedsAnswer(size_t i) const
 	return (false);
 }
 
-std::vector<server> Webserv::createServers()
+std::vector<server> Webserv::createServers(const ConfigParser* parser)
 {
 	std::vector<const Node*> _servers;
 	std::vector<const Node*> _listens;
@@ -253,14 +266,20 @@ std::vector<server> Webserv::createServers()
 	std::vector<const Node*> _limit_except;
 	std::vector<server> servers;
 	std::vector<std::string> args;
+	std::ostringstream oss;
 	std::string _host;
 	location loc;
 	QueryListener* ql;
 	uint16_t _port;
 	server _server;
 
-	_roots = m_parser->getDirectives("root");
-	_servers = m_parser->getDirectives("server");
+	if (parser == NULL)
+	{
+		oss << "No config file.";
+		logMessage(oss);
+	}
+	_roots = parser->getDirectives("root");
+	_servers = parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
 		_server.ports.clear();
@@ -275,7 +294,7 @@ std::vector<server> Webserv::createServers()
 			_server.root = "/html";
 		else
 			_server.root = args[0];
-		_listens = m_parser->getDirectives("listen", static_cast<const NodeBlock*>(*it));
+		_listens = parser->getDirectives("listen", static_cast<const NodeBlock*>(*it));
 		if (_listens.size() == 0)
 		{
 			ql = createListener(_port, _host);
@@ -296,14 +315,14 @@ std::vector<server> Webserv::createServers()
 						m_listeners.push_back(ql);
 				}
 			}
-		_server_names = m_parser->getDirectives("server_name", static_cast<const NodeBlock*>(*it));
+		_server_names = parser->getDirectives("server_name", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it1 = _server_names.begin(); it1 != _server_names.end(); ++it1)
 		{
 			args = (*it1)->getArgs();
 			for (std::vector<std::string>::iterator it1 = args.begin(); it1 != args.end(); ++it1)
 				_server.server_names.push_back(*it1);
 		}
-		_location = m_parser->getDirectives("location", static_cast<const NodeBlock*>(*it));
+		_location = parser->getDirectives("location", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it1 = _location.begin(); it1 != _location.end(); ++it1)
 		{
 			loc.concatOrReplace = (*it1)->getArgs()[0];
@@ -314,14 +333,14 @@ std::vector<server> Webserv::createServers()
 					loc.by = (*it2)->getArgs()[0];
 					_server.locations.push_back(loc);
 				}
-			_alias = m_parser->getDirectives("alias", static_cast<const NodeBlock*>(*it1));
+			_alias = parser->getDirectives("alias", static_cast<const NodeBlock*>(*it1));
 			if (_alias.size())
 			{
 				loc.type = ALIAS;
 				loc.by = _alias[0]->getArgs()[0];
 				_server.locations.push_back(loc);	
 			}
-			_limit_except = m_parser->getDirectives("limit_except", static_cast<const NodeBlock*>(*it1));
+			_limit_except = parser->getDirectives("limit_except", static_cast<const NodeBlock*>(*it1));
 			if (_limit_except.size())
 			{
 				for (size_t i = 0; i < _limit_except[0]->getArgs().size(); ++i)
