@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/14 15:24:57 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/15 10:43:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,6 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 		ql = createListener(server.ports[0], server.hosts[0]);
 		if (ql)
 			m_listeners.push_back(ql);
-		//throw std::runtime_error("No configuration.");
 	}
 	oss << "buffer Header_size: " << m_client_buffers_size[0];
 	logMessage(oss);

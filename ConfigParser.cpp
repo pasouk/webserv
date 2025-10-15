@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/14 14:47:34 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/15 10:42:20 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 
 ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 {
+	openFile(file);
+
 	//use new to ovoid "objects slicing" (polymorphism failed !!)
 	//instead passing by value ! 
 	//block
@@ -34,8 +36,6 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 	m_directives.push_back(new KeepaliveTimeout());
 	m_directives.push_back(new Deny());
 	
-	//if fail -> exception
-	openFile(file);
 	getFormat(m_ast);
 }
 
@@ -55,6 +55,7 @@ void ConfigParser::openFile(const std::string& file)
 	}
 	catch(const std::ios_base::failure& e)
 	{
+		cleanParser();
 		throw std::runtime_error(file + ": " + e.what());
 	}	
 }
