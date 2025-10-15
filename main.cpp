@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/14 14:47:31 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/15 13:18:24 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 	// - si pas vide, si la methode demandée par le client n'est pas dans la liste -> 405 error
 	
 	//aurorisd http methods
-	if (s.httpMethodsAllowed.size() == 0)
+	/*if (s.httpMethodsAllowed.size() == 0)
 		std::cout << "ALL HTTP METHODS ARE ALLOWED.\n";
 	else
 	{
@@ -42,7 +42,7 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 		for (size_t i = 0; i < s.httpMethodsAllowed.size(); ++i)
 			std::cout << methods_map[s.httpMethodsAllowed[i]].name << " ";
 		std::cout << std::endl;
-	}
+	}*/
 
 	//MAXENCE: ici j'implémente les directives alias/root dans la directive location (cfr nginx)
 	//du coup j'ai ajouté un setter "setPath" a ta classe ParserHttpRequest qui modifie _path !
@@ -52,8 +52,9 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 
 	//alias/root location -> update path.
 	root = s.root;
-	if (root[0] == '/') //to get a relative path to the project.
-		root = root.substr(1, root.length() - 1);
+	if (RELATIVE) //to get a relative path to the project.
+		if (root[0] == '/')
+			root = root.substr(1, root.length() - 1);
 	if (s.locations.size())
 	{
 		path = r.getPath();
@@ -66,20 +67,21 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 				{
 					path.replace(pos, s.locations[i].concatOrReplace.size()
 						, s.locations[i].by + s.locations[i].concatOrReplace);
-					std::cout << "ROOT: " << path << std::endl;		
+					//std::cout << "ROOT: " << path << std::endl;		
 				}
 				else if (s.locations[i].type == ALIAS)
 				{
 					path.replace(pos, s.locations[i].concatOrReplace.size(), s.locations[i].by);
-					std::cout << "ALIAS: " << path << std::endl;
+					//std::cout << "ALIAS: " << path << std::endl;
 				}
-				if (path[0] == '/') //to get a relative path to the project.
-					path = path.substr(1, path.length() - 1);
+				if (RELATIVE) //to get a relative path to the project.
+					if (path[0] == '/')
+						path = path.substr(1, path.length() - 1);
 				r.setPath(path);
 				root = "";
 			}
-			else
-				std::cout << "NOT FIND\n";
+			//else
+			//	std::cout << "NOT FIND\n";
 		}
 	}
 
@@ -124,7 +126,7 @@ int main(int argc, char *argv[])
 	try
 	{
 		Webserv	webserv(cp);
-		webserv.printServers();
+		//webserv.printServers();
 		webserv.startListening(onResponse);
 	}
 	catch(const std::exception& e)
