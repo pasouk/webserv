@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/15 13:01:39 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/15 13:48:00 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,7 +208,7 @@ server& Webserv::getRightServer(query& q)
 					{
 						if (bFind)
 						{
-							oss << "conflicting servezer name \"" << *ser_name << "\", first server will be ignored";
+							oss << "conflicting server name \"" << *ser_name << "\", first server will be ignored";
 							logMessage(oss);
 							return (*ret);
 						}

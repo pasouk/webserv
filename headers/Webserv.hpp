@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/15 13:29:44 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/16 16:08:29 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 # include <map>
 # include <ctime>
 # include "ParserHttp.hpp"
+# include "CGI.hpp"
 
 # ifndef RELATIVE
 #  define RELATIVE true
@@ -58,6 +59,7 @@ struct query
 	std::string					httpRequest;
 	std::string 				formatedResponse;
 	ParserHttpRequest*			httpParser;
+	CGI							cgi;
 	std::deque<std::pair<char*, ssize_t> >	bodyChunks;
 };
 

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/15 10:43:06 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/16 11:04:27 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,8 +157,7 @@ void Webserv::addClient(size_t i)
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;
 			m_clients.push_back(query);
-			oss << "New client connected: fd:" << fd.fd
-				<< ", port:"<< ntohs(serverAddress.sin_port);
+			oss << "New client connected: fd:" << fd.fd << ", port:"<< ntohs(serverAddress.sin_port);
 			logMessage(oss);
 		}
 		break;
