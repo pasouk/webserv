@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/15 13:48:00 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/17 14:05:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -170,7 +170,7 @@ bool Webserv::keepAlive(size_t i, double sec) const
 		if ( delay >= sec)
 		{
 			oss << "Client fd:" << client.fd << ", no request for " << delay << " sec ...";
-			logMessage(oss);
+			logOutMessage(oss);
 			return (false);
 		}
 		return (true);
@@ -209,7 +209,7 @@ server& Webserv::getRightServer(query& q)
 						if (bFind)
 						{
 							oss << "conflicting server name \"" << *ser_name << "\", first server will be ignored";
-							logMessage(oss);
+							logOutMessage(oss);
 							return (*ret);
 						}
 						bFind = true;

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/16 11:04:27 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/17 14:05:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,11 +51,11 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 			m_listeners.push_back(ql);
 	}
 	oss << "buffer Header_size: " << m_client_buffers_size[0];
-	logMessage(oss);
+	logOutMessage(oss);
 	oss << "buffer Body_size: " << m_client_buffers_size[1];
-	logMessage(oss);
+	logOutMessage(oss);
 	oss << "Keepalive timeout: " << m_keepalive_timeout;
-	logMessage(oss);
+	logOutMessage(oss);
 }
 
 Webserv::~Webserv()
@@ -84,7 +84,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		m_isClient.push_back(false);
 	}
 	oss << "Listening...";
-	logMessage(oss);
+	logOutMessage(oss);
 	while (g_listening)
 	{
 		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
@@ -110,7 +110,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				if (!keepAlive(i, m_keepalive_timeout))
 				{
 					oss << "Deconnected client fd:" << m_fds[i].fd;
-					logMessage(oss);
+					logOutMessage(oss);
 					destroyClientQueries(i);
 					destroyClient(i);
 				}
@@ -121,7 +121,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 	}
 	cleanWebserv();
 	oss << "Stop listening";
-	logMessage(oss);
+	logOutMessage(oss);
 }
 
 void Webserv::addClient(size_t i)
@@ -158,7 +158,7 @@ void Webserv::addClient(size_t i)
 			query.host = ip;
 			m_clients.push_back(query);
 			oss << "New client connected: fd:" << fd.fd << ", port:"<< ntohs(serverAddress.sin_port);
-			logMessage(oss);
+			logOutMessage(oss);
 		}
 		break;
 	}
@@ -200,7 +200,7 @@ void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpReq
 	else if (n == -1)
 	{
 		oss << "read: " << std::strerror(errno);
-		logMessage(oss);
+		logOutMessage(oss);
 	}
 	if (bDelete)
 		delete [](buffers);
@@ -227,7 +227,7 @@ void Webserv::sendQuery(size_t i)
 				else if (n == -1)
 				{
 					oss << "send: " << std::strerror(errno);
-					logMessage(oss);
+					logOutMessage(oss);
 					break ;
 				}
 				else
@@ -274,7 +274,7 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 	if (parser == NULL)
 	{
 		oss << "No config file.";
-		logMessage(oss);
+		logOutMessage(oss);
 	}
 	_roots = parser->getDirectives("root");
 	_servers = parser->getDirectives("server");

@@ -6,12 +6,13 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/16 16:18:51 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/17 14:25:02 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <deque>
 #include <unistd.h>
+#include <iomanip>
 #include <sys/types.h>
 #include <stdexcept>
 #include <cstring>
@@ -19,6 +20,7 @@
 #include <cerrno>
 #include <stdlib.h>
 #include <map>
+#include "logtime.hpp"
 
 #ifndef CGI_H
 # define CGI_H
@@ -37,18 +39,22 @@
 class CGI
 {
 public:
-    CGI();
+    ~CGI();
+    CGI(std::string&, std::string&);  //interpreter, script
+    CGI(std::string&);                //binary
 
-    void run(std::string&, std::string&) const;   //interpreter, script
-    void run(std::string&) const ;                 //binary
+    void writeBody(std::pair<char*, ssize_t>&) const;
+    std::string readBody() const;
 
 private:
     void cgi(char**, char**) const;
     void server() const;
-    void buildChild(char**, char**);
+    int buildChild(char**, char**);
 
 private:
     pid_t   m_id_cgi;
+    int     m_pipe_in[2];
+    int     m_pipe_out[2];
     std::map<std::string, std::string> m_env;
 };
 #endif

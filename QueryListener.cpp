@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   QueryListener.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/14 15:29:07 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/17 14:05:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ QueryListener::~QueryListener()
 
 	close(m_listenFD);
 	oss << "Deconnected server";
-	logMessage(oss);
+	logOutMessage(oss);
 }
 
 int QueryListener::getListenFD() const
