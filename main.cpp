@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/15 13:18:24 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/19 12:20:40 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,6 +127,7 @@ int main(int argc, char *argv[])
 	{
 		Webserv	webserv(cp);
 		//webserv.printServers();
+		delete (cp);
 		webserv.startListening(onResponse);
 	}
 	catch(const std::exception& e)
@@ -135,6 +136,6 @@ int main(int argc, char *argv[])
 		delete (cp);
 		return (1);
 	}
-	delete (cp);
+	//delete (cp);
 	return (0);
 }

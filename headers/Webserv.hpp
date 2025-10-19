@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/17 09:34:37 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/19 12:11:32 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,6 +85,7 @@ public:
 	void startListening(void (*)(std::string&, ParserHttpRequest&, server&));
 	void printServers();
 	void printQuery(query&) const;
+	void cleanWebserv();
 
 private:
 	size_t m_keepalive_timeout;
@@ -99,7 +100,6 @@ private:
 private:
 	QueryListener* createListener(u_int16_t, const std::string&);
 	std::vector<server> createServers(const ConfigParser*);
-	void cleanWebserv();
 	void printServer(server&) const;
 	void addClient(size_t);
 	void readQuery(size_t, void (*)(std::string&, ParserHttpRequest&, server&));
@@ -117,6 +117,8 @@ private:
 	const std::vector<std::string> getRoot(const Node*, const std::vector<const Node*>) const;
 	server& getRightServer(query&);
 	bool matchServerName(const std::string&, const std::string&) const;
+	void addPipeToPoll(pollfd(&)[2]);
+	void removePipeFromPoll(pollfd(&)[2]);
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/17 14:05:06 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/19 14:07:54 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,6 +145,7 @@ void Webserv::destroyClientQueries(size_t i)
 void Webserv::destroyClient(size_t i)
 {
 	close(m_fds[i].fd);
+	destroyClientQueries(i);
 	for (size_t j = 0; j < m_clients.size(); ++j)
 		if (m_fds[i].fd == m_clients[j].fd)
 		{
@@ -236,10 +237,31 @@ bool Webserv::matchServerName(const std::string& host, const std::string& ser) c
 	for (std::string::iterator c = _host.begin(); c != _host.end(); ++c)
 		*c = std::tolower(*c);
 	for (std::string::iterator c = _ser.begin(); c != _ser.end(); ++c)
-		*c = std::tolower(*c);
+		*c = std::tolower(*c); 
 	if (_host == _ser)
 		return (true);
 	return (false);
+}
+
+void Webserv::addPipeToPoll(pollfd(&poll)[2])
+{
+	m_fds.push_back(poll[0]);
+	m_isClient.push_back(false);
+	m_fds.push_back(poll[1]);
+	m_isClient.push_back(false);
+}
+
+void Webserv::removePipeFromPoll(pollfd(&poll)[2])
+{
+	for (size_t i = 0; i < m_fds.size(); ++i)
+		if (m_fds[i].fd == poll[0].fd && i < m_fds.size())
+		{
+			m_fds.erase(m_fds.begin() + i);
+			m_isClient.erase(m_isClient.begin() + i);
+			m_fds.erase(m_fds.begin() + i);
+			m_isClient.erase(m_isClient.begin() + i);	
+			break ;
+		}
 }
 
 void Webserv::printQuery(query& query) const

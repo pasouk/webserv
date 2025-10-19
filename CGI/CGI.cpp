@@ -6,26 +6,43 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/17 15:54:38 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/19 15:12:23 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CGI.hpp"
+#include "Webserv.hpp"
 
-//In our implementation, CGI pipes are in blocking mode (unlike sockets who are O_NONBLOCK),
-//that means if a CGI is running, server could wait the end of his execution.
-CGI::CGI(std::string& interpreter, std::string & script)
+CGI::~CGI()
 {
+    close(m_pipe_in[1]);
+    close(m_pipe_out[0]);
+}
+
+CGI::CGI(std::string interpreter, std::string script, Webserv* web) : m_webserv(web)
+{
+    initFDS();
     const char* argv[3] = {interpreter.data(), script.data(), NULL};
-    if (buildChild(const_cast<char**>(argv), NULL))
-        throw std::runtime_error(std::strerror(errno));}
-
-CGI::CGI(std::string& binary)
-{
-    const char* argv[2] = {binary.data(), NULL};
-    if (buildChild(const_cast<char**>(argv), NULL))
+    if (buildChild(const_cast<char**>(argv), NULL, m_poll))
         throw std::runtime_error(std::strerror(errno));
 }
+
+CGI::CGI(std::string binary, Webserv* web) : m_webserv(web)
+{
+    initFDS();
+    const char* argv[2] = {binary.data(), NULL};
+    if (buildChild(const_cast<char**>(argv), NULL, m_poll))
+        throw std::runtime_error(std::strerror(errno));
+}
+
+void CGI::initFDS()
+{
+    m_pipe_in[0] = -1;
+    m_pipe_in[1] = -1;
+    m_pipe_out[0] = -1;
+    m_pipe_out[1] = -1;
+}
+
 
 void CGI::writeBody(std::pair<char*, ssize_t>& chunk) const
 {
@@ -54,10 +71,23 @@ std::string CGI::readBody() const
     return (response);
 }
 
-int CGI::buildChild(char* argv[], char* envp[])
+int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
 {
-    if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out))
+    std::ostringstream oss;
+    
+    if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
+    if (fcntl(m_pipe_in[1], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[0], F_SETFL, O_NONBLOCK == -1))
+    {
+        oss << std::strerror(errno);
+	    logErrMessage(oss);
+    }
+    poll[0].fd = m_pipe_out[0];
+    poll[0].events = POLLIN;
+    poll[0].revents = 0;
+    poll[1].fd = m_pipe_in[1];
+    poll[1].events = POLLOUT;
+    poll[1].revents = 0;
     close(m_pipe_in[0]);
     close(m_pipe_out[1]);
     m_id_cgi = fork();
@@ -68,17 +98,22 @@ int CGI::buildChild(char* argv[], char* envp[])
         return (1);
     }
     if (m_id_cgi == 0)
+    {
+        if (m_webserv != NULL)
+            m_webserv->cleanWebserv();
         cgi(argv, envp);
-    server();
+    }
     return (0); 
 }
 
 void CGI::cgi(char* argv[], char* envp[]) const
 {
     (void)envp;
-
-    dup2(m_pipe_in[0], STDIN_FILENO);
-    dup2(m_pipe_out[1], STDOUT_FILENO);
+    (void)argv;
+    /*dup2(m_pipe_in[0], STDIN_FILENO);
+    dup2(m_pipe_out[1], STDOUT_FILENO);*/
+    close(m_pipe_in[0]);
+    close(m_pipe_out[1]);
     close(m_pipe_in[1]);
     close(m_pipe_out[0]);
 
@@ -89,13 +124,11 @@ void CGI::cgi(char* argv[], char* envp[]) const
         NULL
     };*/
 
-    execve(argv[0], argv, envp);
-    exit(1);
+    //execve(argv[0], argv, envp);
+    //exit(1);
 }
 
-void CGI::server() const
+const pollfd* CGI::getPoll() const
 {
-    //int status;
-
-    //waitpid(m_id_cgi, &status, 0);
+    return (&m_poll[0]);
 }

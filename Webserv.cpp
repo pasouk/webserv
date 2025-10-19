@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/17 14:05:06 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/19 15:10:11 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,14 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 	static rlimit limit;
 	std::ostringstream oss;
 
+
+
+	//CGI tests
+	static bool bInstance;
+	//CGI* _cgi = NULL;
+
+
+
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
 	{
@@ -117,8 +125,42 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
 			}
+
+
+
+			//CGI tests
+			//int status;
+			if (!bInstance)
+			{
+				bInstance = true;
+				//_cgi = new (std::nothrow)CGI("fff", this);
+				/*const pollfd *fds = _cgi->getPoll();
+				pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+				addPipeToPoll(arr);*/
+			}    
+
+
+				
 		}
 	}
+
+
+
+	//CGI test
+	/*const pollfd *fds = _cgi->getPoll();
+	pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+	removePipeFromPoll(arr);*/
+	//delete (_cgi);
+	/*int status;
+	pid_t p = waitpid(-1, &status, 0);//WNOHANG);
+	//while (p > 0)
+	{
+		std::cout << "CHILD FINISHED: " << p << std::endl;
+		delete (_cgi);
+	}*/
+
+
+	
 	cleanWebserv();
 	oss << "Stop listening";
 	logOutMessage(oss);
@@ -141,6 +183,11 @@ void Webserv::addClient(size_t i)
 		fd.fd = accept(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 		if (fd.fd < 0) 
 			continue;
+		if (fcntl(fd.fd, F_SETFL, O_NONBLOCK) == -1)
+		{
+			oss << std::strerror(errno);
+			logErrMessage(oss);
+		}
 		fd.events |= POLLIN;
 		fd.revents = 0;
 		for (j = 0; j < m_fds.size(); ++j)
@@ -391,7 +438,7 @@ void Webserv::cleanWebserv()
 	for (size_t i = 0; i < m_fds.size(); ++i)
 		if (m_isClient[i])
 		{
-			destroyClientQueries(i);
+			destroyClient(i);
 			close (m_fds[i].fd);
 		}
 	m_fds.clear();
