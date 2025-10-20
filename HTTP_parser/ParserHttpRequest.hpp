@@ -9,6 +9,7 @@
 #include "ParserHttp.hpp"
 #include <deque>
 #include <sys/types.h>
+#include <vector>
 
 //ATTENTION A MODIFIER LE TABLEAU METHOD_MAP DANS LE .CPP SI ON MODIFIE L ENUM
 enum HttpMethod
@@ -46,6 +47,7 @@ class ParserHttpRequest
         std::string     _methodLine;
         std::string     _headerLine;
         std::string     _bodyLine;
+        std::vector<char> _bodyBuffer;
 
         HttpMethod                      _method;
         std::string                     _path;

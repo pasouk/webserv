@@ -9,7 +9,7 @@ class SubPartRequest
         std::string     _rawRequest;
         std::string     _headerLine;
         std::string     _bodyLine;
-
+        std::deque<std::pair<char*, ssize_t> > _bodyBuffer;
         std::map<std::string, std::string>   _headers;
 
     public:
@@ -31,6 +31,7 @@ class SubPartRequest
         //int     debugParsingRequest();
         //void    sanitize();
         void    printParsedData();
+        const std::deque<std::pair<char*, ssize_t> >& getBodyBuffer() const ;
 
 };
 

@@ -5,6 +5,11 @@ SubPartRequest::SubPartRequest(std::string rawRequest ): _rawRequest(rawRequest)
     
 }
 
+const std::deque<std::pair<char*, ssize_t> >& SubPartRequest::getBodyBuffer() const 
+{ 
+    return _bodyBuffer; 
+}
+
 std::string SubPartRequest::getHeaderLine()
 {
     return _headerLine;
@@ -32,17 +37,29 @@ void SubPartRequest::devideRequest()
     if (pos != std::string::npos)
     {
         _headerLine = _rawRequest.substr(0, pos);
-        if (pos + 4 < _rawRequest.size())
+        size_t bodySize = _rawRequest.size() - (pos + 4);
+
+        if (bodySize > 0)
+        {
+
             _bodyLine = _rawRequest.substr(pos + 4);
+
+            char* bodyPtr = new char[bodySize];
+            memcpy(bodyPtr, _rawRequest.data() + pos + 4, bodySize);
+            _bodyBuffer.push_back(std::make_pair(bodyPtr, bodySize));
+        }
         else
-            _bodyLine = "";
+        {
+            _bodyLine.clear();
+        }
     }
     else
     {
         _headerLine = _rawRequest;
-        _bodyLine = "";
+        _bodyLine.clear();
     }
 }
+
 
 
 int SubPartRequest::parseHeaderLine()
@@ -114,12 +131,12 @@ int    SubPartRequest::basicChecks()
 
 void SubPartRequest::printParsedData()
 {
-    std::cout << Colors::BLUE << "Headers : " << Colors::RESET  ;
+    std::cout << Colors::GREEN<< "Headers : " << Colors::RESET  ;
     for (std::map<std::string, std::string>::const_iterator it = getHeaders().begin();
         it != getHeaders().end(); ++it)
     {
         std::cout << it->first << " : " << it->second << std::endl;
     }
-    std::cout << Colors::BLUE << "Body : " << _bodyLine << std::endl << Colors::RESET  ;
+    std::cout << Colors::GREEN << "Body : " << _bodyLine << std::endl << Colors::RESET  ;
     std::cout << "-------------------------------------------------\n";
 }

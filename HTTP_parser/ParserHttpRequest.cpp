@@ -30,6 +30,9 @@ int    ParserHttpRequest::basicChecks()
         return 400;
     return 0;
 }
+
+
+
 /*
 parsingState operator++(parsingState &state, int)
 {
@@ -266,21 +269,27 @@ void ParserHttpRequest::printParsedData()
 
 void ParserHttpRequest::setBodyLine(const std::deque<std::pair<char*, ssize_t> >& bodyChunks)
 {
-    (void)bodyChunks;
-    /*_bodyLine.clear();
+    _bodyLine.clear();
+    _bodyBuffer.clear();
 
-    for (std::deque<char*>::const_iterator it = bodyChunks.begin();
+    for (std::deque<std::pair<char*, ssize_t> >::const_iterator it = bodyChunks.begin();
          it != bodyChunks.end();
          ++it)
     {
-        if (*it)
-            _bodyLine += *it; 
-    }*/
+        const char* data = it->first;
+        ssize_t len = it->second;
+
+        if (data && len > 0)
+        {
+            _bodyLine.append(data, len);
+            _bodyBuffer.insert(_bodyBuffer.end(), data, data + len);
+        }
+    }
 }
 
 int ParserHttpRequest::parseRequest()
 {
-    std::cout << Colors::GREEN << "Request received \n" << Colors::RESET ;
+    std::cout << Colors::GREEN << "Request received :  " << _methodLine << Colors::RESET ;
     int ret;
     ret = basicChecks();
     if (ret)

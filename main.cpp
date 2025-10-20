@@ -33,9 +33,9 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 	//2 posibilités:
 	// - s.httpMethodsAllowed est vide (size() == 0): tout les methodes HTTP sont autorisées.
 	// - si pas vide, si la methode demandée par le client n'est pas dans la liste -> 405 error
-	
+	 
 	//aurorisd http methods
-	if (s.httpMethodsAllowed.size() == 0)
+/*	if (s.httpMethodsAllowed.size() == 0)
 		std::cout << "ALL HTTP METHODS ARE ALLOWED.\n";
 	else
 	{
@@ -43,7 +43,7 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 		for (size_t i = 0; i < s.httpMethodsAllowed.size(); ++i)
 			std::cout << methods_map[s.httpMethodsAllowed[i]].name << " ";
 		std::cout << std::endl;
-	}
+	}*/
 
 	//MAXENCE: ici j'implémente les directives alias/root dans la directive location (cfr nginx)
 	//du coup j'ai ajouté un setter "setPath" a ta classe ParserHttpRequest qui modifie _path !
@@ -87,9 +87,10 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 	//response
     HttpResponse response1(r, r.getError());
     response1.setRoot(root);
+	response1.setServerMethods(s.httpMethodsAllowed);
     response1.HttpResponseManager();
-
 	response = response1.getFormatedResponse();
+	std::cout << response << std::endl;
 }
 
 int main(int argc, char *argv[])

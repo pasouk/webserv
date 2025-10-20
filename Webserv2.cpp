@@ -18,7 +18,7 @@ void Webserv:: responseHook(std::vector<query>::iterator it
 	(*it).httpParser->setBodyLine((*it).bodyChunks);
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);
-	printQuery(*it);
+	//printQuery(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
 	(*it).byteSent = 0;

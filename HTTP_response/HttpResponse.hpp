@@ -37,7 +37,7 @@ class   HttpResponse
         std::string                                 _fullPath;
         std::string                                 _formated_response;
         std::string                                 _uploads_dir;
-
+        std::vector<HttpMethod>                     _server_methods;
     public:
 
         void buildFullPathGet();
@@ -51,7 +51,7 @@ class   HttpResponse
         void setUploadDir(std::string dir);
         std::string getFullPathGet();
 
-        void HttpResponseError(int code, std::string reason);
+        void HttpResponseError(int code, const std::string& reason);
         
         std::string getContentType(const std::string &rawStr);
         void manageGetHeaders();
@@ -61,7 +61,7 @@ class   HttpResponse
 
         void    buildGet();
         void    buildPost();
-        //void    buildDelete();
+        void    buildDelete();
 
         void serialize();
 
@@ -73,6 +73,8 @@ class   HttpResponse
                 void    handleFileSubPart(const SubPartRequest &sub, const std::string &str);
 
         std::vector<std::string> cutMultipartPost(const std::string& rawBody, const std::string& boundary);
+        void    setServerMethods(const std::vector<HttpMethod> &serverMethods);
+        bool checkServerMethods(HttpMethod method);
 };
 
 

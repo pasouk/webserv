@@ -10,7 +10,7 @@
   <div class="text-center space-y-6 p-8 rounded-2xl bg-gray-800/50 shadow-xl backdrop-blur w-96">
     <h1 class="text-3xl font-bold">42 - WEBSERV 🌐</h1>
 
-    <!-- Sélecteur pour GET -->
+    <!-- Sélecteur GET -->
     <div class="space-y-3">
       <select id="getTarget" 
               class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -24,94 +24,112 @@
       </button>
     </div>
 
-<!-- Formulaire POST -->
-<form id="postForm" action="/test_post" method="POST" enctype="multipart/form-data" class="space-y-4">
-  <!-- Choix du type -->
-  <select id="postType" name="type"
-          class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          onchange="updatePostInput()">
-    <option value="message">Message texte</option>
-    <option value="file">Fichier</option>
-    <option value="image">Image</option>
-  </select>
+    <!-- Formulaire POST -->
+    <form id="postForm" action="/test_post" method="POST" enctype="multipart/form-data" class="space-y-4">
+      <select id="postType" name="type"
+              class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onchange="updatePostInput()">
+        <option value="message">Message texte</option>
+        <option value="file">Fichier</option>
+        <option value="image">Image</option>
+      </select>
 
-  <!-- Zone dynamique -->
-  <div id="postInput" class="space-y-2">
-    <!-- Champ texte par défaut -->
-    <input type="text" 
-           name="message" 
-           placeholder="Tape ton message" 
-           class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-  </div>
-
-  <!-- Champ optionnel pour nom de fichier -->
-  <input type="text" 
-         id="customFilename"
-         name="custom_filename"
-         placeholder="Nom du fichier (ex: image.png)" 
-         class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 hidden">
-
-  <button type="submit" 
-          class="w-full py-2 px-4 rounded-xl bg-green-600 hover:bg-green-500 transition">
-    Send POST request
-  </button>
-</form>
-
-<script>
-  function updatePostInput() {
-    const type = document.getElementById("postType").value;
-    const postInput = document.getElementById("postInput");
-    const filenameInput = document.getElementById("customFilename");
-
-    if (type === "message") {
-      filenameInput.classList.add("hidden");
-      postInput.innerHTML = `
+      <div id="postInput" class="space-y-2">
         <input type="text" 
                name="message" 
                placeholder="Tape ton message" 
                class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-      `;
-    } else if (type === "file") {
-      filenameInput.classList.remove("hidden");
-      postInput.innerHTML = `
-        <input type="file" 
-               name="file" 
-               class="w-full text-sm text-gray-300">
-      `;
-    } else if (type === "image") {
-      filenameInput.classList.remove("hidden");
-      postInput.innerHTML = `
-        <input type="file" 
-               name="image" 
-               accept="image/*" 
-               class="w-full text-sm text-gray-300">
-      `;
-    }
-  }
-</script>
+      </div>
 
-    <!-- Requête avec JavaScript -->
-    <button onclick="sendDelete()" 
-            class="w-full py-2 px-4 rounded-xl bg-red-600 hover:bg-red-500 transition">
-      Send DELETE request
-    </button>
+      <input type="text" 
+             id="customFilename"
+             name="custom_filename"
+             placeholder="Nom du fichier (ex: image.png)" 
+             class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 hidden">
+
+      <button type="submit" 
+              class="w-full py-2 px-4 rounded-xl bg-green-600 hover:bg-green-500 transition">
+        Send POST request
+      </button>
+    </form>
+
+    <!-- DELETE -->
+    <div class="space-y-3 pt-4 border-t border-gray-700">
+      <input type="text"
+             id="deleteTarget"
+             placeholder="/uploads/nom_du_fichier.txt"
+             class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+      <button onclick="sendDelete()" 
+              class="w-full py-2 px-4 rounded-xl bg-red-600 hover:bg-red-500 transition">
+        Send DELETE request
+      </button>
+      <p id="deleteResult" class="text-sm text-gray-400"></p>
+    </div>
+
   </div>
 
-  <!-- Footer en bas de page -->
   <h3 class="absolute bottom-4 w-full text-center text-sm text-gray-400">
     fbuyl & magillet
   </h3>
 
   <script>
-    function sendGet() {
-      const target = document.getElementById("getTarget").value;
-      window.location.href = target; // redirige vers la ressource choisie
+    function updatePostInput() {
+      const type = document.getElementById("postType").value;
+      const postInput = document.getElementById("postInput");
+      const filenameInput = document.getElementById("customFilename");
+
+      if (type === "message") {
+        filenameInput.classList.add("hidden");
+        postInput.innerHTML = `
+          <input type="text" 
+                 name="message" 
+                 placeholder="Tape ton message" 
+                 class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        `;
+      } else if (type === "file") {
+        filenameInput.classList.remove("hidden");
+        postInput.innerHTML = `
+          <input type="file" 
+                 name="file" 
+                 class="w-full text-sm text-gray-300">
+        `;
+      } else if (type === "image") {
+        filenameInput.classList.remove("hidden");
+        postInput.innerHTML = `
+          <input type="file" 
+                 name="image" 
+                 accept="image/*" 
+                 class="w-full text-sm text-gray-300">
+        `;
+      }
     }
 
-    function sendDelete() {
-      fetch('/test_delete', { method: 'DELETE' })
-        .then(res => res.text())
-        .then(txt => alert('Réponse: ' + txt));
+    function sendGet() {
+      const target = document.getElementById("getTarget").value;
+      window.location.href = target;
+    }
+
+    async function sendDelete() {
+      const path = document.getElementById("deleteTarget").value.trim();
+      const result = document.getElementById("deleteResult");
+      result.textContent = "";
+
+      if (!path) {
+        result.textContent = "⚠️ Entrez un chemin de fichier à supprimer (ex: test.txt)";
+        result.classList.add("text-yellow-400");
+        return;
+      }
+
+      try {
+        const response = await fetch(path, { method: 'DELETE' });
+        const text = await response.text();
+        if (response.ok)
+          result.textContent = "✅ " + text;
+        else
+          result.textContent = `❌ Erreur ${response.status}: ${text}`;
+      } catch (err) {
+        result.textContent = "⚠️ Erreur réseau: " + err.message;
+      }
     }
   </script>
 
