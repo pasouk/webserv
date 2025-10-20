@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/11 13:35:31 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/15 13:29:44 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,9 @@
 # include <ctime>
 # include "ParserHttp.hpp"
 
+# ifndef RELATIVE
+#  define RELATIVE true
+# endif
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
 # define KEEPALIVE_TIMEOUT 65
@@ -83,7 +86,6 @@ public:
 	void printQuery(query&) const;
 
 private:
-	ConfigParser* m_parser;
 	size_t m_keepalive_timeout;
 	size_t m_client_buffers_size[2];	//0: header, 1: body
 	std::vector<server> m_servers;		//servers list
@@ -95,7 +97,7 @@ private:
 
 private:
 	QueryListener* createListener(u_int16_t, const std::string&);
-	std::vector<server> createServers();
+	std::vector<server> createServers(const ConfigParser*);
 	void cleanWebserv();
 	void printServer(server&) const;
 	void addClient(size_t);

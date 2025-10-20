@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Directives.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/07 09:20:39 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/14 09:24:12 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,12 +78,6 @@ class ClientBodyBufferSize : public Directives { public: ClientBodyBufferSize();
 class ClientHeaderBufferSize : public Directives { public: ClientHeaderBufferSize(); };
 class KeepaliveTimeout : public Directives { public: KeepaliveTimeout(); };
 class Events : public Directives { public: Events(); }; //not use, only for nginx tests
-class WorkerConnections : public Directives //not use, only for nginx tests
-{
-public: 
-	WorkerConnections(); 
-	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
-};
 class LimitExcept : public Directives { public: LimitExcept(); };
 class Deny : public Directives //only "all" argument is valid for now, not use, only for nginx tests
 { 

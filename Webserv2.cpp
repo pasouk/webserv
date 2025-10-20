@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/12 10:09:28 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/10/15 13:01:39 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -160,6 +160,7 @@ void Webserv::destroyClient(size_t i)
 
 bool Webserv::keepAlive(size_t i, double sec) const
 {
+	std::ostringstream oss;
 	double delay;
 	query client;
 
@@ -168,7 +169,8 @@ bool Webserv::keepAlive(size_t i, double sec) const
 		delay = (std::time(NULL) - client.lifeTime);
 		if ( delay >= sec)
 		{
-			std::cout << "Client fd:" << client.fd << ", no request for " << delay << " sec ...\n";
+			oss << "Client fd:" << client.fd << ", no request for " << delay << " sec ...";
+			logMessage(oss);
 			return (false);
 		}
 		return (true);
@@ -187,20 +189,32 @@ bool Webserv::getClient(size_t i, query& client) const
 server& Webserv::getRightServer(query& q)
 {
 	std::map<std::string, std::string> headers;
+	std::ostringstream oss;
 	server* ret = &m_servers[0];
+	bool bFind = false;
 
 	for (std::vector<server>::iterator s = m_servers.begin(); s != m_servers.end(); ++s)
 	{
 		for (size_t i = 0; i < (*s).hosts.size(); ++i)
 			if ((*s).hosts[i] == q.host && (*s).ports[i] == q.port)
 			{
-				ret = &*s;
+				if (!bFind)
+					ret = &*s;
 				for (std::vector<std::string>::iterator ser_name = (*s).server_names.begin()
 					; ser_name != (*s).server_names.end(); ++ser_name)
 				{
 					headers = q.httpParser->getHeaders();
 					if (matchServerName(headers["Host"], *ser_name))
-						return (*ret);
+					{
+						if (bFind)
+						{
+							oss << "conflicting servezer name \"" << *ser_name << "\", first server will be ignored";
+							logMessage(oss);
+							return (*ret);
+						}
+						bFind = true;
+						ret = &*s;
+					}
 				}
 			}
 	}

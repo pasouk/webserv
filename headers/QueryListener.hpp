@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   QueryListener.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/08/31 14:36:22 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/14 15:28:57 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 # include <poll.h>
 # include <arpa/inet.h>
 # include "ConfigParser.hpp"
+# include "logtime.hpp"
 
 //extern bool g_listening;
 
