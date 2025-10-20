@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/19 15:12:23 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/20 14:53:39 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,8 +110,8 @@ void CGI::cgi(char* argv[], char* envp[]) const
 {
     (void)envp;
     (void)argv;
-    /*dup2(m_pipe_in[0], STDIN_FILENO);
-    dup2(m_pipe_out[1], STDOUT_FILENO);*/
+    dup2(m_pipe_in[0], STDIN_FILENO);
+    dup2(m_pipe_out[1], STDOUT_FILENO);
     close(m_pipe_in[0]);
     close(m_pipe_out[1]);
     close(m_pipe_in[1]);
@@ -124,8 +124,8 @@ void CGI::cgi(char* argv[], char* envp[]) const
         NULL
     };*/
 
-    //execve(argv[0], argv, envp);
-    //exit(1);
+    execve(argv[0], argv, envp);
+    _exit(1);
 }
 
 const pollfd* CGI::getPoll() const

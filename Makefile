@@ -6,7 +6,7 @@
 #    By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/10/16 16:08:18 by fabrice          ###   ########.fr        #
+#    Updated: 2025/10/20 13:25:37 by fabrice          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -23,6 +23,7 @@ SOURCES = QueryListener.cpp \
 	Directives.cpp \
 	Webserv.cpp \
 	Webserv2.cpp \
+	Webserv3.cpp \
 	main.cpp \
 	HTTP_parser/ParserHttpRequest.cpp\
 	HTTP_parser/ParserHttpUtils.cpp \

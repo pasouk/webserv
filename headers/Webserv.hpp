@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/19 12:11:32 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/20 15:13:38 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,6 +59,7 @@ struct query
 	std::string					httpRequest;
 	std::string 				formatedResponse;
 	ParserHttpRequest*			httpParser;
+	CGI*						cgi;
 	std::deque<std::pair<char*, ssize_t> >	bodyChunks;
 };
 
@@ -119,6 +120,8 @@ private:
 	bool matchServerName(const std::string&, const std::string&) const;
 	void addPipeToPoll(pollfd(&)[2]);
 	void removePipeFromPoll(pollfd(&)[2]);
+	CGI* callCGI(const std::string&);
+	bool isRunnable(const std::string&) const;
 };
 
 #endif

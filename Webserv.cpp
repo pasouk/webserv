@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/19 15:10:11 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/20 15:14:10 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 
 
 	//CGI tests
-	static bool bInstance;
+	//static bool bInstance;
 	//CGI* _cgi = NULL;
 
 
@@ -130,14 +130,14 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 
 			//CGI tests
 			//int status;
-			if (!bInstance)
+			/*if (!bInstance)
 			{
 				bInstance = true;
-				//_cgi = new (std::nothrow)CGI("fff", this);
+				_cgi = new (std::nothrow)CGI("fff", this);*/
 				/*const pollfd *fds = _cgi->getPoll();
 				pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 				addPipeToPoll(arr);*/
-			}    
+			//}    
 
 
 				

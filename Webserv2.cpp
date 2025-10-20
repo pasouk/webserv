@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/19 14:07:54 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/20 15:37:08 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,12 @@ void Webserv:: responseHook(std::vector<query>::iterator it
 	(*it).httpParser->setBodyLine((*it).bodyChunks);
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);
+	if ((*it).cgi)
+	{
+		std::cout << "BYE CGI !\n";
+		delete ((*it).cgi);
+		(*it).cgi = NULL;
+	}
 	//printQuery(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
@@ -59,6 +65,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 			chunk = removeChunk(&buffer[i], (*it).bodySize);
 			(*it).bodyChunks.push_back(chunk);
 			i += (*it).bodySize;
+			std::cout << "ZOUOU:" << (*it).bodyChunks.size() << std::endl;
 			responseHook(it, onResponse);
 		}
 		else
@@ -86,6 +93,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 					cleanWebserv();
 					throw std::bad_alloc();
 				}
+				(*it).cgi = callCGI((*it).httpParser->getPath());
 				headers = (*it).httpParser->getHeaders();
 				header = headers["Content-Length"];
 				(*it).bodySize = 0;
@@ -136,7 +144,16 @@ void Webserv::destroyClientQueries(size_t i)
 		{
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
 				delete [](m_queries[j].bodyChunks[k].first);
-			delete (m_queries[j].httpParser);
+			if (m_queries[j].httpParser)
+			{
+				delete (m_queries[j].httpParser);
+				m_queries[j].httpParser = NULL;
+			}
+			if (m_queries[j].cgi)
+			{
+				delete (m_queries[j].cgi);
+				m_queries[j].cgi = NULL;
+			}
 			m_queries.erase(m_queries.begin() + j);
 		}
 	}
@@ -151,7 +168,16 @@ void Webserv::destroyClient(size_t i)
 		{
 			for (size_t k = 0; k < m_clients[j].bodyChunks.size(); ++k)
 				delete [](m_clients[j].bodyChunks[k].first);
-			delete (m_clients[j].httpParser);
+			if (m_clients[j].httpParser)
+			{
+				delete (m_clients[j].httpParser);
+				m_clients[j].httpParser = NULL;
+			}
+			if (m_clients[j].cgi)
+			{
+				delete (m_clients[j].cgi);
+				m_clients[j].cgi = NULL;
+			}
 			m_clients.erase(m_clients.begin() + j);
 			break ;
 		}

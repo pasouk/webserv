@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 13:35:43 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/17 14:07:35 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/20 09:40:37 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 # include <ctime>
 # include <iomanip>
 # include <sstream>
+# include <unistd.h>
 
 std::string currentDateTime();
 void logOutMessage(std::ostringstream&);
