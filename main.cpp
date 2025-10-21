@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/20 13:14:13 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/21 10:12:11 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,7 +104,6 @@ int main(int argc, char *argv[])
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
-		delete (cp);
 		return (1);
 	}
 	//delete (cp);

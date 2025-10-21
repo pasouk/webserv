@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/20 15:13:38 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/21 12:03:37 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,14 +103,14 @@ private:
 	std::vector<server> createServers(const ConfigParser*);
 	void printServer(server&) const;
 	void addClient(size_t);
-	void readQuery(size_t, void (*)(std::string&, ParserHttpRequest&, server&));
+	int readQuery(size_t, void (*)(std::string&, ParserHttpRequest&, server&));
 	void sendQuery(size_t);
 	void stopListening();
 	void destroyClient(size_t);
 	void destroyClientQueries(size_t);
 	void responseHook(std::vector<query>::iterator,  void (*)(std::string&, ParserHttpRequest&, server&));
-	bool tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
-		, void (*)(std::string&, ParserHttpRequest&, server&));
+	int tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
+		, void (*)(std::string&, ParserHttpRequest&, server&), bool&);
 	bool clientNeedsAnswer(size_t) const;
 	bool keepAlive(size_t, double) const;
 	bool getClient(size_t, query&) const;
@@ -120,7 +120,7 @@ private:
 	bool matchServerName(const std::string&, const std::string&) const;
 	void addPipeToPoll(pollfd(&)[2]);
 	void removePipeFromPoll(pollfd(&)[2]);
-	CGI* callCGI(const std::string&);
+	int callCGI(const std::string&, CGI*&);
 	bool isRunnable(const std::string&) const;
 };
 

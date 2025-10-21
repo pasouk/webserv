@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/20 14:53:39 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/21 10:16:46 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,9 +99,8 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     }
     if (m_id_cgi == 0)
     {
-        if (m_webserv != NULL)
-            m_webserv->cleanWebserv();
         cgi(argv, envp);
+        return (1);
     }
     return (0); 
 }
@@ -125,7 +124,6 @@ void CGI::cgi(char* argv[], char* envp[]) const
     };*/
 
     execve(argv[0], argv, envp);
-    _exit(1);
 }
 
 const pollfd* CGI::getPoll() const

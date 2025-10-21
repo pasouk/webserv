@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv3.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/20 14:10:20 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/21 10:53:12 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,18 +28,18 @@ bool Webserv::isRunnable(const std::string& file) const
     return (false);
 }
 
-CGI* Webserv::callCGI(const std::string& file)
+int Webserv::callCGI(const std::string& file, CGI*& cgi)
 {
-    CGI* cgi;
     if (isRunnable(file))
     {
-        cgi = new (std::nothrow)CGI(file, this);
-        if (cgi == NULL)
+        try
         {
-            cleanWebserv();
-            throw std::bad_alloc();
+            cgi = new CGI(file, this);
         }
-        return (cgi);
+        catch(const std::exception& e)
+        {
+ 		    return (1);
+        }
     }
-    return (NULL);
+    return (0);
 }

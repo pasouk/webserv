@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/20 15:37:08 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/21 11:40:51 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,16 +48,16 @@ std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 	return (chunk);
 }
 
-bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
-	, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
+int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
+	, void (*onResponse)(std::string&, ParserHttpRequest&, server&), bool& bDelete)
 {
 	std::map<std::string, std::string> headers;
 	std::stringstream ss;
 	ssize_t i = 0;
 	std::string header;
-	bool bDelete = true;
 	std::pair<char*, ssize_t> chunk;
 
+	bDelete = true;
 	if ((*it).bodySize)
 	{
 		if (i + (*it).bodySize < n)
@@ -65,7 +65,6 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 			chunk = removeChunk(&buffer[i], (*it).bodySize);
 			(*it).bodyChunks.push_back(chunk);
 			i += (*it).bodySize;
-			std::cout << "ZOUOU:" << (*it).bodyChunks.size() << std::endl;
 			responseHook(it, onResponse);
 		}
 		else
@@ -89,11 +88,9 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 			{
 				(*it).httpParser = new (std::nothrow)ParserHttpRequest((*it).httpRequest);
 				if ((*it).httpParser == NULL)
-				{
-					cleanWebserv();
-					throw std::bad_alloc();
-				}
-				(*it).cgi = callCGI((*it).httpParser->getPath());
+					return (1);
+				if (callCGI((*it).httpParser->getPath(), (*it).cgi))
+					return (1);
 				headers = (*it).httpParser->getHeaders();
 				header = headers["Content-Length"];
 				(*it).bodySize = 0;
@@ -133,7 +130,7 @@ bool Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 		}
 		++i;
 	}			
-	return (bDelete);
+	return (0);
 }
 
 void Webserv::destroyClientQueries(size_t i)

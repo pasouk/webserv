@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/20 15:14:10 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/21 11:59:32 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,17 +65,9 @@ Webserv::~Webserv()
 
 void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
-	pollfd fd;
+	static pollfd fd;
 	static rlimit limit;
 	std::ostringstream oss;
-
-
-
-	//CGI tests
-	//static bool bInstance;
-	//CGI* _cgi = NULL;
-
-
 
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
@@ -107,7 +99,11 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 			if (m_isClient[i])
 			{
 				if (m_fds[i].revents & POLLIN)
-					readQuery(i, onResponse);
+					if (readQuery(i, onResponse))
+					{
+						g_listening = false;
+						break ;
+					}
 				if (clientNeedsAnswer(i))
 					m_fds[i].events |= POLLOUT;
 				else
@@ -125,9 +121,6 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
 			}
-
-
-
 			//CGI tests
 			//int status;
 			/*if (!bInstance)
@@ -137,15 +130,9 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				/*const pollfd *fds = _cgi->getPoll();
 				pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 				addPipeToPoll(arr);*/
-			//}    
-
-
-				
+			//}    				
 		}
 	}
-
-
-
 	//CGI test
 	/*const pollfd *fds = _cgi->getPoll();
 	pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
@@ -158,9 +145,6 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		std::cout << "CHILD FINISHED: " << p << std::endl;
 		delete (_cgi);
 	}*/
-
-
-	
 	cleanWebserv();
 	oss << "Stop listening";
 	logOutMessage(oss);
@@ -211,18 +195,19 @@ void Webserv::addClient(size_t i)
 	}
 }
 
-void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
+int Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
 	static char *buffers;
 	static bool bBody;
 	std::ostringstream oss;
-	bool bDelete;
+	bool bDelete, bError;
 	query client;
 	ssize_t n;
 	
 	bDelete = true;
+	bError = false;
 	buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
 	if (buffers == NULL)
 	{
@@ -239,7 +224,7 @@ void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpReq
 		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
 			if (m_fds[i].fd == (*it).fd)
 			{
-				bDelete = tcpStream(buffers, n, it, onResponse);
+				bError = tcpStream(buffers, n, it, onResponse, bDelete);
 				(*it).bodySize ? bBody = true : bBody = false;
 				break;
 			}
@@ -251,6 +236,7 @@ void Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpReq
 	}
 	if (bDelete)
 		delete [](buffers);
+	return (bError);
 }
 
 void Webserv::sendQuery(size_t i)
