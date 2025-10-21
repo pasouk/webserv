@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv3.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/21 10:53:12 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/21 15:44:40 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,12 +34,16 @@ int Webserv::callCGI(const std::string& file, CGI*& cgi)
     {
         try
         {
-            cgi = new CGI(file, this);
+            cgi = new CGI(file);
+            std::cerr << "CGI: " << cgi << std::endl;
         }
         catch(const std::exception& e)
         {
+            std::cerr << "CGI: " << cgi << std::endl;
  		    return (1);
         }
     }
+    else
+        cgi = NULL;
     return (0);
 }

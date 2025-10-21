@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/19 10:28:01 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/21 15:24:10 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,8 @@ class CGI
 {
 public:
     ~CGI();
-    CGI(std::string, std::string, Webserv*);    //interpreter, script
-    CGI(std::string, Webserv*);                 //binary
+    CGI(std::string, std::string);    //interpreter, script
+    CGI(std::string);                 //binary
 
     void writeBody(std::pair<char*, ssize_t>&) const;
     std::string readBody() const;
@@ -53,9 +53,9 @@ private:
     void cgi(char**, char**) const;
     int buildChild(char**, char**, pollfd(&)[2]);
     void initFDS();
+    void closeFDS();
 
 private:
-    Webserv* m_webserv;
     pid_t   m_id_cgi;
     int     m_pipe_in[2];
     int     m_pipe_out[2];

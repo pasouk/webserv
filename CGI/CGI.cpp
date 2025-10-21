@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/21 10:16:46 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/21 16:07:44 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,24 +15,29 @@
 
 CGI::~CGI()
 {
-    close(m_pipe_in[1]);
-    close(m_pipe_out[0]);
+    closeFDS();
 }
 
-CGI::CGI(std::string interpreter, std::string script, Webserv* web) : m_webserv(web)
+CGI::CGI(std::string interpreter, std::string script)
 {
     initFDS();
     const char* argv[3] = {interpreter.data(), script.data(), NULL};
     if (buildChild(const_cast<char**>(argv), NULL, m_poll))
+    {
+        closeFDS();
         throw std::runtime_error(std::strerror(errno));
+    }
 }
 
-CGI::CGI(std::string binary, Webserv* web) : m_webserv(web)
+CGI::CGI(std::string binary)
 {
     initFDS();
     const char* argv[2] = {binary.data(), NULL};
     if (buildChild(const_cast<char**>(argv), NULL, m_poll))
+    {
+        closeFDS();
         throw std::runtime_error(std::strerror(errno));
+    }
 }
 
 void CGI::initFDS()
@@ -43,6 +48,13 @@ void CGI::initFDS()
     m_pipe_out[1] = -1;
 }
 
+void CGI::closeFDS()
+{
+    if (m_pipe_in[1] != -1)
+        close(m_pipe_in[1]);
+    if (m_pipe_out[0] != -1)
+        close(m_pipe_out[0]);  
+}
 
 void CGI::writeBody(std::pair<char*, ssize_t>& chunk) const
 {
