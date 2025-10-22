@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/21 15:38:17 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/22 13:05:15 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,6 @@ void Webserv:: responseHook(std::vector<query>::iterator it
 	m_queries.push_back(*it);
 	if ((*it).cgi)
 	{
-		std::cout << "BYE CGI !\n";
 		delete ((*it).cgi);
 		(*it).cgi = NULL;
 	}
@@ -52,6 +51,7 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 	, void (*onResponse)(std::string&, ParserHttpRequest&, server&), bool& bDelete)
 {
 	std::map<std::string, std::string> headers;
+	std::ostringstream oss;
 	std::stringstream ss;
 	ssize_t i = 0;
 	std::string header;
@@ -90,7 +90,12 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 				if ((*it).httpParser == NULL)
 					return (1);
 				if (callCGI((*it).httpParser->getPath(), (*it).cgi))
+				{
+
+					oss << "CGI can't be build.";
+					logErrMessage(oss);
 					return (1);
+				}
 				headers = (*it).httpParser->getHeaders();
 				header = headers["Content-Length"];
 				(*it).bodySize = 0;
@@ -146,11 +151,11 @@ void Webserv::destroyClientQueries(size_t i)
 				delete (m_queries[j].httpParser);
 				m_queries[j].httpParser = NULL;
 			}
-			if (m_queries[j].cgi)
+			/*if (m_queries[j].cgi)
 			{
 				delete (m_queries[j].cgi);
 				m_queries[j].cgi = NULL;
-			}
+			}*/
 			m_queries.erase(m_queries.begin() + j);
 		}
 	}

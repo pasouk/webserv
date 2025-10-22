@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/21 15:44:40 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/22 13:02:23 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,10 +21,7 @@ bool Webserv::isRunnable(const std::string& file) const
 	if (pos != std::string::npos)
 		ext = file.substr(pos + 1, file.length() - pos);
 	if (ext == "cgi")
-	{
-		std::cout << "HELLO CGI !!\n";
         return (true);
-	}
     return (false);
 }
 
@@ -35,11 +32,9 @@ int Webserv::callCGI(const std::string& file, CGI*& cgi)
         try
         {
             cgi = new CGI(file);
-            std::cerr << "CGI: " << cgi << std::endl;
         }
         catch(const std::exception& e)
         {
-            std::cerr << "CGI: " << cgi << std::endl;
  		    return (1);
         }
     }

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/21 16:07:44 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/22 13:17:59 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,30 +103,31 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     close(m_pipe_in[0]);
     close(m_pipe_out[1]);
     m_id_cgi = fork();
-    if (fork() == -1)
-    {
-        close(m_pipe_in[1]);
-        close(m_pipe_out[0]);
-        return (1);
-    }
     if (m_id_cgi == 0)
     {
         cgi(argv, envp);
         return (1);
     }
+    else if (m_id_cgi == -1)
+    {
+        close(m_pipe_in[1]);
+        close(m_pipe_out[0]);
+        return (1);
+    }
     return (0); 
 }
 
-void CGI::cgi(char* argv[], char* envp[]) const
+void CGI::cgi(char* argv[], char* envp[])
 {
     (void)envp;
     (void)argv;
-    dup2(m_pipe_in[0], STDIN_FILENO);
+    /*dup2(m_pipe_in[0], STDIN_FILENO);
     dup2(m_pipe_out[1], STDOUT_FILENO);
     close(m_pipe_in[0]);
     close(m_pipe_out[1]);
     close(m_pipe_in[1]);
     close(m_pipe_out[0]);
+    initFDS();*/
 
     /*char *envp[] = {
         "REQUEST_METHOD=POST",

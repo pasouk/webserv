@@ -1,0 +1,4 @@
+GET /cgi-bin/formulaire.py?nom=Jean&age=30 HTTP/1.1
+Host: localhost
+User-Agent: netcat-test
+Accept: */*

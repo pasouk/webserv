@@ -1,0 +1,8 @@
+POST /cgi-bin/formulaire.py HTTP/1.1
+Host: localhost
+User-Agent: netcat-test
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 16
+Accept: */*
+
+nom=Alice&age=25

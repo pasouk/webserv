@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/21 15:24:10 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/22 13:18:09 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,15 +42,15 @@ class CGI
 {
 public:
     ~CGI();
-    CGI(std::string, std::string);    //interpreter, script
-    CGI(std::string);                 //binary
+    CGI(std::string, std::string);    //script whithout shebang
+    CGI(std::string);                 //binary/script (with shebang)
 
     void writeBody(std::pair<char*, ssize_t>&) const;
     std::string readBody() const;
     const pollfd* getPoll() const;
 
 private:
-    void cgi(char**, char**) const;
+    void cgi(char**, char**);
     int buildChild(char**, char**, pollfd(&)[2]);
     void initFDS();
     void closeFDS();
