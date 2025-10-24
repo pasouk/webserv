@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/22 13:05:15 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/24 14:33:58 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,11 @@ void Webserv:: responseHook(std::vector<query>::iterator it
 	m_queries.push_back(*it);
 	if ((*it).cgi)
 	{
+		//int status;
+		std::cerr << (*it).cgi->readBody() << std::endl;
+		/*pid_t p = waitpid(-1, &status, 0);//WNOHANG);
+		while (p > 0)
+			std::cout << "CHILD FINISHED: " << p << std::endl;*/
 		delete ((*it).cgi);
 		(*it).cgi = NULL;
 	}
@@ -89,9 +94,8 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 				(*it).httpParser = new (std::nothrow)ParserHttpRequest((*it).httpRequest);
 				if ((*it).httpParser == NULL)
 					return (1);
-				if (callCGI((*it).httpParser->getPath(), (*it).cgi))
+				if (callCGI((*it).httpParser, (*it).cgi))
 				{
-
 					oss << "CGI can't be build.";
 					logErrMessage(oss);
 					return (1);

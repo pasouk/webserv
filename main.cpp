@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/21 10:12:11 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/24 13:49:09 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,6 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 	std::string path;
 	std::string root;
 	size_t pos;
-
 
 	//alias/root location -> update path.
 	root = s.root;

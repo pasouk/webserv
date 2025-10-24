@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/22 13:17:59 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/24 15:08:34 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,28 +16,77 @@
 CGI::~CGI()
 {
     closeFDS();
+    deleteEnvp();
 }
 
-CGI::CGI(std::string interpreter, std::string script)
-{
-    initFDS();
+CGI::CGI(std::string interpreter, std::string script, std::map<std::string, std::string>& env)
+    : m_envp(NULL), m_id_cgi(-1)
+{    
     const char* argv[3] = {interpreter.data(), script.data(), NULL};
-    if (buildChild(const_cast<char**>(argv), NULL, m_poll))
+    initFDS();
+    setEnvp(env);
+    if (buildChild(const_cast<char**>(argv), m_envp, m_poll))
     {
         closeFDS();
+        deleteEnvp();
         throw std::runtime_error(std::strerror(errno));
     }
 }
 
-CGI::CGI(std::string binary)
+CGI::CGI(std::string binary, std::map<std::string, std::string>& env) : m_envp(NULL), m_id_cgi(-1)
 {
-    initFDS();
     const char* argv[2] = {binary.data(), NULL};
-    if (buildChild(const_cast<char**>(argv), NULL, m_poll))
+    initFDS();
+    setEnvp(env);
+    if (buildChild(const_cast<char**>(argv), m_envp, m_poll))
     {
         closeFDS();
+        deleteEnvp();
         throw std::runtime_error(std::strerror(errno));
     }
+}
+
+void CGI::setEnvp(std::map<std::string, std::string> env)
+{
+    std::map<std::string, std::string>::const_iterator it;
+    std::string var;
+    int i;
+
+    m_envp = new (std::nothrow)char*[env.size() + 1];
+    if (m_envp == NULL)
+    {
+        closeFDS();
+        throw std::bad_alloc();
+    }
+    i = -1;
+    for (it = env.begin(); it != env.end(); ++it)
+    {
+        var = (*it).first + "=" + (*it).second;
+        m_envp[++i] = new (std::nothrow)char[var.length() + 1];
+        if (m_envp[i] == NULL)
+        {
+            while (--i >= 0)
+                delete [](m_envp[i]);
+            delete [](m_envp);
+            throw std::bad_alloc();
+        }
+        var.copy(m_envp[i], var.length());
+        m_envp[i][var.length()] = '\0';
+        //std::cout << "++++++++++" << m_envp[i] << "********\n";
+    }
+    m_envp[++i] = NULL;
+}
+
+void CGI::deleteEnvp()
+{
+    int i;
+
+    if (m_envp == NULL)
+        return ;
+    i = -1;
+    while (m_envp[++i] != NULL)
+        delete [](m_envp[i]);
+    delete [](m_envp);
 }
 
 void CGI::initFDS()
@@ -78,8 +127,18 @@ void CGI::writeBody(std::pair<char*, ssize_t>& chunk) const
 
 std::string CGI::readBody() const
 {
+    std::ostringstream oss;
     std::string response;
+    char buff[500];
+    ssize_t n;
     
+    n = read(m_pipe_out[0], buff, 500);
+    if (n == - 1)
+    {
+        oss << std::strerror(errno);
+        logErrMessage(oss);
+    }
+    response = buff;
     return (response);
 }
 
@@ -119,24 +178,18 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
 
 void CGI::cgi(char* argv[], char* envp[])
 {
-    (void)envp;
-    (void)argv;
-    /*dup2(m_pipe_in[0], STDIN_FILENO);
+    std::ostringstream oss;
+
+    dup2(m_pipe_in[0], STDIN_FILENO);
     dup2(m_pipe_out[1], STDOUT_FILENO);
     close(m_pipe_in[0]);
     close(m_pipe_out[1]);
     close(m_pipe_in[1]);
     close(m_pipe_out[0]);
-    initFDS();*/
-
-    /*char *envp[] = {
-        "REQUEST_METHOD=POST",
-        "CONTENT_LENGTH=13",
-        "QUERY_STRING=",
-        NULL
-    };*/
-
+    initFDS();
     execve(argv[0], argv, envp);
+    oss << argv[0] << ": " << std::strerror(errno) << std::endl;
+    logErrMessage(oss);
 }
 
 const pollfd* CGI::getPoll() const
