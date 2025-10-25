@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/24 10:17:11 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/25 14:34:23 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,7 +108,7 @@ private:
 	void stopListening();
 	void destroyClient(size_t);
 	void destroyClientQueries(size_t);
-	void responseHook(std::vector<query>::iterator,  void (*)(std::string&, ParserHttpRequest&, server&));
+	int responseHook(std::vector<query>::iterator,  void (*)(std::string&, ParserHttpRequest&, server&));
 	int tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
 		, void (*)(std::string&, ParserHttpRequest&, server&), bool&);
 	bool clientNeedsAnswer(size_t) const;
@@ -120,7 +120,7 @@ private:
 	bool matchServerName(const std::string&, const std::string&) const;
 	void addPipeToPoll(pollfd(&)[2]);
 	void removePipeFromPoll(pollfd(&)[2]);
-	int callCGI(const ParserHttpRequest*, CGI*&);
+	int callCGI(const std::string&, std::map<std::string, std::string>&, CGI*&) const;
 	bool isRunnable(const std::string&) const;
 };
 

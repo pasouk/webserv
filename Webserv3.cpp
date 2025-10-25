@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/24 15:01:42 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/25 14:10:49 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,25 +25,19 @@ bool Webserv::isRunnable(const std::string& file) const
     return (false);
 }
 
-int Webserv::callCGI(const ParserHttpRequest* http, CGI*& cgi)
+int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, CGI*& cgi) const
 {
-    std::string file = http->getPath();
-    file = "." + file;
-    if (isRunnable(file))
+    std::string addDot;
+    addDot = "." + file;
+    cgi = NULL;
+
+    try
     {
-        try
-        {
-            std::map<std::string, std::string> env;
-            env["QUERY_STRING"] = "test";
-            env["PATH_INFO"] = "test2";
-            cgi = new CGI(file, env);
-        }
-        catch(const std::exception& e)
-        {
- 		    return (1);
-        }
+        cgi = new CGI(addDot, env);
     }
-    else
-        cgi = NULL;
+    catch(const std::exception& e)
+    {
+        return (1);
+    }
     return (0);
 }

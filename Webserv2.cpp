@@ -6,25 +6,45 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/24 14:33:58 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/25 15:05:35 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-void Webserv:: responseHook(std::vector<query>::iterator it
+int Webserv::responseHook(std::vector<query>::iterator it
 	, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
+	std::map<std::string, std::string> env;
+	std::stringstream ss;
+	std::ostringstream oss;
+
 	(*it).httpParser->setBodyLine((*it).bodyChunks);
+	if ((*it).cgi == NULL && isRunnable((*it).httpParser->getPath()))
+	{
+		ss << (*it).port;
+        env["QUERY_STRING"] = "not implemented";
+        env["PATH_INFO"] = "not implemented";
+		env["SCRIPT_NAME"] = (*it).httpParser->getPath();
+        env["REQUEST_METHOD"] = methods_map[(*it).httpParser->getMethod()].name;
+		env["SERVER_PORT"] = ss.str();
+		env["SERVER_NAME"] = (*it).hostName;
+		env["SERVER_SOFTWARE"] = "webserv/1.0";
+		env["SERVER_PROTOCOL"] = (*it).httpParser->getVersion();
+		if (callCGI((*it).httpParser->getPath(), env, (*it).cgi))
+		{
+			oss << "CGI can't be build.";
+			logErrMessage(oss);
+			return (1);
+		}
+	}
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);
 	if ((*it).cgi)
 	{
-		//int status;
-		std::cerr << (*it).cgi->readBody() << std::endl;
-		/*pid_t p = waitpid(-1, &status, 0);//WNOHANG);
-		while (p > 0)
-			std::cout << "CHILD FINISHED: " << p << std::endl;*/
+		int status;
+		std::cerr << (*it).cgi->readBody();
+		waitpid(-1, &status, 0);
 		delete ((*it).cgi);
 		(*it).cgi = NULL;
 	}
@@ -34,6 +54,7 @@ void Webserv:: responseHook(std::vector<query>::iterator it
 	(*it).byteSent = 0;
 	(*it).httpParser = NULL;
 	(*it).bodyChunks.clear();
+	return (0);
 }
 
 std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
@@ -56,7 +77,6 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 	, void (*onResponse)(std::string&, ParserHttpRequest&, server&), bool& bDelete)
 {
 	std::map<std::string, std::string> headers;
-	std::ostringstream oss;
 	std::stringstream ss;
 	ssize_t i = 0;
 	std::string header;
@@ -70,7 +90,8 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 			chunk = removeChunk(&buffer[i], (*it).bodySize);
 			(*it).bodyChunks.push_back(chunk);
 			i += (*it).bodySize;
-			responseHook(it, onResponse);
+			if (responseHook(it, onResponse))
+				return (1);
 		}
 		else
 		{
@@ -80,7 +101,8 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 			bDelete = false;
 			(*it).bodySize -= n;
 			if ((*it).bodySize == 0)
-				responseHook(it, onResponse);
+				if(responseHook(it, onResponse))
+					return (1);
 			i += n;
 		}
 	}
@@ -94,12 +116,6 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 				(*it).httpParser = new (std::nothrow)ParserHttpRequest((*it).httpRequest);
 				if ((*it).httpParser == NULL)
 					return (1);
-				if (callCGI((*it).httpParser, (*it).cgi))
-				{
-					oss << "CGI can't be build.";
-					logErrMessage(oss);
-					return (1);
-				}
 				headers = (*it).httpParser->getHeaders();
 				header = headers["Content-Length"];
 				(*it).bodySize = 0;
@@ -118,7 +134,8 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 							chunk = removeChunk(&buffer[i], (*it).bodySize);
 							(*it).bodyChunks.push_back(chunk);
 							i += (*it).bodySize - 1;
-							responseHook(it, onResponse);
+							if (responseHook(it, onResponse))
+								return (1);
 						}
 						else
 						{
@@ -126,16 +143,19 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 							(*it).bodyChunks.push_back(chunk);
 							(*it).bodySize -= n - i;
 							if ((*it).bodySize == 0)
-								responseHook(it, onResponse);
+								if (responseHook(it, onResponse))
+									return (1);
 							i = n;
 						}
 					}
 				}
 				else
-					responseHook(it, onResponse);
+					if (responseHook(it, onResponse))
+						return (1);
 			}
 			else
-				responseHook(it, onResponse);
+				if (responseHook(it, onResponse))
+					return (1);
 		}
 		++i;
 	}			
@@ -239,6 +259,7 @@ server& Webserv::getRightServer(query& q)
 					headers = q.httpParser->getHeaders();
 					if (matchServerName(headers["Host"], *ser_name))
 					{
+						q.hostName = *ser_name;
 						if (bFind)
 						{
 							oss << "conflicting server name \"" << *ser_name << "\", first server will be ignored";

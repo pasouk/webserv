@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/24 15:08:34 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/25 14:13:37 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,10 +99,14 @@ void CGI::initFDS()
 
 void CGI::closeFDS()
 {
+    if (m_pipe_in[0] != -1)
+        close(m_pipe_in[0]);
+    if (m_pipe_out[1] != -1)
+        close(m_pipe_out[1]); 
     if (m_pipe_in[1] != -1)
         close(m_pipe_in[1]);
     if (m_pipe_out[0] != -1)
-        close(m_pipe_out[0]);  
+        close(m_pipe_out[0]);        
 }
 
 void CGI::writeBody(std::pair<char*, ssize_t>& chunk) const
@@ -114,7 +118,7 @@ void CGI::writeBody(std::pair<char*, ssize_t>& chunk) const
     total = chunk.second;
     while (written < total)
     {
-        n = write(m_pipe_in[1], chunk.first + written, total - written);
+        n = write(m_pipe_out[1], chunk.first + written, total - written);
         if (n == -1)
         {
             oss << std::strerror(errno);
@@ -129,10 +133,10 @@ std::string CGI::readBody() const
 {
     std::ostringstream oss;
     std::string response;
-    char buff[500];
+    static char buff[500];
     ssize_t n;
     
-    n = read(m_pipe_out[0], buff, 500);
+    n = read(m_pipe_in[0], buff, 500);
     if (n == - 1)
     {
         oss << std::strerror(errno);
@@ -144,11 +148,12 @@ std::string CGI::readBody() const
 
 int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
 {
+    (void)poll;
     std::ostringstream oss;
     
     if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
-    if (fcntl(m_pipe_in[1], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[0], F_SETFL, O_NONBLOCK == -1))
+    /*if (fcntl(m_pipe_in[1], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[0], F_SETFL, O_NONBLOCK == -1))
     {
         oss << std::strerror(errno);
 	    logErrMessage(oss);
@@ -158,9 +163,7 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     poll[0].revents = 0;
     poll[1].fd = m_pipe_in[1];
     poll[1].events = POLLOUT;
-    poll[1].revents = 0;
-    close(m_pipe_in[0]);
-    close(m_pipe_out[1]);
+    poll[1].revents = 0;*/
     m_id_cgi = fork();
     if (m_id_cgi == 0)
     {
@@ -169,8 +172,7 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     }
     else if (m_id_cgi == -1)
     {
-        close(m_pipe_in[1]);
-        close(m_pipe_out[0]);
+        closeFDS();
         return (1);
     }
     return (0); 
@@ -180,12 +182,9 @@ void CGI::cgi(char* argv[], char* envp[])
 {
     std::ostringstream oss;
 
-    dup2(m_pipe_in[0], STDIN_FILENO);
-    dup2(m_pipe_out[1], STDOUT_FILENO);
-    close(m_pipe_in[0]);
-    close(m_pipe_out[1]);
-    close(m_pipe_in[1]);
-    close(m_pipe_out[0]);
+    dup2(m_pipe_in[1], STDOUT_FILENO);
+    dup2(m_pipe_out[0], STDIN_FILENO);
+    closeFDS();
     initFDS();
     execve(argv[0], argv, envp);
     oss << argv[0] << ": " << std::strerror(errno) << std::endl;
