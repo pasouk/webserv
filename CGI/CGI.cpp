@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/25 14:13:37 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/26 16:19:14 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,34 +136,39 @@ std::string CGI::readBody() const
     static char buff[500];
     ssize_t n;
     
-    n = read(m_pipe_in[0], buff, 500);
-    if (n == - 1)
+    do
     {
-        oss << std::strerror(errno);
-        logErrMessage(oss);
-    }
-    response = buff;
+        n = read(m_pipe_in[0], buff, 500);
+        buff[n] = '\0';
+        if (n == - 1)
+        {
+            oss << std::strerror(errno);
+            logErrMessage(oss);
+        }
+        response += buff;
+    } while (n > 0);
+    std::cout << "OUT OF THE LOOP: " << response << std::endl;
     return (response);
 }
 
 int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
 {
-    (void)poll;
     std::ostringstream oss;
     
     if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
-    /*if (fcntl(m_pipe_in[1], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[0], F_SETFL, O_NONBLOCK == -1))
+    if (fcntl(m_pipe_in[0], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[1], F_SETFL, O_NONBLOCK) == -1)
     {
         oss << std::strerror(errno);
 	    logErrMessage(oss);
     }
-    poll[0].fd = m_pipe_out[0];
-    poll[0].events = POLLIN;
+    poll[0].fd = m_pipe_out[1];
+    poll[0].events = POLLOUT;
     poll[0].revents = 0;
-    poll[1].fd = m_pipe_in[1];
-    poll[1].events = POLLOUT;
-    poll[1].revents = 0;*/
+    poll[1].fd = m_pipe_in[0];
+    std::cout << m_pipe_in[0] << std::endl;
+    poll[1].events = POLLIN;
+    poll[1].revents = 0;
     m_id_cgi = fork();
     if (m_id_cgi == 0)
     {

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/25 15:05:35 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/26 16:06:59 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ int Webserv::responseHook(std::vector<query>::iterator it
 	std::map<std::string, std::string> env;
 	std::stringstream ss;
 	std::ostringstream oss;
+	const pollfd *fds;
 
 	(*it).httpParser->setBodyLine((*it).bodyChunks);
 	if ((*it).cgi == NULL && isRunnable((*it).httpParser->getPath()))
@@ -37,6 +38,9 @@ int Webserv::responseHook(std::vector<query>::iterator it
 			logErrMessage(oss);
 			return (1);
 		}
+		fds = (*it).cgi->getPoll();
+		pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+		addPipeToPoll(arr);
 	}
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);
@@ -45,6 +49,9 @@ int Webserv::responseHook(std::vector<query>::iterator it
 		int status;
 		std::cerr << (*it).cgi->readBody();
 		waitpid(-1, &status, 0);
+		fds = (*it).cgi->getPoll();
+		pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+		removePipeFromPoll(arr);
 		delete ((*it).cgi);
 		(*it).cgi = NULL;
 	}
@@ -307,13 +314,11 @@ void Webserv::addPipeToPoll(pollfd(&poll)[2])
 void Webserv::removePipeFromPoll(pollfd(&poll)[2])
 {
 	for (size_t i = 0; i < m_fds.size(); ++i)
-		if (m_fds[i].fd == poll[0].fd && i < m_fds.size())
+		if (m_fds[i].fd == poll[1].fd || m_fds[i].fd == poll[0].fd)
 		{
+			std::cout << "FIND IT AND REMOVE\n";
 			m_fds.erase(m_fds.begin() + i);
 			m_isClient.erase(m_isClient.begin() + i);
-			m_fds.erase(m_fds.begin() + i);
-			m_isClient.erase(m_isClient.begin() + i);	
-			break ;
 		}
 }
 

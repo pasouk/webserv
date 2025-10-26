@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/21 11:59:32 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/10/26 16:17:19 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,6 +67,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 {
 	static pollfd fd;
 	static rlimit limit;
+	static query q;
 	std::ostringstream oss;
 
 	//check system queue size
@@ -96,6 +97,16 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		{
 			if (!m_isClient[i] && (m_fds[i].revents & POLLIN))
 				addClient(i);
+			if (!m_isClient[i] && (m_fds[i].revents & POLLIN))
+			{
+				std::cout << m_fds[i].fd << std::endl; 
+				getClient(i, q);
+				if (q.cgi)
+				{
+					q.cgi->readBody();
+					std::cout << "IT'S A CGI\n";
+				}
+			}
 			if (m_isClient[i])
 			{
 				if (m_fds[i].revents & POLLIN)
@@ -121,30 +132,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				if (m_fds[i].revents & POLLOUT)
 					sendQuery(i);
 			}
-			//CGI tests
-			//int status;
-			/*if (!bInstance)
-			{
-				bInstance = true;
-				_cgi = new (std::nothrow)CGI("fff", this);*/
-				/*const pollfd *fds = _cgi->getPoll();
-				pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-				addPipeToPoll(arr);*/
-			//}    				
 		}
 	}
-	//CGI test
-	/*const pollfd *fds = _cgi->getPoll();
-	pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-	removePipeFromPoll(arr);*/
-	//delete (_cgi);
-	/*int status;
-	pid_t p = waitpid(-1, &status, 0);//WNOHANG);
-	//while (p > 0)
-	{
-		std::cout << "CHILD FINISHED: " << p << std::endl;
-		delete (_cgi);
-	}*/
 	cleanWebserv();
 	oss << "Stop listening";
 	logOutMessage(oss);
