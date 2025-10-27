@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/26 16:17:19 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/27 15:16:17 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 {
 	static pollfd fd;
 	static rlimit limit;
-	static query q;
+	CGI* cgi;
 	std::ostringstream oss;
 
 	//check system queue size
@@ -88,6 +88,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 	logOutMessage(oss);
 	while (g_listening)
 	{
+		int status;
+    	while (waitpid(-1, &status, WNOHANG) > 0) {};
 		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
 		{
 			g_listening = false;
@@ -99,12 +101,19 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				addClient(i);
 			if (!m_isClient[i] && (m_fds[i].revents & POLLIN))
 			{
-				std::cout << m_fds[i].fd << std::endl; 
-				getClient(i, q);
-				if (q.cgi)
+				std::string response;
+				getCGI(m_fds[i].fd, cgi);
+				if (cgi)
 				{
-					q.cgi->readBody();
-					std::cout << "IT'S A CGI\n";
+					int n = cgi->readCGI(response);
+					std::cout << "n: " << n << std::endl;
+					std::cout << response << std::endl;
+					if (n == 0)
+					{
+						const pollfd *fds = cgi->getPoll();
+						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+						removePipeFromPoll(arr);
+					}
 				}
 			}
 			if (m_isClient[i])
@@ -126,7 +135,6 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				{
 					oss << "Deconnected client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
-					destroyClientQueries(i);
 					destroyClient(i);
 				}
 				if (m_fds[i].revents & POLLOUT)

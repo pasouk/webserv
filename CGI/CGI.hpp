@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/25 14:11:08 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/27 12:51:33 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,8 +47,8 @@ public:
     CGI(std::string, std::string, std::map<std::string, std::string>&);    //script whithout shebang
     CGI(std::string, std::map<std::string, std::string>&);                 //binary/script (with shebang)
 
-    void writeBody(std::pair<char*, ssize_t>&) const;
-    std::string readBody() const;
+    void writeCGI(std::pair<char*, ssize_t>&) const;
+    int readCGI(std::string&) const;
     const pollfd* getPoll() const;
 
 private:

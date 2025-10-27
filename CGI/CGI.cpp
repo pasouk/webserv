@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/26 16:19:14 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/27 13:13:04 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,7 +109,7 @@ void CGI::closeFDS()
         close(m_pipe_out[0]);        
 }
 
-void CGI::writeBody(std::pair<char*, ssize_t>& chunk) const
+void CGI::writeCGI(std::pair<char*, ssize_t>& chunk) const
 {
     std::ostringstream oss;
     ssize_t written, total, n;
@@ -129,26 +129,23 @@ void CGI::writeBody(std::pair<char*, ssize_t>& chunk) const
     }
 }
 
-std::string CGI::readBody() const
+int CGI::readCGI(std::string& response) const
 {
     std::ostringstream oss;
-    std::string response;
-    static char buff[500];
-    ssize_t n;
+    static char buff[2];
+    int n;
     
-    do
+    while ((n = read(m_pipe_in[0], buff, 2)) > 0)
     {
-        n = read(m_pipe_in[0], buff, 500);
         buff[n] = '\0';
-        if (n == - 1)
-        {
-            oss << std::strerror(errno);
-            logErrMessage(oss);
-        }
         response += buff;
-    } while (n > 0);
-    std::cout << "OUT OF THE LOOP: " << response << std::endl;
-    return (response);
+    }
+    if (n == - 1)
+    {
+        oss << std::strerror(errno);
+        logErrMessage(oss);
+    }
+    return (n);
 }
 
 int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
@@ -166,7 +163,6 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     poll[0].events = POLLOUT;
     poll[0].revents = 0;
     poll[1].fd = m_pipe_in[0];
-    std::cout << m_pipe_in[0] << std::endl;
     poll[1].events = POLLIN;
     poll[1].revents = 0;
     m_id_cgi = fork();
@@ -180,6 +176,8 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
         closeFDS();
         return (1);
     }
+    close(m_pipe_in[1]);
+    close(m_pipe_out[0]);
     return (0); 
 }
 

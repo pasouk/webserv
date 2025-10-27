@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/26 16:06:59 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/10/27 15:27:49 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,17 +44,6 @@ int Webserv::responseHook(std::vector<query>::iterator it
 	}
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);
-	if ((*it).cgi)
-	{
-		int status;
-		std::cerr << (*it).cgi->readBody();
-		waitpid(-1, &status, 0);
-		fds = (*it).cgi->getPoll();
-		pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-		removePipeFromPoll(arr);
-		delete ((*it).cgi);
-		(*it).cgi = NULL;
-	}
 	//printQuery(*it);
 	(*it).httpRequest.clear();
 	(*it).bodySize = 0;
@@ -173,7 +162,7 @@ void Webserv::destroyClientQueries(size_t i)
 {
 	for (size_t j = 0; j < m_queries.size(); ++j)
 	{
-		if (m_queries[j].fd == m_fds[i].fd)
+		if (m_queries[j].fd == m_fds[i].fd)// && m_queries[j].cgi == NULL)
 		{
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
 				delete [](m_queries[j].bodyChunks[k].first);
@@ -314,12 +303,22 @@ void Webserv::addPipeToPoll(pollfd(&poll)[2])
 void Webserv::removePipeFromPoll(pollfd(&poll)[2])
 {
 	for (size_t i = 0; i < m_fds.size(); ++i)
-		if (m_fds[i].fd == poll[1].fd || m_fds[i].fd == poll[0].fd)
+		if (m_fds[i].fd == poll[1].fd)
 		{
 			std::cout << "FIND IT AND REMOVE\n";
 			m_fds.erase(m_fds.begin() + i);
 			m_isClient.erase(m_isClient.begin() + i);
+			break ;
 		}
+	for (size_t i = 0; i < m_fds.size(); ++i)
+		if (m_fds[i].fd == poll[0].fd)
+		{
+			std::cout << "FIND IT AND REMOVE\n";
+			m_fds.erase(m_fds.begin() + i);
+			m_isClient.erase(m_isClient.begin() + i);
+			break ;
+		}
+
 }
 
 void Webserv::printQuery(query& query) const
