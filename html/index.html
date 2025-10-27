@@ -65,7 +65,28 @@
       </button>
       <p id="deleteResult" class="text-sm text-gray-400"></p>
     </div>
+    <!-- CGI -->
+    <div class="space-y-3 pt-4 border-t border-gray-700">
+      <h2 class="text-lg font-semibold text-indigo-400">Test CGI Script ⚙️</h2>
+      
+      <input type="text"
+             id="cgiTarget"
+             placeholder="/cgi-bin/hello.py?name=John"
+             class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      
+      <div class="flex gap-2">
+        <button onclick="sendCgiGet()" 
+                class="flex-1 py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition">
+          Send CGI (GET)
+        </button>
+        <button onclick="sendCgiPost()" 
+                class="flex-1 py-2 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 transition">
+          Send CGI (POST)
+        </button>
+      </div>
 
+      <div id="cgiResult" class="text-sm text-gray-300 text-left bg-gray-900/50 rounded-xl p-3 overflow-auto max-h-64"></div>
+    </div>
   </div>
 
   <h3 class="absolute bottom-4 w-full text-center text-sm text-gray-400">
@@ -127,6 +148,51 @@
           result.textContent = "✅ " + text;
         else
           result.textContent = `❌ Erreur ${response.status}: ${text}`;
+      } catch (err) {
+        result.textContent = "⚠️ Erreur réseau: " + err.message;
+      }
+    }
+
+     async function sendCgiGet() {
+      const target = document.getElementById("cgiTarget").value.trim();
+      const result = document.getElementById("cgiResult");
+      result.textContent = "";
+
+      if (!target) {
+        result.textContent = "⚠️ Entrez le chemin du script CGI (ex: /cgi-bin/hello.py)";
+        result.classList.add("text-yellow-400");
+        return;
+      }
+
+      try {
+        const response = await fetch(target, { method: "GET" });
+        const text = await response.text();
+        result.innerHTML = `<pre>${text}</pre>`;
+      } catch (err) {
+        result.textContent = "⚠️ Erreur réseau: " + err.message;
+      }
+    }
+
+    async function sendCgiPost() {
+      const target = document.getElementById("cgiTarget").value.trim();
+      const result = document.getElementById("cgiResult");
+      result.textContent = "";
+
+      if (!target) {
+        result.textContent = "⚠️ Entrez le chemin du script CGI (ex: /cgi-bin/echo.py)";
+        result.classList.add("text-yellow-400");
+        return;
+      }
+
+      try {
+        const body = "message=HelloFromPOST";
+        const response = await fetch(target, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body
+        });
+        const text = await response.text();
+        result.innerHTML = `<pre>${text}</pre>`;
       } catch (err) {
         result.textContent = "⚠️ Erreur réseau: " + err.message;
       }

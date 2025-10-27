@@ -78,6 +78,23 @@ void ParserHttpRequest::devideRequest()
         _headerLine = "";
 }
 
+bool ParserHttpRequest::isCgiRequest(const std::string &path)
+{
+    const std::string arr[] = {".py", ".php", ".pl", ".cgi"};
+    const std::vector<std::string> cgiExt(arr, arr + sizeof(arr) / sizeof(arr[0]));
+    const std::string cgiDir = "/cgi-bin/";
+
+    if (path.find(cgiDir) == 0)
+        return true;
+
+    for (size_t i = 0; i < cgiExt.size(); ++i)
+    {
+        if (path.find(cgiExt[i]) != std::string::npos)
+            return true;
+    }
+    return false;
+}   
+
 int    ParserHttpRequest::parseMethodLine()
 {
     if (ft_countwords(_methodLine) !=3)
@@ -88,7 +105,55 @@ int    ParserHttpRequest::parseMethodLine()
     findMethod();
     findPath();
     _version = getMethodLine();
+    _isCgi = isCgiRequest(_path);
+    if (_isCgi)
+        splitCgiPath(_path);
     return checkVersionAndMethod();
+}
+
+void ParserHttpRequest::splitCgiPath(const std::string &rawPath)
+{
+    std::string path = rawPath;
+
+    size_t qpos = path.find('?');
+    if (qpos != std::string::npos)
+    {
+        _queryString = path.substr(qpos + 1);
+        path = path.substr(0, qpos);
+    }
+    else
+        _queryString.clear();
+
+const std::string arr[] = {".py", ".php", ".pl", ".cgi"};
+const std::vector<std::string> cgiExt(arr, arr + sizeof(arr) / sizeof(arr[0]));    size_t extPos = std::string::npos;
+    std::string foundExt;
+
+    for (size_t i = 0; i < cgiExt.size(); ++i)
+    {
+        size_t pos = path.find(cgiExt[i]);
+        if (pos != std::string::npos)
+        {
+            extPos = pos;
+            foundExt = cgiExt[i];
+            break;
+        }
+    }
+
+    if (extPos != std::string::npos)
+    {
+        extPos += foundExt.length(); 
+        _scriptName = path.substr(0, extPos);
+        _pathInfo = path.substr(extPos);
+    }
+    else
+    {
+        _scriptName = path;
+        _pathInfo.clear();
+    }
+
+    std::cout << "[CGI DETECTED] script=" << _scriptName
+              << " pathInfo=" << _pathInfo
+              << " query=" << _queryString << std::endl;
 }
 
 int ParserHttpRequest::parseHeaderLine()
