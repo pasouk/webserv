@@ -34,11 +34,7 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 	// - si pas vide, si la methode demandée par le client n'est pas dans la liste -> 405 error
 	 
 	//aurorisd http methods
-<<<<<<< HEAD
-/*	if (s.httpMethodsAllowed.size() == 0)
-=======
 	/*if (s.httpMethodsAllowed.size() == 0)
->>>>>>> refs/remotes/origin/main
 		std::cout << "ALL HTTP METHODS ARE ALLOWED.\n";
 	else
 	{

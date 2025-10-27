@@ -25,11 +25,18 @@ SOURCES = QueryListener.cpp \
 	Webserv2.cpp \
 	main.cpp \
 	HTTP_parser/ParserHttpRequest.cpp\
-	HTTP_parser/ParserHttpUtils.cpp \
+	HTTP_parser/ParsingUtils.cpp \
+	HTTP_parser/ParsingChecks.cpp \
+	HTTP_parser/Utils.cpp \
 	HTTP_response/HttpResponseUtils.cpp \
-	HTTP_response/HttpResponse.cpp \
-	logtime.cpp \
-	HTTP_response/HttpMultipartRequest.cpp
+	HTTP_response/HttpResponseMain.cpp \
+	HTTP_response/HttpMultipartRequest.cpp \
+	HTTP_response/HttpResponseDelete.cpp \
+	HTTP_response/HttpResponseGet.cpp \
+	HTTP_response/HttpResponsePost.cpp \
+	HTTP_response/Utils.cpp \
+	logtime.cpp 
+	
 
 	
 OBJECTS = $(SOURCES:.cpp=.o)
