@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/27 15:16:17 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/02 13:48:51 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,8 +67,9 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 {
 	static pollfd fd;
 	static rlimit limit;
-	CGI* cgi;
+	query* q;
 	std::ostringstream oss;
+	std::string cgiResponse;
 
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
@@ -82,7 +83,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		fd.events = POLLIN;
 		fd.revents = 0;
 		m_fds.push_back(fd);
-		m_isClient.push_back(false);
+		m_fdTYpe.push_back(SOCKET);
 	}
 	oss << "Listening...";
 	logOutMessage(oss);
@@ -97,39 +98,40 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		}
 		for (size_t i = 0; i < m_fds.size(); ++i)
 		{
-			if (!m_isClient[i] && (m_fds[i].revents & POLLIN))
+			if (m_fdTYpe[i] == SOCKET && (m_fds[i].revents & POLLIN))
 				addClient(i);
-			if (!m_isClient[i] && (m_fds[i].revents & POLLIN))
-			{
-				std::string response;
-				getCGI(m_fds[i].fd, cgi);
-				if (cgi)
-				{
-					int n = cgi->readCGI(response);
-					std::cout << "n: " << n << std::endl;
-					std::cout << response << std::endl;
-					if (n == 0)
-					{
-						const pollfd *fds = cgi->getPoll();
-						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-						removePipeFromPoll(arr);
-					}
-				}
-			}
-			if (m_isClient[i])
+			else if (m_fdTYpe[i] == PIPE && getCgiQuery(m_fds[i].fd, q))
 			{
 				if (m_fds[i].revents & POLLIN)
-					if (readQuery(i, onResponse))
+				{
+					if ((q->cgi->readCGI(cgiResponse)) <= 0)
 					{
-						g_listening = false;
-						break ;
+						const pollfd *fds = q->cgi->getPollfd();
+						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+						removePipeFromPoll(arr);
+						releaseQuery(q);
+					}
+					std::cout << cgiResponse << std::endl;
+				}
+				else if (m_fds[i].revents & POLLOUT)
+				{				
+				}
+			}
+			else if (m_fdTYpe[i] == ACCEPT)
+			{
+				if (m_fds[i].revents & POLLIN)
+					if (readQuery(i, onResponse) == 0)
+					{
+						oss << "Deconnected client fd:" << m_fds[i].fd;
+						logOutMessage(oss);
+						destroyClient(i);
 					}
 				if (clientNeedsAnswer(i))
 					m_fds[i].events |= POLLOUT;
 				else
-				{
+				{				
 					m_fds[i].events &= ~POLLOUT;
-					destroyClientQueries(i);
+					releaseQueries(i);
 				}
 				if (!keepAlive(i, m_keepalive_timeout))
 				{
@@ -177,7 +179,7 @@ void Webserv::addClient(size_t i)
 		if (j == m_fds.size())
 		{
 			m_fds.push_back(fd);
-			m_isClient.push_back(true);
+			m_fdTYpe.push_back(ACCEPT);
 			getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 			query.fd = fd.fd;
 			query.lifeTime = std::time(NULL);
@@ -194,46 +196,44 @@ void Webserv::addClient(size_t i)
 
 int Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
-	static sockaddr_in serverAddress;
-	static socklen_t serverlen;
 	static char *buffers;
 	static bool bBody;
 	std::ostringstream oss;
-	bool bDelete, bError;
-	query client;
+	bool bDelete;
 	ssize_t n;
 	
+	n = 0;
 	bDelete = true;
-	bError = false;
-	buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
-	if (buffers == NULL)
-	{
-		cleanWebserv();
-		throw std::bad_alloc();
-	}
-	getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
-	if(getClient(i, client))
-		client.lifeTime = std::time(NULL);
-	n = read(m_fds[i].fd, buffers, m_client_buffers_size[bBody] - 1);
-	if (n > 0)
-	{
-		buffers[n] = '\0';
-		for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
-			if (m_fds[i].fd == (*it).fd)
+	for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
+		if (m_fds[i].fd == (*it).fd)
+		{
+			(*it).lifeTime = std::time(NULL);
+			do
 			{
-				bError = tcpStream(buffers, n, it, onResponse, bDelete);
-				(*it).bodySize ? bBody = true : bBody = false;
-				break;
+				buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
+				if (buffers == NULL)
+				{
+					cleanWebserv();
+					throw std::bad_alloc();
+				}
+				if ((n = read((*it).fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
+				{
+					buffers[n] = '\0';
+					if(tcpStream(buffers, n, it, onResponse, bDelete))
+						return (delete [](buffers), -1);
+					(*it).bodySize ? bBody = true : bBody = false;
+					if (bDelete)
+						delete [](buffers);
+				}
+			} while(n > 0);
+			if (n == -1)
+			{
+				oss << "read: " << std::strerror(errno);
+				logOutMessage(oss);
 			}
-	}
-	else if (n == -1)
-	{
-		oss << "read: " << std::strerror(errno);
-		logOutMessage(oss);
-	}
-	if (bDelete)
-		delete [](buffers);
-	return (bError);
+			break ;
+		}
+	return (delete [](buffers), n);
 }
 
 void Webserv::sendQuery(size_t i)
@@ -261,9 +261,9 @@ void Webserv::sendQuery(size_t i)
 					break ;
 				}
 				else
-				{ 
-					cleanWebserv();
-					throw std::runtime_error(std::strerror(errno));
+				{
+					destroyClient(i);
+					break ;
 				}
 			}
 			if ((*it).byteSent == (*it).formatedResponse.size())
@@ -419,13 +419,13 @@ void Webserv::cleanWebserv()
 		delete (*it);
 	m_listeners.clear();
 	for (size_t i = 0; i < m_fds.size(); ++i)
-		if (m_isClient[i])
+		if (m_fdTYpe[i])
 		{
 			destroyClient(i);
 			close (m_fds[i].fd);
 		}
 	m_fds.clear();
-	m_isClient.clear();
+	m_fdTYpe.clear();
 }
 
 void Webserv::stopListening()

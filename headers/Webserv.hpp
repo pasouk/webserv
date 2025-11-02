@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/27 10:23:53 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/01 14:34:28 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,13 @@ enum locationType
     ROOT,
     ALIAS,
 	PROXY_PASS
+};
+
+enum fdType
+{
+	SOCKET,
+	ACCEPT,
+	PIPE
 };
 
 struct location
@@ -95,7 +102,7 @@ private:
 	std::vector<query> m_clients;		//connected clients
 	std::vector<query> m_queries;
 	std::vector<pollfd> m_fds;
-	std::vector<bool> m_isClient;
+	std::vector<fdType> m_fdTYpe;
 	std::vector<const QueryListener*> m_listeners;
 
 private:
@@ -107,13 +114,14 @@ private:
 	void sendQuery(size_t);
 	void stopListening();
 	void destroyClient(size_t);
-	void destroyClientQueries(size_t);
+	void releaseQueries(size_t);
+	void releaseQuery(query*&);
 	int responseHook(std::vector<query>::iterator,  void (*)(std::string&, ParserHttpRequest&, server&));
 	int tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
 		, void (*)(std::string&, ParserHttpRequest&, server&), bool&);
 	bool clientNeedsAnswer(size_t) const;
-	bool keepAlive(size_t, double) const;
-	bool getClient(size_t, query&) const;
+	bool keepAlive(size_t, double);
+	bool getClient(size_t, query&);
 	std::pair<char*, ssize_t> removeChunk(char*, ssize_t);
 	const std::vector<std::string> getRoot(const Node*, const std::vector<const Node*>) const;
 	server& getRightServer(query&);
@@ -122,7 +130,7 @@ private:
 	void removePipeFromPoll(pollfd(&)[2]);
 	int callCGI(const std::string&, std::map<std::string, std::string>&, CGI*&) const;
 	bool isRunnable(const std::string&) const;
-	bool getCGI(int, CGI*&) const;
+	bool getCgiQuery(int, query*&);
 };
 
 #endif

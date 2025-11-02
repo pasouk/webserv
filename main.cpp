@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/27 13:41:55 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/02 10:40:24 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,20 +20,6 @@ void handle_sigint(int sig)
 {
 	(void)sig;
 	g_listening = false;
-}
-
-void Handle_sigchld(int sig)
-{
-	(void)sig;
-	std::ostringstream oss;
-    int status;
-    pid_t pid;
-
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
-	{
-		oss << "Terminated CGI, pid: " << pid;
-        logOutMessage(oss);
-    }
 }
 
 void onResponse(std::string& response, ParserHttpRequest& r, server& s)
@@ -87,15 +73,11 @@ int main(int argc, char *argv[])
 		return (0);
 	}
 
-	struct sigaction sa, sb;
+	struct sigaction sa;
     sa.sa_handler = handle_sigint;
-	sb.sa_handler = Handle_sigchld;
     sa.sa_flags = SA_RESTART;
-	sb.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
-    sigemptyset(&sb.sa_mask);
     sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGCHLD, &sb, NULL);
 
 	//Config file parsing
 	try

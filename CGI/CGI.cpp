@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/27 13:13:04 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/02 10:25:37 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,17 @@
 
 CGI::~CGI()
 {
+    int status;
+    std::ostringstream oss;
+
     closeFDS();
     deleteEnvp();
+    if (kill(m_id_cgi, 0) == 0)
+    {
+        waitpid(m_id_cgi, &status, 0);
+        oss << "Terminated CGI by server, pid: " << m_id_cgi;
+        logOutMessage(oss);
+    }
 }
 
 CGI::CGI(std::string interpreter, std::string script, std::map<std::string, std::string>& env)
@@ -194,7 +203,7 @@ void CGI::cgi(char* argv[], char* envp[])
     logErrMessage(oss);
 }
 
-const pollfd* CGI::getPoll() const
+const pollfd* CGI::getPollfd() const
 {
     return (&m_poll[0]);
 }

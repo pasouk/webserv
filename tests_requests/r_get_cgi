@@ -4,3 +4,9 @@ User-Agent: netcat-test
 Accept: */*
 
 
+GET /cgi-bin/cgi1.py HTTP/1.1
+Host: localhost
+User-Agent: netcat-test
+Accept: */*
+
+

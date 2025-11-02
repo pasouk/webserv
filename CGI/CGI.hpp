@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/27 12:51:33 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/02 12:57:26 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@
 | **`SERVER_SOFTWARE`** | Web server identifiant                           | `nginx/1.24.0`, `Apache/2.4.58`    |
 | **`QUERY_STRING`**    | HTTP data client                                 |                                    |
 | **`PATH_INFO`**       |                                                  |                                    |
+| **`CONTENT_LENGTH`**  | HTTP body length                                 |                                    |
 */
 class Webserv;
 class CGI
@@ -49,7 +50,7 @@ public:
 
     void writeCGI(std::pair<char*, ssize_t>&) const;
     int readCGI(std::string&) const;
-    const pollfd* getPoll() const;
+    const pollfd* getPollfd() const;
 
 private:
     void cgi(char**, char**);

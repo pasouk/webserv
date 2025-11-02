@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/27 11:14:05 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/02 09:42:24 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,19 +42,18 @@ int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>
     return (0);
 }
 
-bool Webserv::getCGI(int fd, CGI*& cgi) const
+bool Webserv::getCgiQuery(int fd, query*& q)
 {
     const pollfd *fds;
 
-    cgi = NULL;
     for (size_t i = 0; i < m_queries.size(); ++i)
     {
         if (m_queries[i].cgi != NULL)
         {
-            fds = m_queries[i].cgi->getPoll();
+            fds = m_queries[i].cgi->getPollfd();
             pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
             if (arr[0].fd == fd || arr[1].fd == fd)
-                return (cgi = m_queries[i].cgi, true);
+                return (q = &(m_queries[i]), true);
         }
     }
     return (false);
