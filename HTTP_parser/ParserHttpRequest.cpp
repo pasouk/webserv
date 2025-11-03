@@ -1,43 +1,7 @@
 #include "ParserHttpRequest.hpp"
 #include <sstream>
 
-MethodMap methods_map[] = {
-    {"GET", GET},
-    {"POST", POST},
-    {"DELETE", DELETE_},
-    {"UNKNOWN",UNKNOWN}
-};
 
-bool    ParserHttpRequest::isSeveralLines()
-{
-    if(_rawRequest.find("\r\n") == std::string::npos)
-        return false;
-    return true;
-}
-
-bool    ParserHttpRequest::isBodySeparator()
-{
-    if(_rawRequest.find("\r\n\r\n") == std::string::npos)
-        return false;   
-    return true;   
-}
-
-int    ParserHttpRequest::basicChecks()
-{
-    if(_rawRequest.empty())
-        return 400;
-    if (!isSeveralLines() || !isBodySeparator())
-        return 400;
-    return 0;
-}
-/*
-parsingState operator++(parsingState &state, int)
-{
-    parsingState old = state;
-    if (state != FINISHED)
-        state = static_cast<parsingState>(state + 1);
-    return old;
-}*/
 
 ParserHttpRequest::ParserHttpRequest(std::string rawRequest) : _rawRequest(rawRequest)
 {
@@ -47,7 +11,6 @@ ParserHttpRequest::ParserHttpRequest(std::string rawRequest) : _rawRequest(rawRe
 ParserHttpRequest::ParserHttpRequest(std::string rawRequest, const std::deque<std::pair<char*, ssize_t> > &bodyChunks) : _rawRequest(rawRequest)
 {
     setBodyLine(bodyChunks);
-//    / _state++;
 }
 
 std::string ParserHttpRequest::getMethodLine()
@@ -113,54 +76,24 @@ void ParserHttpRequest::devideRequest()
         _headerLine = _rawRequest.substr(pos1 + 2, pos2 - (pos1 + 2));
     else
         _headerLine = "";
-
-  //  if (pos2 != std::string::npos && pos2 + 4 < _rawRequest.size())
-   //     _bodyLine = _rawRequest.substr(pos2 + 4);
-    //else
-     //   _bodyLine = "";
 }
 
-
-
-void ParserHttpRequest::findMethod()
+bool ParserHttpRequest::isCgiRequest(const std::string &path)
 {
-    _method = UNKNOWN;
-    size_t methodCount = sizeof(methods_map) / sizeof(methods_map[0]);
-    
-    for (size_t i = 0; i < methodCount; i++)
-    {
-        if (_methodLine.find(methods_map[i].name) != std::string::npos)
-        {
-            _method = methods_map[i].value;
+    const std::string arr[] = {".py", ".php", ".pl", ".cgi"};
+    const std::vector<std::string> cgiExt(arr, arr + sizeof(arr) / sizeof(arr[0]));
+    const std::string cgiDir = "/cgi-bin/";
 
-            _methodLine = _methodLine.substr(strlen(methods_map[i].name) + 1);
-            return;
-        }
-    }
-}
+    if (path.find(cgiDir) == 0)
+        return true;
 
-void    ParserHttpRequest::findPath()
-{
-    size_t pos = _methodLine.find(" ");
-    _path = _methodLine.substr(0, pos);
-    _methodLine = _methodLine.substr(pos + 1);
-}
-
-int ParserHttpRequest::checkVersionAndMethod()
-{
-    if (_method == UNKNOWN)
+    for (size_t i = 0; i < cgiExt.size(); ++i)
     {
-        std::cout << "Invalid HHTP Request : Unknown method !\n";
-        return 400;
+        if (path.find(cgiExt[i]) != std::string::npos)
+            return true;
     }
-    if (_version != "HTTP/1.0" && _version != "HTTP/1.1")
-    {
-        std::cout << "Invalid HHTP Request : Unknown version !\n";
-        return 400;
-    }
-    return 0;
-    
-}
+    return false;
+}   
 
 int    ParserHttpRequest::parseMethodLine()
 {
@@ -172,7 +105,55 @@ int    ParserHttpRequest::parseMethodLine()
     findMethod();
     findPath();
     _version = getMethodLine();
+    _isCgi = isCgiRequest(_path);
+    if (_isCgi)
+        splitCgiPath(_path);
     return checkVersionAndMethod();
+}
+
+void ParserHttpRequest::splitCgiPath(const std::string &rawPath)
+{
+    std::string path = rawPath;
+
+    size_t qpos = path.find('?');
+    if (qpos != std::string::npos)
+    {
+        _queryString = path.substr(qpos + 1);
+        path = path.substr(0, qpos);
+    }
+    else
+        _queryString.clear();
+
+const std::string arr[] = {".py", ".php", ".pl", ".cgi"};
+const std::vector<std::string> cgiExt(arr, arr + sizeof(arr) / sizeof(arr[0]));    size_t extPos = std::string::npos;
+    std::string foundExt;
+
+    for (size_t i = 0; i < cgiExt.size(); ++i)
+    {
+        size_t pos = path.find(cgiExt[i]);
+        if (pos != std::string::npos)
+        {
+            extPos = pos;
+            foundExt = cgiExt[i];
+            break;
+        }
+    }
+
+    if (extPos != std::string::npos)
+    {
+        extPos += foundExt.length(); 
+        _scriptName = path.substr(0, extPos);
+        _pathInfo = path.substr(extPos);
+    }
+    else
+    {
+        _scriptName = path;
+        _pathInfo.clear();
+    }
+
+    std::cout << "[CGI DETECTED] script=" << _scriptName
+              << " pathInfo=" << _pathInfo
+              << " query=" << _queryString << std::endl;
 }
 
 int ParserHttpRequest::parseHeaderLine()
@@ -210,7 +191,6 @@ int ParserHttpRequest::parseHeaderLine()
             std::cout << "Invalid HTTP request: Missing value in header line!\n";
             return 400;
         }
-        //std::cout << "Inserting header => [" << key << "] = [" << value << "]\n";
         if (!_headers.insert(std::make_pair(key, value)).second)
         {
                 std::cout << "Duplicate key detected: [" << key << "]\n";            
@@ -221,66 +201,29 @@ int ParserHttpRequest::parseHeaderLine()
     return 0;
 }
 
-int    ParserHttpRequest::debugParsingRequest()
-{
-    int ret;
-    std::cout << Colors::BLUE << "\n\n----------- STEP 0 : Before parsing (Raw request) ----------\n" \
-     << Colors::RESET << std::endl  << _rawRequest << std::endl;
-    devideRequest();
-    std::cout << Colors::BLUE << "\n\n----------- STEP 1 : devide request in 3 ---------- \n" \
-     << Colors::RESET << std::endl << Colors::CYAN << "Method line : " << Colors::RESET << getMethodLine() << std::endl \
-     << Colors::RESET << std::endl << Colors::CYAN << "Header line : " << Colors::RESET << getHeaderLine() << std::endl \
-     << Colors::RESET << std::endl << Colors::CYAN << "body line : " << Colors::RESET << getBodyLine() << std::endl;
-    ret = parseMethodLine();
-    if (ret)
-        return ret;
-    std::cout << Colors::BLUE << "\n\n----------- STEP 2 : Parsing method line ----------\n" \
-     << Colors::RESET << std::endl << Colors::CYAN << "Method found: " << Colors::RESET << methods_map[getMethod()].name << std::endl \
-     << Colors::RESET << Colors::CYAN << "Path found : " << Colors::RESET << getPath() << std::endl \
-     << Colors::RESET << Colors::CYAN << "Version found : " << Colors::RESET << getVersion() << std::endl;
-     ret = parseHeaderLine();
-     if (ret)
-        return ret;
-     std::cout << Colors::BLUE << "\n\n----------- STEP 3 : Parsing headers ----------\n" ;
-     std::cout << Colors::CYAN << "Headers fond :  " << Colors::RESET << std::endl;
-    for (std::map<std::string, std::string>::const_iterator it = getHeaders().begin();
-        it != getHeaders().end(); ++it)
-    {
-        std::cout << it->first << " : " << it->second << std::endl;
-    }
-      return 0;
-}
-
-void ParserHttpRequest::printParsedData()
-{
-    std::cout << Colors::BLUE << "Method : " << Colors::RESET << _method << std::endl;
-    std::cout << Colors::BLUE << "Path : " << Colors::RESET << _path << std::endl;
-    std::cout << Colors::BLUE << "Version : " << Colors::RESET << _version << std::endl;
-    std::cout << Colors::BLUE << "Headers : " << Colors::RESET  ;
-    for (std::map<std::string, std::string>::const_iterator it = getHeaders().begin();
-        it != getHeaders().end(); ++it)
-    {
-        std::cout << it->first << " : " << it->second << std::endl;
-    }
-}
-
 void ParserHttpRequest::setBodyLine(const std::deque<std::pair<char*, ssize_t> >& bodyChunks)
 {
-    (void)bodyChunks;
-    /*_bodyLine.clear();
+    _bodyLine.clear();
+    _bodyBuffer.clear();
 
-    for (std::deque<char*>::const_iterator it = bodyChunks.begin();
+    for (std::deque<std::pair<char*, ssize_t> >::const_iterator it = bodyChunks.begin();
          it != bodyChunks.end();
          ++it)
     {
-        if (*it)
-            _bodyLine += *it; 
-    }*/
+        const char* data = it->first;
+        ssize_t len = it->second;
+
+        if (data && len > 0)
+        {
+            _bodyLine.append(data, len);
+            _bodyBuffer.insert(_bodyBuffer.end(), data, data + len);
+        }
+    }
 }
 
 int ParserHttpRequest::parseRequest()
 {
-    std::cout << Colors::GREEN << "Request received \n" << Colors::RESET ;
+    std::cout << Colors::GREEN << "Request received :  " << _methodLine << Colors::RESET ;
     int ret;
     ret = basicChecks();
     if (ret)
@@ -296,18 +239,3 @@ int ParserHttpRequest::parseRequest()
     return 0;
 }
 
-void ParserHttpRequest::sanitize()
-{
-    _path    = trim(_path);
-    _version = trim(_version);
-
-    std::map<std::string, std::string> cleaned;
-    for (std::map<std::string, std::string>::iterator it = _headers.begin();
-         it != _headers.end(); ++it) 
-    {
-        std::string key = trim(it->first);
-        std::string value = trim(it->second);
-        cleaned[key] = value;
-    }
-    _headers.swap(cleaned);
-}

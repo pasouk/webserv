@@ -1,0 +1,241 @@
+#include "HttpResponse.hpp"
+
+std::string HttpResponse::extractFileName(const std::string &str) 
+{
+    size_t pos = str.find("filename=");
+
+    if (pos == std::string::npos)
+        return "UnknownFileName";
+    pos += 9;
+    
+    std::string filename = str.substr(pos);
+
+    if (!filename.empty() && filename[0] == '"') 
+    {
+        filename = filename.substr(1, filename.size() - 2);
+    }
+
+    return filename;
+}
+
+bool HttpResponse::writeUploadedFile(std::string name) 
+{
+    // Construction du chemin complet
+    std::string fullName;
+    if (!_uploads_dir.empty() && _uploads_dir[_uploads_dir.size()-1] != '/')
+        fullName = _uploads_dir + "/" + name;
+    else
+        fullName = _uploads_dir + name;
+
+    // Décodage du body
+    std::string body = urlDecode(_ParsedRequest.getBodyLine());
+
+
+    // Création / ouverture du fichier
+    int fd = open(fullName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd == -1) {
+        HttpResponseError(500, "Internal Server Error (opening/creating file)");
+      //  std::cout << Colors::RED << fullName << "doesnt exist\n" << Colors::RESET;
+        perror("Open failed");
+        
+        return false;
+    }
+
+    // Écriture dans le fichier
+    if (write(fd, body.c_str(), body.size()) == -1) {
+        close(fd);
+        HttpResponseError(500, "Internal Server Error (writing file)");
+        perror("write failed");
+        return false;
+    }
+
+    close(fd);
+
+    // Mettre à jour la réponse HTTP
+    _status_code = 201;           // Created
+    _reason_phrase = "Created";
+
+    return true;
+}
+
+void HttpResponse::managePostHeaders() 
+{
+
+    const std::map<std::string, std::string>& headers = _ParsedRequest.getHeaders();
+
+    for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+         it != headers.end();
+         ++it) 
+    {
+        if (it->first == "Content-Length") 
+        {
+            _headers["Content-Length"] = toString(_body.size());
+        }
+        else if (it->first == "Content-Type") 
+        {
+             _headers["Content-Type"] = getContentType(_uploads_dir);
+        }
+    }
+}
+
+void HttpResponse::handleFileSubPart(const SubPartRequest &sub, const std::string &cd)
+{
+    // Récupération du nom du fichier
+    size_t start = cd.find("filename=\"");
+    if (start == std::string::npos)
+    {
+        std::cout << "No filename found in Content-Disposition.\n";
+        return;
+    }
+    start += 10;
+    size_t end = cd.find("\"", start);
+    std::string filename = cd.substr(start, end - start);
+
+    _uploads_dir = "uploads";
+    std::string fullName = _uploads_dir + "/" + filename;
+    int fd = open(fullName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd == -1)
+    {
+        perror("open");
+        return;
+    }
+
+    // Détection du Content-Type pour décider du mode d’écriture
+    std::string contentType = getHeaderValue("Content-Type", sub.getHeaders());
+    if (!contentType.empty() && contentType.find("text/") == 0)
+    {
+        // si texte
+        std::string body = sub.getBodyLine();
+        if (body.size() >= 2 && body.substr(body.size() - 2) == "\r\n")
+            body = body.substr(0, body.size() - 2);
+        write(fd, body.c_str(), body.size());
+    }
+    else
+    {
+        // si bin
+        const std::deque<std::pair<char*, ssize_t> >& chunks = sub.getBodyBuffer();
+        for (std::deque<std::pair<char*, ssize_t> >::const_iterator it = chunks.begin();
+             it != chunks.end(); ++it)
+        {
+            if (it->first && it->second > 0)
+                write(fd, it->first, it->second);
+        }
+    }
+    close(fd);
+    _status_code = 201;
+    _reason_phrase = "Created";
+    _body = "File uploaded successfully";
+    _headers["Content-Length"] = toString(_body.size());
+    _headers["Content-Type"] = "text/plain";
+    serialize();
+}
+
+std::vector<std::string> HttpResponse::cutMultipartPost(const std::string& rawBody, const std::string& boundary)
+{
+    std::vector<std::string> sections;
+
+    std::string sep = "--" + boundary;
+    std::string endSep = sep + "--";
+    size_t pos = 0;
+
+    while (true)
+    {
+        size_t begin = rawBody.find(sep, pos);
+        if (begin == std::string::npos)
+            break;
+        size_t sectionStart = begin + sep.size();
+
+        size_t end = rawBody.find(sep, sectionStart);
+        size_t endLast = rawBody.find(endSep, sectionStart);
+        bool last = false;
+
+        if (endLast != std::string::npos && (endLast < end || end == std::string::npos))
+        {
+            end = endLast;
+            last = true;
+        }
+
+        if (end != std::string::npos && sectionStart < end)
+        {
+            std::string section = rawBody.substr(sectionStart, end - sectionStart);
+
+            while (!section.empty() && (section[0] == '\r' || section[0] == '\n'))
+                section.erase(0, 1);
+            while (!section.empty() && (section[section.size() - 1] == '\r' || section[section.size() - 1] == '\n'))
+                section.erase(section.size() - 1);
+
+            sections.push_back(section);
+        }
+
+        if (last)
+            break;
+
+        pos = end;
+    }
+
+    return sections;
+}
+
+void HttpResponse::handleMultipartPost()
+{
+    std::string contentType = getHeaderValue("Content-Type", _ParsedRequest.getHeaders());
+
+    size_t pos = contentType.find("boundary=");
+    if (pos == std::string::npos)
+        return;
+    std::string boundary = contentType.substr(pos + 9);
+    std::vector<std::string> devidedBody = cutMultipartPost(_ParsedRequest.getBodyLine(), boundary);
+    for(long unsigned int i = 0; i < devidedBody.size(); i++)
+    {
+        SubPartRequest sub(devidedBody[i]);
+        sub.devideRequest();
+        sub.parseHeaderLine();  
+        std::string cd = getHeaderValue("Content-Disposition", sub.getHeaders());
+        if (cd.find("filename=") != std::string::npos)
+        {
+            handleFileSubPart(sub, cd);
+        }
+    }
+}
+
+void HttpResponse::buildPost()
+{
+    std::string ctype = getHeaderValue("Content-Type", _ParsedRequest.getHeaders());
+    if (ctype.find("multipart/form-data") != std::string::npos) 
+    {
+        handleMultipartPost();
+        return;
+    }   
+    std::string contentLen = getHeaderValue("Content-Length", _ParsedRequest.getHeaders());
+    std::string contentVal = getHeaderValue("Content-Disposition", _ParsedRequest.getHeaders());
+    std::string fileName;
+
+    //std::cout << Colors::RED << "contentlen: " << contentLen << std::endl << "contentval:" <<  contentVal << Colors::RESET << std::endl;
+
+    //pour l'instant, a changer pllus tard
+    setUploadDir("uploads/");
+    if (contentLen.empty())
+    {
+        HttpResponseError(400, "Bad Request");
+        return;
+    }
+
+    if(!contentVal.empty())
+    {
+        fileName = extractFileName(contentVal);
+        
+    }
+    else 
+        fileName = generateUploadedFileName();
+   // std::cout << Colors::RED << fileName << Colors::RESET;
+
+    if(!writeUploadedFile(fileName))
+        return;
+    _status_code = 201; 
+    _reason_phrase = "Created";
+    _body = "File uploaded successfully";
+    _headers["Content-Length"] = toString(_body.size());
+    _headers["Content-Type"] = "text/plain";
+    serialize();
+
+}
