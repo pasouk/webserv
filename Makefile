@@ -6,7 +6,7 @@
 #    By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/11/03 12:04:14 by fbuyl            ###   ########.fr        #
+#    Updated: 2025/11/03 12:19:27 by fbuyl            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,7 +24,8 @@ SOURCES = QueryListener.cpp \
 	Webserv.cpp \
 	Webserv2.cpp \
 	Webserv3.cpp \
-	main.cpp \
+	CGI/CGI.cpp \
+	logtime.cpp \
 	HTTP_parser/ParserHttpRequest.cpp\
 	HTTP_parser/ParsingUtils.cpp \
 	HTTP_parser/ParsingChecks.cpp \
@@ -36,10 +37,8 @@ SOURCES = QueryListener.cpp \
 	HTTP_response/HttpResponseGet.cpp \
 	HTTP_response/HttpResponsePost.cpp \
 	HTTP_response/Utils.cpp \
-	logtime.cpp 
-	
-
-	
+	main.cpp
+		
 OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(NAME)
