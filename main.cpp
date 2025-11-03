@@ -6,7 +6,7 @@
 /*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/03 12:01:55 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/03 12:53:47 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@ void handle_sigint(int sig)
 
 void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 {	
+	(void)response;
 	std::string path;
 	std::string root;
 	size_t pos;
@@ -60,7 +61,7 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 	response1.setServerMethods(s.httpMethodsAllowed);
     response1.HttpResponseManager();
 	response = response1.getFormatedResponse();
-	std::cout << response << std::endl;
+	//std::cout << response << std::endl;
 }
 
 int main(int argc, char *argv[])
