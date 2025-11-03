@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/02 10:40:24 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/03 11:10:25 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,6 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 			}
 		}
 	}
-
 	//response
     HttpResponse response1(r, r.getError());
     response1.setRoot(root);

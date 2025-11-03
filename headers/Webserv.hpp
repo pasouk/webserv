@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/01 14:34:28 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/03 11:05:51 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
 # define KEEPALIVE_TIMEOUT 65
+# define MAX_BODY_SIZE 8192
 
 extern bool g_listening;
 
@@ -77,7 +78,8 @@ struct server
 	std::vector<std::string>		server_names;
 	std::vector<uint16_t> 			ports;
 	std::vector<std::string>		hosts;
-	std::string						root;	
+	std::string						root;
+	size_t							max_body_size;
 };
 
 class Webserv
@@ -97,6 +99,7 @@ public:
 
 private:
 	size_t m_keepalive_timeout;
+	size_t m_max_body_size;
 	size_t m_client_buffers_size[2];	//0: header, 1: body
 	std::vector<server> m_servers;		//servers list
 	std::vector<query> m_clients;		//connected clients

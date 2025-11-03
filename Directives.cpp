@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Directives.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/14 09:24:43 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/11/03 10:39:09 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,6 @@ bool Listen::areArgsValid(const std::vector<std::string>& args, std::string& err
 		//only port
 		"|(^(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4][0-9]{3}|[1-5][0-9]{4}|[0-9]{1,4})$)"
 	);
-		
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{
 		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
@@ -183,6 +182,11 @@ ClientHeaderBufferSize::ClientHeaderBufferSize() : Directives(false, 1, 1, "clie
 }
 
 KeepaliveTimeout::KeepaliveTimeout() : Directives(false, 1, 1, "keepalive_timeout")
+{
+	m_memberships.push_back("http");
+}
+
+ClientMaxBodySize::ClientMaxBodySize() : Directives(false, 1, 1, "client_max_body_size")
 {
 	m_memberships.push_back("http");
 }

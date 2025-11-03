@@ -3,20 +3,21 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/02 13:48:51 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/03 11:09:21 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
+Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT), m_max_body_size(MAX_BODY_SIZE)
 {
 	std::vector<const Node*> clientBufferSize;
 	std::vector<const Node*> KeepaliveTimeout;
+	std::vector<const Node*> MaxBodySize;
 	std::ostringstream oss;
 	QueryListener* ql;
 	server server;
@@ -26,18 +27,21 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 
 	if (parser != NULL)
 	{
-		//build servers structures instances
-		m_servers = createServers(parser);
 		//define global variables server
 		clientBufferSize = parser->getDirectives("client_body_buffer_size");
 		for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
-			static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[1]);
+			static_cast<const NodeDirective*>(*it)->getClientSize(m_client_buffers_size[1]);
 		clientBufferSize = parser->getDirectives("client_header_buffer_size");
 		for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
-			static_cast<const NodeDirective*>(*it)->getClientBufferSize(m_client_buffers_size[0]);
+			static_cast<const NodeDirective*>(*it)->getClientSize(m_client_buffers_size[0]);
 		KeepaliveTimeout = parser->getDirectives("keepalive_timeout");
 		for (std::vector<const Node*>::const_iterator it = KeepaliveTimeout.begin(); it != KeepaliveTimeout.end(); ++it)
 			static_cast<const NodeDirective*>(*it)->getClientsTimeout(m_keepalive_timeout);
+		MaxBodySize = parser->getDirectives("client_max_body_size");
+		for (std::vector<const Node*>::const_iterator it = MaxBodySize.begin(); it != MaxBodySize.end(); ++it)
+			static_cast<const NodeDirective*>(*it)->getClientSize(m_max_body_size);
+		//build servers structures instances
+		m_servers = createServers(parser);
 	}
 	else
 	{
@@ -56,6 +60,8 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 	logOutMessage(oss);
 	oss << "Keepalive timeout: " << m_keepalive_timeout;
 	logOutMessage(oss);
+	oss << "max body size: " << m_max_body_size;
+	logOutMessage(oss);
 }
 
 Webserv::~Webserv()
@@ -70,6 +76,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 	query* q;
 	std::ostringstream oss;
 	std::string cgiResponse;
+	pid_t pid;
+	int status;
 
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
@@ -89,12 +97,14 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 	logOutMessage(oss);
 	while (g_listening)
 	{
-		int status;
-    	while (waitpid(-1, &status, WNOHANG) > 0) {};
 		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
 		{
 			g_listening = false;
 			break;
+		}
+		while ((pid = waitpid(-1, &status, WNOHANG)) > 0) 
+		{
+			std::cerr << "CRASH: " << pid << std::endl;
 		}
 		for (size_t i = 0; i < m_fds.size(); ++i)
 		{
@@ -104,7 +114,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 			{
 				if (m_fds[i].revents & POLLIN)
 				{
-					if ((q->cgi->readCGI(cgiResponse)) <= 0)
+					if (q->cgi->readCGI(cgiResponse) <= 0)
 					{
 						const pollfd *fds = q->cgi->getPollfd();
 						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
@@ -114,7 +124,15 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 					std::cout << cgiResponse << std::endl;
 				}
 				else if (m_fds[i].revents & POLLOUT)
-				{				
+				{
+					for (size_t i = 0; i < q->bodyChunks.size(); ++i)
+						if (q->cgi->writeCGI(q->bodyChunks[i]) <= 0)
+						{
+							const pollfd *fds = q->cgi->getPollfd();
+							pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+							removePipeFromPoll(arr);
+							releaseQuery(q);
+						}
 				}
 			}
 			else if (m_fdTYpe[i] == ACCEPT)
@@ -314,6 +332,7 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 		_server.hosts.clear();
 		_server.server_names.clear();
 		_server.locations.clear();
+		_server.max_body_size = m_max_body_size;
 		_port = 80;
 		_host = "0.0.0.0";
 

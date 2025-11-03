@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/02 13:55:26 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/03 08:56:49 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,8 +48,6 @@ int Webserv::responseHook(std::vector<query>::iterator it
 		fds = (*it).cgi->getPollfd();
 		pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 		addPipeToPoll(arr);
-		for (size_t i = 0; i < (*it).bodyChunks.size(); ++i)
-			(*it).cgi->writeCGI((*it).bodyChunks[i]);
 	}
 	onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
 	m_queries.push_back(*it);

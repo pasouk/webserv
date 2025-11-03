@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/02 10:25:37 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/03 09:52:29 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,12 +20,10 @@ CGI::~CGI()
 
     closeFDS();
     deleteEnvp();
-    if (kill(m_id_cgi, 0) == 0)
-    {
-        waitpid(m_id_cgi, &status, 0);
-        oss << "Terminated CGI by server, pid: " << m_id_cgi;
-        logOutMessage(oss);
-    }
+    kill(m_id_cgi, SIGTERM);
+    waitpid(m_id_cgi, &status, 0);
+    oss << "Terminated CGI by server, pid: " << m_id_cgi;
+    logOutMessage(oss);
 }
 
 CGI::CGI(std::string interpreter, std::string script, std::map<std::string, std::string>& env)
@@ -118,7 +116,7 @@ void CGI::closeFDS()
         close(m_pipe_out[0]);        
 }
 
-void CGI::writeCGI(std::pair<char*, ssize_t>& chunk) const
+int CGI::writeCGI(std::pair<char*, ssize_t>& chunk) const
 {
     std::ostringstream oss;
     ssize_t written, total, n;
@@ -136,6 +134,7 @@ void CGI::writeCGI(std::pair<char*, ssize_t>& chunk) const
         }
         written += n;
     }
+    return (n);
 }
 
 int CGI::readCGI(std::string& response) const

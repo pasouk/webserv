@@ -6,7 +6,7 @@
 /*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:14 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/07 10:39:13 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/03 10:51:51 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,11 +65,13 @@ int NodeDirective::getListenHostPort(uint16_t& port, std::string& host) const
 	return (0);
 }
 
-int NodeDirective::getClientBufferSize(size_t& size) const
+int NodeDirective::getClientSize(size_t& size) const
 {
 	std::stringstream ss;
 
-	if (m_name != "client_body_buffer_size" && m_name != "client_header_buffer_size")
+	if (m_name != "client_body_buffer_size" 
+		&& m_name != "client_header_buffer_size"
+		&& m_name != "client_max_body_size")
 		return (1);
 	ss << getArgs()[0];
 	ss >> size;

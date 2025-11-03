@@ -6,7 +6,7 @@
 /*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/10/07 10:06:01 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/03 10:51:51 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ public:
 	NodeDirective& operator=(const NodeDirective&);
 
 	int getListenHostPort(uint16_t&, std::string&) const;
-	int getClientBufferSize(size_t&) const;
+	int getClientSize(size_t&) const;
 	int getClientsTimeout(size_t&) const;
 	int getHttpMethod(size_t, HttpMethod&) const;
 };

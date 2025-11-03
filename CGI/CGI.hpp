@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/02 12:57:26 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/03 09:51:47 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ public:
     CGI(std::string, std::string, std::map<std::string, std::string>&);    //script whithout shebang
     CGI(std::string, std::map<std::string, std::string>&);                 //binary/script (with shebang)
 
-    void writeCGI(std::pair<char*, ssize_t>&) const;
+    int writeCGI(std::pair<char*, ssize_t>&) const;
     int readCGI(std::string&) const;
     const pollfd* getPollfd() const;
 
