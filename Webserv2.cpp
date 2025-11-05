@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/03 14:19:31 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/11/04 12:16:35 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -217,7 +217,7 @@ void Webserv::destroyClient(size_t i)
 			break ;
 		}
 	m_fds.erase(m_fds.begin() + i);
-	m_fdTYpe.erase(m_fdTYpe.begin() + i);
+	m_fdType.erase(m_fdType.begin() + i);
 }
 
 bool Webserv::keepAlive(size_t i, double sec)
@@ -308,9 +308,9 @@ bool Webserv::matchServerName(const std::string& host, const std::string& ser) c
 void Webserv::addPipeToPoll(pollfd(&poll)[2])
 {
 	m_fds.push_back(poll[0]);
-	m_fdTYpe.push_back(PIPE);
+	m_fdType.push_back(PIPE);
 	m_fds.push_back(poll[1]);
-	m_fdTYpe.push_back(PIPE);
+	m_fdType.push_back(PIPE);
 }
 
 void Webserv::removePipeFromPoll(pollfd(&poll)[2])
@@ -319,14 +319,14 @@ void Webserv::removePipeFromPoll(pollfd(&poll)[2])
 		if (m_fds[i].fd == poll[1].fd)
 		{
 			m_fds.erase(m_fds.begin() + i);
-			m_fdTYpe.erase(m_fdTYpe.begin() + i);
+			m_fdType.erase(m_fdType.begin() + i);
 			break ;
 		}
 	for (size_t i = 0; i < m_fds.size(); ++i)
 		if (m_fds[i].fd == poll[0].fd)
 		{
 			m_fds.erase(m_fds.begin() + i);
-			m_fdTYpe.erase(m_fdTYpe.begin() + i);
+			m_fdType.erase(m_fdType.begin() + i);
 			break ;
 		}
 
@@ -372,6 +372,8 @@ void Webserv::printServer(server& server) const
 	std::cout << "\033[0m" << std::endl;
 	std::cout << std::setw(col1) << "root:" 
         << "\033[0;36m" << std::setw(col2 + 5) << server.root << "\033[0m" << std::endl;
+	std::cout << std::setw(col1) << "max body:" 
+        << "\033[0;36m" << std::setw(col2 + 5) << server.max_body_size << "\033[0m" << std::endl;
 }
 
 void Webserv::printServers()

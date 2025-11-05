@@ -3,21 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/03 11:09:21 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/05 07:15:48 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "Node.hpp"
 
-Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT), m_max_body_size(MAX_BODY_SIZE)
+Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 {
 	std::vector<const Node*> clientBufferSize;
 	std::vector<const Node*> KeepaliveTimeout;
-	std::vector<const Node*> MaxBodySize;
 	std::ostringstream oss;
 	QueryListener* ql;
 	server server;
@@ -37,9 +36,6 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT),
 		KeepaliveTimeout = parser->getDirectives("keepalive_timeout");
 		for (std::vector<const Node*>::const_iterator it = KeepaliveTimeout.begin(); it != KeepaliveTimeout.end(); ++it)
 			static_cast<const NodeDirective*>(*it)->getClientsTimeout(m_keepalive_timeout);
-		MaxBodySize = parser->getDirectives("client_max_body_size");
-		for (std::vector<const Node*>::const_iterator it = MaxBodySize.begin(); it != MaxBodySize.end(); ++it)
-			static_cast<const NodeDirective*>(*it)->getClientSize(m_max_body_size);
 		//build servers structures instances
 		m_servers = createServers(parser);
 	}
@@ -60,8 +56,6 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT),
 	logOutMessage(oss);
 	oss << "Keepalive timeout: " << m_keepalive_timeout;
 	logOutMessage(oss);
-	oss << "max body size: " << m_max_body_size;
-	logOutMessage(oss);
 }
 
 Webserv::~Webserv()
@@ -76,8 +70,6 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 	query* q;
 	std::ostringstream oss;
 	std::string cgiResponse;
-	pid_t pid;
-	int status;
 
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
@@ -91,7 +83,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		fd.events = POLLIN;
 		fd.revents = 0;
 		m_fds.push_back(fd);
-		m_fdTYpe.push_back(SOCKET);
+		m_fdType.push_back(SOCKET);
 	}
 	oss << "Listening...";
 	logOutMessage(oss);
@@ -100,17 +92,13 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
 		{
 			g_listening = false;
-			break;
-		}
-		while ((pid = waitpid(-1, &status, WNOHANG)) > 0) 
-		{
-			std::cerr << "CRASH: " << pid << std::endl;
+			break ;
 		}
 		for (size_t i = 0; i < m_fds.size(); ++i)
 		{
-			if (m_fdTYpe[i] == SOCKET && (m_fds[i].revents & POLLIN))
+			if (m_fdType[i] == SOCKET && (m_fds[i].revents & POLLIN))
 				addClient(i);
-			else if (m_fdTYpe[i] == PIPE && getCgiQuery(m_fds[i].fd, q))
+			else if (m_fdType[i] == PIPE && getCgiQuery(m_fds[i].fd, q))
 			{
 				if (m_fds[i].revents & POLLIN)
 				{
@@ -135,7 +123,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 						}
 				}
 			}
-			else if (m_fdTYpe[i] == ACCEPT)
+			else if (m_fdType[i] == ACCEPT)
 			{
 				if (m_fds[i].revents & POLLIN)
 					if (readQuery(i, onResponse) == 0)
@@ -197,7 +185,7 @@ void Webserv::addClient(size_t i)
 		if (j == m_fds.size())
 		{
 			m_fds.push_back(fd);
-			m_fdTYpe.push_back(ACCEPT);
+			m_fdType.push_back(ACCEPT);
 			getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
 			query.fd = fd.fd;
 			query.lifeTime = std::time(NULL);
@@ -310,6 +298,7 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 	std::vector<const Node*> _server_names;
 	std::vector<const Node*> _location;
 	std::vector<const Node*> _limit_except;
+	std::vector<const Node*> _max_body_size;
 	std::vector<server> servers;
 	std::vector<std::string> args;
 	std::ostringstream oss;
@@ -325,6 +314,7 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 		logOutMessage(oss);
 	}
 	_roots = parser->getDirectives("root");
+	_max_body_size = parser->getDirectives("client_max_body_size");
 	_servers = parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
@@ -332,15 +322,19 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 		_server.hosts.clear();
 		_server.server_names.clear();
 		_server.locations.clear();
-		_server.max_body_size = m_max_body_size;
 		_port = 80;
 		_host = "0.0.0.0";
 
-		args = getRoot(*it, _roots);
+		args = getDiretiveValue(*it, _roots);
 		if (args.empty())
 			_server.root = "/html";
 		else
 			_server.root = args[0];
+		args = getDiretiveValue(*it, _max_body_size);
+		if (args.empty())
+			_server.max_body_size = "8192";
+		else
+			_server.max_body_size = args[0];
 		_listens = parser->getDirectives("listen", static_cast<const NodeBlock*>(*it));
 		if (_listens.size() == 0)
 		{
@@ -372,21 +366,27 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 		_location = parser->getDirectives("location", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it1 = _location.begin(); it1 != _location.end(); ++it1)
 		{
+			loc.type = NONE;
+			loc.concatOrReplace = "none";
+			loc.by = "none";
+			loc.max_body_size = "not define";
+			loc.httpMethodsAllowed.clear();
 			loc.concatOrReplace = (*it1)->getArgs()[0];
 			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
 				if ((*it2)->getParent() == *it1)
 				{
 					loc.type = ROOT;
 					loc.by = (*it2)->getArgs()[0];
-					_server.locations.push_back(loc);
 				}
 			_alias = parser->getDirectives("alias", static_cast<const NodeBlock*>(*it1));
 			if (_alias.size())
 			{
 				loc.type = ALIAS;
 				loc.by = _alias[0]->getArgs()[0];
-				_server.locations.push_back(loc);	
 			}
+			for (std::vector<const Node*>::const_iterator it2 = _max_body_size.begin(); it2 != _max_body_size.end(); ++it2)
+				if ((*it2)->getParent() == *it1)
+					loc.max_body_size = (*it2)->getArgs()[0];
 			_limit_except = parser->getDirectives("limit_except", static_cast<const NodeBlock*>(*it1));
 			if (_limit_except.size())
 			{
@@ -394,16 +394,17 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 				{
 					HttpMethod method;
 					if (static_cast<const NodeDirective*>(_limit_except[0])->getHttpMethod(i, method) == 0)
-						_server.httpMethodsAllowed.push_back(method);
+						loc.httpMethodsAllowed.push_back(method);
 				}
 			}
+			_server.locations.push_back(loc);
 		}
 		servers.push_back(_server);
 	}
 	return (servers);
 }
 
-const std::vector<std::string> Webserv::getRoot(const Node* server, const std::vector<const Node*> list) const
+const std::vector<std::string> Webserv::getDiretiveValue(const Node* server, const std::vector<const Node*> list) const
 {
 	std::vector<std::string> args;
 	int currentDeep = 0;
@@ -419,14 +420,6 @@ const std::vector<std::string> Webserv::getRoot(const Node* server, const std::v
 					args = (*directive)->getArgs();
 				}
 		}
-		else if ((*directive)->getDeep() < server->getDeep())
-		{
-			if (currentDeep < (*directive)->getDeep())
-			{
-				currentDeep = (*directive)->getDeep();
-				args = (*directive)->getArgs();
-			}
-		}
 	}
 	return (args);
 }
@@ -438,13 +431,13 @@ void Webserv::cleanWebserv()
 		delete (*it);
 	m_listeners.clear();
 	for (size_t i = 0; i < m_fds.size(); ++i)
-		if (m_fdTYpe[i])
+		if (m_fdType[i])
 		{
 			destroyClient(i);
 			close (m_fds[i].fd);
 		}
 	m_fds.clear();
-	m_fdTYpe.clear();
+	m_fdType.clear();
 }
 
 void Webserv::stopListening()

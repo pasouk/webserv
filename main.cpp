@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/03 14:20:30 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/11/05 07:14:41 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,22 +43,33 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 			if (pos != std::string::npos)
 			{
 				if (s.locations[i].type == ROOT)
+				{
 					path.replace(pos, s.locations[i].concatOrReplace.size()
 						, s.locations[i].by + s.locations[i].concatOrReplace);
+					//std::cout << "LOCATION " << i << ": ROOT: " << path << std::endl;
+				}
 				else if (s.locations[i].type == ALIAS)
+				{
 					path.replace(pos, s.locations[i].concatOrReplace.size(), s.locations[i].by);
+					//std::cout << "LOCATION " << i << ": ALIAS: " << path << std::endl;
+				}
 				if (RELATIVE) //to get a relative path to the project.
 					if (path[0] == '/')
 						path = path.substr(1, path.length() - 1);
 				r.setPath(path);
 				root = "";
 			}
+			/*std::cout << "LOCATION " << i << ": MAX BODY SIZE: " << s.locations[i].max_body_size << std::endl;
+			std::cout << "LOCATION " << i << ": ALLOWED METHOD(S): " << std::endl;
+			for (size_t j = 0; j < s.locations[i].httpMethodsAllowed.size(); ++j)
+				std::cout << methods_map[s.locations[i].httpMethodsAllowed[j]].name << " ";
+			std::cout << std::endl;*/
 		}
 	}
 	//response
     HttpResponse response1(r, r.getError());
     response1.setRoot(root);
-	response1.setServerMethods(s.httpMethodsAllowed);
+	//response1.setServerMethods(s.httpMethodsAllowed);
     response1.HttpResponseManager();
 	response = response1.getFormatedResponse();
 	//std::cout << response << std::endl;

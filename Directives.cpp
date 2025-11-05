@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Directives.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/03 10:39:09 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/05 06:59:11 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -176,9 +176,37 @@ ClientBodyBufferSize::ClientBodyBufferSize() : Directives(false, 1, 1, "client_b
 	m_memberships.push_back("http");
 }
 
+bool ClientBodyBufferSize::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^[0-9]{1,10}$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
+}
+
 ClientHeaderBufferSize::ClientHeaderBufferSize() : Directives(false, 1, 1, "client_header_buffer_size")
 {
 	m_memberships.push_back("http");
+}
+
+bool ClientHeaderBufferSize::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^[0-9]{1,10}$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
 }
 
 KeepaliveTimeout::KeepaliveTimeout() : Directives(false, 1, 1, "keepalive_timeout")
@@ -186,9 +214,39 @@ KeepaliveTimeout::KeepaliveTimeout() : Directives(false, 1, 1, "keepalive_timeou
 	m_memberships.push_back("http");
 }
 
+bool KeepaliveTimeout::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^[0-9]{1,5}$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
+}
+
 ClientMaxBodySize::ClientMaxBodySize() : Directives(false, 1, 1, "client_max_body_size")
 {
 	m_memberships.push_back("http");
+	m_memberships.push_back("server");
+	m_memberships.push_back("location");
+}
+
+bool ClientMaxBodySize::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^[0-9]{1,10}$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
 }
 
 Events::Events() : Directives(true, 0, 0, "events")

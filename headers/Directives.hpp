@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Directives.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/03 10:36:31 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/05 07:00:54 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,10 +74,30 @@ public:
 };
 class Server : public Directives { public: Server(); };
 class Http : public Directives { public: Http(); };
-class ClientBodyBufferSize : public Directives { public: ClientBodyBufferSize(); };
-class ClientHeaderBufferSize : public Directives { public: ClientHeaderBufferSize(); };
-class KeepaliveTimeout : public Directives { public: KeepaliveTimeout(); };
-class ClientMaxBodySize : public Directives { public: ClientMaxBodySize(); };
+class ClientBodyBufferSize : public Directives 
+{
+public: 
+	ClientBodyBufferSize();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
+class ClientHeaderBufferSize : public Directives 
+{
+public: 
+	ClientHeaderBufferSize();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
+class KeepaliveTimeout : public Directives
+{
+public:
+	KeepaliveTimeout();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
+class ClientMaxBodySize : public Directives
+{
+public: 
+	ClientMaxBodySize();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const; 
+};
 class Events : public Directives { public: Events(); }; //not use, only for nginx tests
 class LimitExcept : public Directives { public: LimitExcept(); };
 class Deny : public Directives //only "all" argument is valid for now, not use, only for nginx tests

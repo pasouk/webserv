@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/03 11:05:51 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/05 07:10:50 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,8 @@ enum locationType
 {
     ROOT,
     ALIAS,
-	PROXY_PASS
+	PROXY_PASS,
+	NONE
 };
 
 enum fdType
@@ -50,9 +51,11 @@ enum fdType
 struct location
 {
 public:
-	std::string		concatOrReplace;
-	locationType	type;
-	std::string		by;
+	std::string				concatOrReplace;
+	locationType			type;
+	std::string				by;
+	std::string				max_body_size;
+	std::vector<HttpMethod>	httpMethodsAllowed;
 };
 
 struct query
@@ -74,12 +77,11 @@ struct query
 struct server
 {
 	std::vector<location>			locations;
-	std::vector<HttpMethod>			httpMethodsAllowed;
 	std::vector<std::string>		server_names;
 	std::vector<uint16_t> 			ports;
 	std::vector<std::string>		hosts;
 	std::string						root;
-	size_t							max_body_size;
+	std::string						max_body_size;
 };
 
 class Webserv
@@ -99,13 +101,12 @@ public:
 
 private:
 	size_t m_keepalive_timeout;
-	size_t m_max_body_size;
 	size_t m_client_buffers_size[2];	//0: header, 1: body
 	std::vector<server> m_servers;		//servers list
 	std::vector<query> m_clients;		//connected clients
 	std::vector<query> m_queries;
 	std::vector<pollfd> m_fds;
-	std::vector<fdType> m_fdTYpe;
+	std::vector<fdType> m_fdType;
 	std::vector<const QueryListener*> m_listeners;
 
 private:
@@ -126,7 +127,7 @@ private:
 	bool keepAlive(size_t, double);
 	bool getClient(size_t, query&);
 	std::pair<char*, ssize_t> removeChunk(char*, ssize_t);
-	const std::vector<std::string> getRoot(const Node*, const std::vector<const Node*>) const;
+	const std::vector<std::string> getDiretiveValue(const Node*, const std::vector<const Node*>) const;
 	server& getRightServer(query&);
 	bool matchServerName(const std::string&, const std::string&) const;
 	void addPipeToPoll(pollfd(&)[2]);
