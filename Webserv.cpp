@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/07 13:59:07 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/07 15:16:10 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,7 +124,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 			else if (m_fdType[i] == ACCEPT)
 			{
 				if (m_fds[i].revents & POLLIN)
-					if (readQuery(fd, onResponse) == 0)
+					if (readQuery(fd, onResponse) <= 0)
 					{
 						oss << "Deconnected client fd:" << m_fds[i].fd;
 						logOutMessage(oss);

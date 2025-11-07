@@ -14,4 +14,4 @@ if os.environ.get('REQUEST_METHOD') == 'POST':
             break
         data += c
     print("Read on stdin: ", repr(data))
-#print (os.environ)
+print (os.environ)

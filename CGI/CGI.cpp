@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/07 13:19:06 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/07 15:07:52 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,6 +166,7 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     std::ostringstream oss;
     
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGTERM, SIG_IGN);
     if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
     if (fcntl(m_pipe_in[0], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[1], F_SETFL, O_NONBLOCK) == -1)

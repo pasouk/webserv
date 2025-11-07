@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/07 13:45:06 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/07 15:28:20 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,9 +23,10 @@ int Webserv::responseHook(/*std::vector<query>::iterator it*/query& q
 	const pollfd *fds;
 
 	q.httpParser->setBodyLine(q.bodyChunks);
-	if (q.cgi == NULL && isRunnable(q.httpParser->getPath()))
+	if (q.cgi == NULL && q.httpParser->isCgiRequest(q.httpParser->getPath()))
 	{
-        env["QUERY_STRING"] = "not implemented";
+		q.httpParser->splitCgiPath(header);
+        env["QUERY_STRING"] = header;
         env["PATH_INFO"] = "not implemented";
 		env["SCRIPT_NAME"] = q.httpParser->getPath();
         env["REQUEST_METHOD"] = methods_map[q.httpParser->getMethod()].name;
