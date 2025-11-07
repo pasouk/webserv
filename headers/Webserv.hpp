@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/05 07:10:50 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/07 13:45:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,26 +113,26 @@ private:
 	QueryListener* createListener(u_int16_t, const std::string&);
 	std::vector<server> createServers(const ConfigParser*);
 	void printServer(server&) const;
-	void addClient(size_t);
-	int readQuery(size_t, void (*)(std::string&, ParserHttpRequest&, server&));
-	void sendQuery(size_t);
+	void addClient(int);
+	int readQuery(int, void (*)(std::string&, ParserHttpRequest&, server&));
+	void sendQuery(int);
 	void stopListening();
-	void destroyClient(size_t);
-	void releaseQueries(size_t);
+	void destroyClient(int);
+	void releaseQueries(int);
 	void releaseQuery(query*&);
-	int responseHook(std::vector<query>::iterator,  void (*)(std::string&, ParserHttpRequest&, server&));
-	int tcpStream(char* buffer, ssize_t, std::vector<query>::iterator
+	int responseHook(query&,  void (*)(std::string&, ParserHttpRequest&, server&));
+	int tcpStream(char* buffer, ssize_t, query&
 		, void (*)(std::string&, ParserHttpRequest&, server&), bool&);
-	bool clientNeedsAnswer(size_t) const;
-	bool keepAlive(size_t, double);
-	bool getClient(size_t, query&);
+	bool clientNeedsAnswer(int) const;
+	bool keepAlive(int, double);
+	bool getClient(int, query&);
 	std::pair<char*, ssize_t> removeChunk(char*, ssize_t);
 	const std::vector<std::string> getDiretiveValue(const Node*, const std::vector<const Node*>) const;
 	server& getRightServer(query&);
 	bool matchServerName(const std::string&, const std::string&) const;
 	void addPipeToPoll(pollfd(&)[2]);
-	void removePipeFromPoll(pollfd(&)[2]);
-	int callCGI(const std::string&, std::map<std::string, std::string>&, CGI*&) const;
+	void removePipesFromPoll(pollfd(&)[2]);
+	int callCGI(const std::string&, std::map<std::string, std::string>&, query&) const;
 	bool isRunnable(const std::string&) const;
 	bool getCgiQuery(int, query*&);
 };

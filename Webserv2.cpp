@@ -6,13 +6,13 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/04 12:16:35 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/07 13:45:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-int Webserv::responseHook(std::vector<query>::iterator it
+int Webserv::responseHook(/*std::vector<query>::iterator it*/query& q
 	, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	std::map<std::string, std::string> headers;
@@ -22,43 +22,43 @@ int Webserv::responseHook(std::vector<query>::iterator it
 	std::ostringstream oss;
 	const pollfd *fds;
 
-	(*it).httpParser->setBodyLine((*it).bodyChunks);
-	if ((*it).cgi == NULL && isRunnable((*it).httpParser->getPath()))
+	q.httpParser->setBodyLine(q.bodyChunks);
+	if (q.cgi == NULL && isRunnable(q.httpParser->getPath()))
 	{
         env["QUERY_STRING"] = "not implemented";
         env["PATH_INFO"] = "not implemented";
-		env["SCRIPT_NAME"] = (*it).httpParser->getPath();
-        env["REQUEST_METHOD"] = methods_map[(*it).httpParser->getMethod()].name;
-		ss << (*it).port;
+		env["SCRIPT_NAME"] = q.httpParser->getPath();
+        env["REQUEST_METHOD"] = methods_map[q.httpParser->getMethod()].name;
+		ss << q.port;
 		env["SERVER_PORT"] = ss.str();
-		env["SERVER_NAME"] = (*it).hostName;
+		env["SERVER_NAME"] = q.hostName;
 		env["SERVER_SOFTWARE"] = "webserv/1.0";
-		env["SERVER_PROTOCOL"] = (*it).httpParser->getVersion();
+		env["SERVER_PROTOCOL"] = q.httpParser->getVersion();
 		env["CONTENT_LENGTH"] = "0";
-		headers = (*it).httpParser->getHeaders();
+		headers = q.httpParser->getHeaders();
 		header = headers["Content-Length"];
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
-		if (callCGI((*it).httpParser->getPath(), env, (*it).cgi))
+		if (callCGI(q.httpParser->getPath(), env, q))
 		{
 			oss << "CGI can't be build.";
 			logErrMessage(oss);
 			return (1);
 		}
-		fds = (*it).cgi->getPollfd();
+		fds = q.cgi->getPollfd();
 		pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 		addPipeToPoll(arr);
 	}
 	else
-		onResponse((*it).formatedResponse, *((*it).httpParser), getRightServer(*it));
-	m_queries.push_back(*it);
+		onResponse(q.formatedResponse, *(q.httpParser), getRightServer(q));
+	m_queries.push_back(q);
 //	printQuery(*it);
-	(*it).httpRequest.clear();
-	(*it).bodySize = 0;
-	(*it).byteSent = 0;
-	(*it).httpParser = NULL;
-	(*it).cgi = NULL;
-	(*it).bodyChunks.clear();
+	q.httpRequest.clear();
+	q.bodySize = 0;
+	q.byteSent = 0;
+	q.httpParser = NULL;
+	q.cgi = NULL;
+	q.bodyChunks.clear();
 	return (0);
 }
 
@@ -78,7 +78,7 @@ std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 	return (chunk);
 }
 
-int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
+int Webserv::tcpStream(char* buffer, ssize_t n, /*std::vector<query>::iterator it*/query& q
 	, void (*onResponse)(std::string&, ParserHttpRequest&, server&), bool& bDelete)
 {
 	std::map<std::string, std::string> headers;
@@ -88,78 +88,78 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 	std::pair<char*, ssize_t> chunk;
 
 	bDelete = true;
-	if ((*it).bodySize)
+	if (q.bodySize)
 	{
-		if (i + (*it).bodySize < n)
+		if (i + q.bodySize < n)
 		{
-			chunk = removeChunk(&buffer[i], (*it).bodySize);
-			(*it).bodyChunks.push_back(chunk);
-			i += (*it).bodySize;
-			if (responseHook(it, onResponse))
+			chunk = removeChunk(&buffer[i], q.bodySize);
+			q.bodyChunks.push_back(chunk);
+			i += q.bodySize;
+			if (responseHook(q, onResponse))
 				return (1);
 		}
 		else
 		{
 			chunk.second = n;
 			chunk.first = buffer;
-			(*it).bodyChunks.push_back(chunk);
+			q.bodyChunks.push_back(chunk);
 			bDelete = false;
-			(*it).bodySize -= n;
-			if ((*it).bodySize == 0)
-				if(responseHook(it, onResponse))
+			q.bodySize -= n;
+			if (q.bodySize == 0)
+				if(responseHook(q, onResponse))
 					return (1);
 			i += n;
 		}
 	}
 	while (i < n)
 	{
-		(*it).httpRequest += buffer[i];
-		if ((*it).httpRequest.find("\r\n\r\n") != std::string::npos)
+		q.httpRequest += buffer[i];
+		if (q.httpRequest.find("\r\n\r\n") != std::string::npos)
 		{
 			if (i < n)
 			{
-				(*it).httpParser = new (std::nothrow)ParserHttpRequest((*it).httpRequest);
-				if ((*it).httpParser == NULL)
+				q.httpParser = new (std::nothrow)ParserHttpRequest(q.httpRequest);
+				if (q.httpParser == NULL)
 					return (1);
-				headers = (*it).httpParser->getHeaders();
+				headers = q.httpParser->getHeaders();
 				header = headers["Content-Length"];
-				(*it).bodySize = 0;
+				q.bodySize = 0;
 				if (!header.empty())
 				{
 					ss.clear();
 					ss << header;
-					ss >> (*it).bodySize;
+					ss >> q.bodySize;
 				}
-				if ((*it).bodySize > 0)
+				if (q.bodySize > 0)
 				{
 					if (++i < n)
 					{
-						if (i + (*it).bodySize < n)
+						if (i + q.bodySize < n)
 						{
-							chunk = removeChunk(&buffer[i], (*it).bodySize);
-							(*it).bodyChunks.push_back(chunk);
-							i += (*it).bodySize - 1;
-							if (responseHook(it, onResponse))
+							chunk = removeChunk(&buffer[i], q.bodySize);
+							q.bodyChunks.push_back(chunk);
+							i += q.bodySize - 1;
+							if (responseHook(q, onResponse))
 								return (1);
 						}
 						else
 						{
 							chunk = removeChunk(&buffer[i], n - i);
-							(*it).bodyChunks.push_back(chunk);
-							(*it).bodySize -= n - i;
-							if ((*it).bodySize == 0)
-								if (responseHook(it, onResponse))
+							q.bodyChunks.push_back(chunk);
+							q.bodySize -= n - i;
+							if (q.bodySize == 0)
+								if (responseHook(q, onResponse))
 									return (1);
 							i = n;
 						}
 					}
 				}
 				else
-					if (responseHook(it, onResponse))
+					if (responseHook(q, onResponse))
 						return (1);
 			}
 			else
-				if (responseHook(it, onResponse))
+				if (responseHook(q, onResponse))
 					return (1);
 		}
 		++i;
@@ -167,13 +167,13 @@ int Webserv::tcpStream(char* buffer, ssize_t n, std::vector<query>::iterator it
 	return (0);
 }
 
-void Webserv::releaseQueries(size_t i)
+void Webserv::releaseQueries(int fd)
 {
 	query* q;
 
 	for (size_t j = 0; j < m_queries.size(); ++j)
 	{
-		if (m_queries[j].fd == m_fds[i].fd && m_queries[j].cgi == NULL)
+		if (m_queries[j].fd == fd)// && m_queries[j].cgi == NULL)
 		{
 			q = &m_queries[j];
 			releaseQuery(q);
@@ -197,6 +197,9 @@ void Webserv::releaseQuery(query*& q)
 			}
 			if (m_queries[j].cgi)
 			{
+				const pollfd *fds = m_queries[j].cgi->getPollfd();
+				pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+				removePipesFromPoll(arr);
 				delete (m_queries[j].cgi);
 				m_queries[j].cgi = NULL;
 			}
@@ -205,28 +208,33 @@ void Webserv::releaseQuery(query*& q)
 	}
 }
 
-void Webserv::destroyClient(size_t i)
+void Webserv::destroyClient(int fd)
 {
-	shutdown(m_fds[i].fd, SHUT_WR);
-	close(m_fds[i].fd);
-	releaseQueries(i);
+	shutdown(fd, SHUT_WR);
+	close(fd);
+	releaseQueries(fd);
 	for (size_t j = 0; j < m_clients.size(); ++j)
-		if (m_fds[i].fd == m_clients[j].fd)
+		if (fd == m_clients[j].fd)
 		{
 			m_clients.erase(m_clients.begin() + j);
 			break ;
 		}
-	m_fds.erase(m_fds.begin() + i);
-	m_fdType.erase(m_fdType.begin() + i);
+	for (size_t i = 0; i < m_fds.size(); ++i)
+		if (fd == m_fds[i].fd)
+		{
+			m_fds.erase(m_fds.begin() + i);
+			m_fdType.erase(m_fdType.begin() + i);
+			break ;
+		}
 }
 
-bool Webserv::keepAlive(size_t i, double sec)
+bool Webserv::keepAlive(int fd, double sec)
 {
 	std::ostringstream oss;
 	double delay;
 	query client;
 
-	if (getClient(i, client))
+	if (getClient(fd, client))
 	{
 		delay = (std::time(NULL) - client.lifeTime);
 		if ( delay >= sec)
@@ -240,10 +248,10 @@ bool Webserv::keepAlive(size_t i, double sec)
 	return (true);
 }
 
-bool Webserv::getClient(size_t i, query& client)
+bool Webserv::getClient(int fd, query& client)
 {
 	for (size_t j = 0; j < m_clients.size(); ++j)
-		if (m_fds[i].fd == m_clients[j].fd)
+		if (fd == m_clients[j].fd)
 			return (client = m_clients[j], true);
 	return (false);
 }
@@ -313,7 +321,7 @@ void Webserv::addPipeToPoll(pollfd(&poll)[2])
 	m_fdType.push_back(PIPE);
 }
 
-void Webserv::removePipeFromPoll(pollfd(&poll)[2])
+void Webserv::removePipesFromPoll(pollfd(&poll)[2])
 {
 	for (size_t i = 0; i < m_fds.size(); ++i)
 		if (m_fds[i].fd == poll[1].fd)

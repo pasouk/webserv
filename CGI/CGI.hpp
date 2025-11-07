@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/03 09:51:47 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/07 13:18:31 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,12 +45,13 @@ class CGI
 {
 public:
     ~CGI();
-    CGI(std::string, std::string, std::map<std::string, std::string>&);    //script whithout shebang
-    CGI(std::string, std::map<std::string, std::string>&);                 //binary/script (with shebang)
+    CGI(std::string, std::string, std::map<std::string, std::string>&, int);    //script whithout shebang
+    CGI(std::string, std::map<std::string, std::string>&, int);                 //binary/script (with shebang)
 
     int writeCGI(std::pair<char*, ssize_t>&) const;
     int readCGI(std::string&) const;
     const pollfd* getPollfd() const;
+    int getFd() const;
 
 private:
     void cgi(char**, char**);
@@ -61,6 +62,7 @@ private:
     void setEnvp(std::map<std::string, std::string>);
 
 private:
+    int     m_fd_client;
     char**  m_envp;
     pid_t   m_id_cgi;
     int     m_pipe_in[2];

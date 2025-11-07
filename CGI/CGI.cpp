@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/03 15:56:25 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/07 13:19:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,8 @@ CGI::~CGI()
     logOutMessage(oss);
 }
 
-CGI::CGI(std::string interpreter, std::string script, std::map<std::string, std::string>& env)
-    : m_envp(NULL), m_id_cgi(-1)
+CGI::CGI(std::string interpreter, std::string script, std::map<std::string, std::string>& env, int fd)
+    : m_fd_client(fd), m_envp(NULL), m_id_cgi(-1)
 {    
     const char* argv[3] = {interpreter.data(), script.data(), NULL};
     initFDS();
@@ -40,7 +40,7 @@ CGI::CGI(std::string interpreter, std::string script, std::map<std::string, std:
     }
 }
 
-CGI::CGI(std::string binary, std::map<std::string, std::string>& env) : m_envp(NULL), m_id_cgi(-1)
+CGI::CGI(std::string binary, std::map<std::string, std::string>& env, int fd) : m_fd_client(fd), m_envp(NULL), m_id_cgi(-1)
 {
     const char* argv[2] = {binary.data(), NULL};
     initFDS();
@@ -51,6 +51,11 @@ CGI::CGI(std::string binary, std::map<std::string, std::string>& env) : m_envp(N
         deleteEnvp();
         throw std::runtime_error(std::strerror(errno));
     }
+}
+
+int CGI::getFd() const
+{
+    return (m_fd_client);
 }
 
 void CGI::setEnvp(std::map<std::string, std::string> env)
@@ -128,7 +133,7 @@ int CGI::writeCGI(std::pair<char*, ssize_t>& chunk) const
         n = write(m_pipe_out[1], chunk.first + written, total - written);
         if (n == -1)
         {
-            oss << std::strerror(errno);
+            oss << "[CGI] client fd:" << m_fd_client << ", " << std::strerror(errno);
             logErrMessage(oss);
             break;
         }
@@ -150,7 +155,7 @@ int CGI::readCGI(std::string& response) const
     }
     if (n == - 1)
     {
-        oss << std::strerror(errno);
+        oss << "[CGI] client fd:" << m_fd_client << ", " << std::strerror(errno);
         logErrMessage(oss);
     }
     return (n);
@@ -160,11 +165,12 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
 {
     std::ostringstream oss;
     
+    signal(SIGPIPE, SIG_IGN);
     if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
     if (fcntl(m_pipe_in[0], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[1], F_SETFL, O_NONBLOCK) == -1)
     {
-        oss << std::strerror(errno);
+        oss << "[CGI] client fd:" << m_fd_client << ", " << std::strerror(errno);
 	    logErrMessage(oss);
     }
     poll[0].fd = m_pipe_out[1];

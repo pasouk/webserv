@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv3.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/03 09:24:15 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/07 08:58:56 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,15 +25,14 @@ bool Webserv::isRunnable(const std::string& file) const
     return (false);
 }
 
-int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, CGI*& cgi) const
+int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q) const
 {
     std::string addDot;
     addDot = "." + file;
-    cgi = NULL;
 
     try
     {
-        cgi = new CGI(addDot, env);
+        q.cgi = new CGI(addDot, env, q.fd);
     }
     catch(const std::exception& e)
     {

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/05 07:15:48 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/07 13:59:07 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,11 +65,11 @@ Webserv::~Webserv()
 
 void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
-	static pollfd fd;
+	static pollfd pfd;
 	static rlimit limit;
 	query* q;
+	int fd;
 	std::ostringstream oss;
-	std::string cgiResponse;
 
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
@@ -79,10 +79,10 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 	}
 	for (std::vector<const QueryListener*>::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
 	{
-		fd.fd = (*it)->getListenFD();
-		fd.events = POLLIN;
-		fd.revents = 0;
-		m_fds.push_back(fd);
+		pfd.fd = (*it)->getListenFD();
+		pfd.events = POLLIN;
+		pfd.revents = 0;
+		m_fds.push_back(pfd);
 		m_fdType.push_back(SOCKET);
 	}
 	oss << "Listening...";
@@ -96,20 +96,19 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 		}
 		for (size_t i = 0; i < m_fds.size(); ++i)
 		{
+			fd = m_fds[i].fd;
 			if (m_fdType[i] == SOCKET && (m_fds[i].revents & POLLIN))
-				addClient(i);
-			else if (m_fdType[i] == PIPE && getCgiQuery(m_fds[i].fd, q))
+				addClient(fd);
+			else if (m_fdType[i] == PIPE && getCgiQuery(fd, q))
 			{
 				if (m_fds[i].revents & POLLIN)
 				{
-					if (q->cgi->readCGI(cgiResponse) <= 0)
+					if (q->cgi->readCGI(q->formatedResponse) <= 0)
 					{
 						const pollfd *fds = q->cgi->getPollfd();
 						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-						removePipeFromPoll(arr);
-						releaseQuery(q);
+						removePipesFromPoll(arr);
 					}
-					std::cout << cgiResponse << std::endl;
 				}
 				else if (m_fds[i].revents & POLLOUT)
 				{
@@ -118,35 +117,36 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 						{
 							const pollfd *fds = q->cgi->getPollfd();
 							pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-							removePipeFromPoll(arr);
-							releaseQuery(q);
+							removePipesFromPoll(arr);
 						}
 				}
 			}
 			else if (m_fdType[i] == ACCEPT)
 			{
 				if (m_fds[i].revents & POLLIN)
-					if (readQuery(i, onResponse) == 0)
+					if (readQuery(fd, onResponse) == 0)
 					{
 						oss << "Deconnected client fd:" << m_fds[i].fd;
 						logOutMessage(oss);
-						destroyClient(i);
+						destroyClient(fd);
 					}
-				if (clientNeedsAnswer(i))
+				if (clientNeedsAnswer(fd))
+				{
 					m_fds[i].events |= POLLOUT;
-				else
-				{				
-					m_fds[i].events &= ~POLLOUT;
-					releaseQueries(i);
 				}
-				if (!keepAlive(i, m_keepalive_timeout))
+				else if (m_fds[i].events & POLLOUT)
+				{
+					m_fds[i].events &= ~POLLOUT;
+					releaseQueries(fd);
+				}
+				if (!keepAlive(fd, m_keepalive_timeout))
 				{
 					oss << "Deconnected client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
-					destroyClient(i);
+					destroyClient(fd);
 				}
 				if (m_fds[i].revents & POLLOUT)
-					sendQuery(i);
+					sendQuery(fd);
 			}
 		}
 	}
@@ -155,12 +155,12 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 	logOutMessage(oss);
 }
 
-void Webserv::addClient(size_t i)
+void Webserv::addClient(int fd)
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
 	static query query;
-	static pollfd fd;
+	static pollfd pfd;
 	std::ostringstream oss;
 	size_t j;
 	char ip[INET_ADDRSTRLEN];
@@ -169,80 +169,80 @@ void Webserv::addClient(size_t i)
 	{					
 		serverAddress = (*it)->getServerAddress();
 		serverlen = sizeof(serverAddress);
-		fd.fd = accept(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
-		if (fd.fd < 0) 
+		pfd.fd = accept(fd, (struct sockaddr*)&serverAddress, &serverlen);
+		if (pfd.fd < 0) 
 			continue;
-		if (fcntl(fd.fd, F_SETFL, O_NONBLOCK) == -1)
+		if (fcntl(pfd.fd, F_SETFL, O_NONBLOCK) == -1)
 		{
 			oss << std::strerror(errno);
 			logErrMessage(oss);
 		}
-		fd.events |= POLLIN;
-		fd.revents = 0;
+		pfd.events |= POLLIN;
+		pfd.revents = 0;
 		for (j = 0; j < m_fds.size(); ++j)
-			if (m_fds[j].fd == fd.fd)
+			if (m_fds[j].fd == pfd.fd)
 				break;
 		if (j == m_fds.size())
 		{
-			m_fds.push_back(fd);
+			m_fds.push_back(pfd);
 			m_fdType.push_back(ACCEPT);
-			getsockname(m_fds[i].fd, (struct sockaddr*)&serverAddress, &serverlen);
-			query.fd = fd.fd;
+			getsockname(fd, (struct sockaddr*)&serverAddress, &serverlen);
+			query.fd = pfd.fd;
 			query.lifeTime = std::time(NULL);
 			query.port = ntohs(serverAddress.sin_port);
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;
 			m_clients.push_back(query);
-			oss << "New client connected: fd:" << fd.fd << ", port:"<< ntohs(serverAddress.sin_port);
+			oss << "New client connected: fd:" << pfd.fd << ", port:"<< ntohs(serverAddress.sin_port);
 			logOutMessage(oss);
 		}
 		break;
 	}
 }
 
-int Webserv::readQuery(size_t i, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
+int Webserv::readQuery(int fd, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	static char *buffers;
 	static bool bBody;
 	std::ostringstream oss;
+	query client;
 	bool bDelete;
 	ssize_t n;
 	
 	n = 0;
 	bDelete = true;
-	for (std::vector<query>::iterator it = m_clients.begin(); it != m_clients.end(); ++it)
-		if (m_fds[i].fd == (*it).fd)
+	if (getClient(fd, client))
+	{
+		client.lifeTime = std::time(NULL);
+		do
 		{
-			(*it).lifeTime = std::time(NULL);
-			do
+			buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
+			if (buffers == NULL)
 			{
-				buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
-				if (buffers == NULL)
-				{
-					cleanWebserv();
-					throw std::bad_alloc();
-				}
-				if ((n = read((*it).fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
-				{
-					buffers[n] = '\0';
-					if(tcpStream(buffers, n, it, onResponse, bDelete))
-						return (delete [](buffers), -1);
-					(*it).bodySize ? bBody = true : bBody = false;
-					if (bDelete)
-						delete [](buffers);
-				}
-			} while(n > 0);
-			if (n == -1)
-			{
-				oss << "read: " << std::strerror(errno);
-				logOutMessage(oss);
+				cleanWebserv();
+				throw std::bad_alloc();
 			}
-			break ;
+			if ((n = read(client.fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
+			{
+				buffers[n] = '\0';
+				if(tcpStream(buffers, n, /*it*/client, onResponse, bDelete))
+					return (delete [](buffers), -1);
+				client.bodySize ? bBody = true : bBody = false;
+				if (bDelete)
+					delete [](buffers);
+			}
+		} while(n > 0);
+		if (n == -1)
+		{
+			oss << "[server] client fd:" << client.fd << ", " << std::strerror(errno);
+			logOutMessage(oss);
 		}
-	return (delete [](buffers), n);
+		delete [](buffers);
+	}
+	return (n);
 }
 
-void Webserv::sendQuery(size_t i)
+void Webserv::sendQuery(int fd)
 {
 	ssize_t n;
 	query client;
@@ -250,25 +250,28 @@ void Webserv::sendQuery(size_t i)
 
 	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
-		if ((*it).fd == m_fds[i].fd)
+		if ((*it).fd == fd)
 		{
 			while ((*it).byteSent < (*it).formatedResponse.size())
 			{
-				if(getClient(i, client))
+				if(getClient(fd, client))
 					client.lifeTime = std::time(NULL);
 				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
 					, (*it).formatedResponse.size() - (*it).byteSent, 0);
 				if (n > 0)
+				{
+					std::cout << (*it).formatedResponse << std::endl;
 					(*it).byteSent += n;
+				}
 				else if (n == -1)
 				{
-					oss << "send: " << std::strerror(errno);
+					oss << "[server] client fd:" << (*it).fd << ", " << std::strerror(errno);
 					logOutMessage(oss);
 					break ;
 				}
 				else
 				{
-					destroyClient(i);
+					destroyClient(fd);
 					break ;
 				}
 			}
@@ -281,10 +284,10 @@ void Webserv::sendQuery(size_t i)
 	}
 }
 
-bool Webserv::clientNeedsAnswer(size_t i) const
+bool Webserv::clientNeedsAnswer(int fd) const
 {
 	for (std::vector<query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
-		if ((*it).fd == m_fds[i].fd && !(*it).formatedResponse.empty())
+		if ((*it).fd == fd && !(*it).formatedResponse.empty())
 			return (true);
 	return (false);
 }
