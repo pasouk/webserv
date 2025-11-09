@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/09 12:29:23 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/09 15:13:36 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,6 +109,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 						removePipesFromPoll(arr);
 					}
+					std::cerr << q->formatedResponse << std::endl;
 				}
 				else if (m_fds[i].revents & POLLOUT)
 				{
@@ -125,20 +126,13 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 			{
 				if (m_fds[i].revents & POLLIN)
 				{
-					int ret = readQuery(fd, onResponse);
-					if (ret == 0)
-					{
-						oss << "Deconnected client fd:" << m_fds[i].fd;
-						logOutMessage(oss);
-						destroyClient(fd);
-					}
-					else if (ret == -2)
+					if (readQuery(fd, onResponse) == -2)
 					{
 						std::cerr << "- 2 ZIOUZOUZOU\n\n\n";
 						g_listening = false;
 						break ;
 					}
-			}
+				}
 				if (clientNeedsAnswer(fd))
 				{
 					m_fds[i].events |= POLLOUT;

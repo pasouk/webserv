@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/09 09:47:35 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/09 14:08:10 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ int Webserv::responseHook(/*std::vector<query>::iterator it*/query& q
 	q.httpParser->setBodyLine(q.bodyChunks);
 	if (q.cgi == NULL && q.httpParser->isCgiRequest(q.httpParser->getPath()))
 	{
+
 		q.httpParser->splitCgiPath(header);
         env["QUERY_STRING"] = header;
         env["PATH_INFO"] = "not implemented";
@@ -41,6 +42,7 @@ int Webserv::responseHook(/*std::vector<query>::iterator it*/query& q
 		header = headers["Content-Length"];
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
+
 		if (callCGI(q.httpParser->getPath(), env, q))
 		{
 			oss << "CGI can't be build.";
