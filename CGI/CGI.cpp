@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/07 15:07:52 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/09 12:29:59 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,11 +33,7 @@ CGI::CGI(std::string interpreter, std::string script, std::map<std::string, std:
     initFDS();
     setEnvp(env);
     if (buildChild(const_cast<char**>(argv), m_envp, m_poll))
-    {
-        closeFDS();
-        deleteEnvp();
         throw std::runtime_error(std::strerror(errno));
-    }
 }
 
 CGI::CGI(std::string binary, std::map<std::string, std::string>& env, int fd) : m_fd_client(fd), m_envp(NULL), m_id_cgi(-1)
@@ -46,16 +42,17 @@ CGI::CGI(std::string binary, std::map<std::string, std::string>& env, int fd) : 
     initFDS();
     setEnvp(env);
     if (buildChild(const_cast<char**>(argv), m_envp, m_poll))
-    {
-        closeFDS();
-        deleteEnvp();
         throw std::runtime_error(std::strerror(errno));
-    }
 }
 
 int CGI::getFd() const
 {
     return (m_fd_client);
+}
+
+pid_t CGI::getPid() const
+{
+    return (m_id_cgi);
 }
 
 void CGI::setEnvp(std::map<std::string, std::string> env)
@@ -84,7 +81,6 @@ void CGI::setEnvp(std::map<std::string, std::string> env)
         }
         var.copy(m_envp[i], var.length());
         m_envp[i][var.length()] = '\0';
-        //std::cout << "++++++++++" << m_envp[i] << "********\n";
     }
     m_envp[++i] = NULL;
 }
@@ -166,7 +162,6 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     std::ostringstream oss;
     
     signal(SIGPIPE, SIG_IGN);
-    signal(SIGTERM, SIG_IGN);
     if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
     if (fcntl(m_pipe_in[0], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[1], F_SETFL, O_NONBLOCK) == -1)
@@ -184,11 +179,14 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     if (m_id_cgi == 0)
     {
         cgi(argv, envp);
+        closeFDS();
+        deleteEnvp();
         return (1);
     }
     else if (m_id_cgi == -1)
     {
         closeFDS();
+        deleteEnvp();
         return (1);
     }
     close(m_pipe_in[1]);

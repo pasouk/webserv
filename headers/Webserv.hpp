@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/07 13:45:06 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/08 09:57:57 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,7 +133,7 @@ private:
 	void addPipeToPoll(pollfd(&)[2]);
 	void removePipesFromPoll(pollfd(&)[2]);
 	int callCGI(const std::string&, std::map<std::string, std::string>&, query&) const;
-	bool isRunnable(const std::string&) const;
+	//bool isRunnable(const std::string&) const;
 	bool getCgiQuery(int, query*&);
 };
 

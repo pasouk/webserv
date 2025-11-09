@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/07 15:28:20 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/09 09:47:35 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@ int Webserv::responseHook(/*std::vector<query>::iterator it*/query& q
 	std::stringstream ss;
 	std::ostringstream oss;
 	const pollfd *fds;
+	int ret = 0;
 
 	q.httpParser->setBodyLine(q.bodyChunks);
 	if (q.cgi == NULL && q.httpParser->isCgiRequest(q.httpParser->getPath()))
@@ -44,23 +45,27 @@ int Webserv::responseHook(/*std::vector<query>::iterator it*/query& q
 		{
 			oss << "CGI can't be build.";
 			logErrMessage(oss);
-			return (1);
+			ret = 1;
 		}
-		fds = q.cgi->getPollfd();
-		pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-		addPipeToPoll(arr);
+		else
+		{
+			fds = q.cgi->getPollfd();
+			pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
+			addPipeToPoll(arr);
+		}
 	}
 	else
 		onResponse(q.formatedResponse, *(q.httpParser), getRightServer(q));
+	std::cerr << "NUM CHUNKs: " << q.bodyChunks.size() << std::endl;
 	m_queries.push_back(q);
-//	printQuery(*it);
+	//printQuery(q);
 	q.httpRequest.clear();
 	q.bodySize = 0;
 	q.byteSent = 0;
 	q.httpParser = NULL;
 	q.cgi = NULL;
 	q.bodyChunks.clear();
-	return (0);
+	return (ret);
 }
 
 std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
@@ -174,7 +179,7 @@ void Webserv::releaseQueries(int fd)
 
 	for (size_t j = 0; j < m_queries.size(); ++j)
 	{
-		if (m_queries[j].fd == fd)// && m_queries[j].cgi == NULL)
+		if (m_queries[j].fd == fd)
 		{
 			q = &m_queries[j];
 			releaseQuery(q);

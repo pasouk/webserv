@@ -6,13 +6,13 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/07 15:24:41 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/08 14:31:32 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-bool Webserv::isRunnable(const std::string& file) const
+/*bool Webserv::isRunnable(const std::string& file) const
 {
     size_t  pos; 
 	std::string ext;
@@ -23,7 +23,7 @@ bool Webserv::isRunnable(const std::string& file) const
 	if (ext == "py")
         return (true);
     return (false);
-}
+}*/
 
 int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q) const
 {
@@ -32,10 +32,12 @@ int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>
 
     try
     {
+        std::cerr << "WE ADD A CGI\n";
         q.cgi = new CGI(addDot, env, q.fd);
     }
     catch(const std::exception& e)
     {
+        std::cerr << "WE ADD NOT A CGI\n";
         return (1);
     }
     return (0);

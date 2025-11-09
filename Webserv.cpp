@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/07 15:16:10 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/09 12:29:23 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,12 +124,21 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 			else if (m_fdType[i] == ACCEPT)
 			{
 				if (m_fds[i].revents & POLLIN)
-					if (readQuery(fd, onResponse) <= 0)
+				{
+					int ret = readQuery(fd, onResponse);
+					if (ret == 0)
 					{
 						oss << "Deconnected client fd:" << m_fds[i].fd;
 						logOutMessage(oss);
 						destroyClient(fd);
 					}
+					else if (ret == -2)
+					{
+						std::cerr << "- 2 ZIOUZOUZOU\n\n\n";
+						g_listening = false;
+						break ;
+					}
+			}
 				if (clientNeedsAnswer(fd))
 				{
 					m_fds[i].events |= POLLOUT;
@@ -150,6 +159,10 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 			}
 		}
 	}
+
+	releaseQueries(fd);
+
+
 	cleanWebserv();
 	oss << "Stop listening";
 	logOutMessage(oss);
@@ -225,8 +238,12 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, ParserHttpReques
 			if ((n = read(client.fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
 			{
 				buffers[n] = '\0';
-				if(tcpStream(buffers, n, /*it*/client, onResponse, bDelete))
-					return (delete [](buffers), -1);
+				if(tcpStream(buffers, n, client, onResponse, bDelete))
+				{
+					if (bDelete)
+						delete [](buffers);
+					return (-2);
+				}
 				client.bodySize ? bBody = true : bBody = false;
 				if (bDelete)
 					delete [](buffers);
@@ -433,12 +450,8 @@ void Webserv::cleanWebserv()
 	for (std::vector<const QueryListener*>::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
 		delete (*it);
 	m_listeners.clear();
-	for (size_t i = 0; i < m_fds.size(); ++i)
-		if (m_fdType[i])
-		{
-			destroyClient(i);
-			close (m_fds[i].fd);
-		}
+	for (size_t i = 0; i < m_clients.size(); ++i)
+		destroyClient(m_clients[i].fd);
 	m_fds.clear();
 	m_fdType.clear();
 }
