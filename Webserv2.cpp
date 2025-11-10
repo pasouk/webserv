@@ -3,17 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/09 14:08:10 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/11/10 10:07:09 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-int Webserv::responseHook(/*std::vector<query>::iterator it*/query& q
-	, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
+int Webserv::responseHook(query& q, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	std::map<std::string, std::string> headers;
 	std::string header;
@@ -58,7 +57,6 @@ int Webserv::responseHook(/*std::vector<query>::iterator it*/query& q
 	}
 	else
 		onResponse(q.formatedResponse, *(q.httpParser), getRightServer(q));
-	std::cerr << "NUM CHUNKs: " << q.bodyChunks.size() << std::endl;
 	m_queries.push_back(q);
 	//printQuery(q);
 	q.httpRequest.clear();
@@ -86,7 +84,7 @@ std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 	return (chunk);
 }
 
-int Webserv::tcpStream(char* buffer, ssize_t n, /*std::vector<query>::iterator it*/query& q
+int Webserv::tcpStream(char* buffer, ssize_t n, query& q
 	, void (*onResponse)(std::string&, ParserHttpRequest&, server&), bool& bDelete)
 {
 	std::map<std::string, std::string> headers;

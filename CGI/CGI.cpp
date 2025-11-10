@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/09 14:57:38 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/11/10 10:19:16 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -178,7 +178,6 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
     m_id_cgi = fork();
     if (m_id_cgi == 0)
     {
-        std::cerr << "WE IN CHILD" << std::endl;
         cgi(argv, envp);
         closeFDS();
         deleteEnvp();

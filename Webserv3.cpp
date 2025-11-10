@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/08 14:31:32 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/10 10:10:26 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,12 +32,10 @@ int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>
 
     try
     {
-        std::cerr << "WE ADD A CGI\n";
         q.cgi = new CGI(addDot, env, q.fd);
     }
     catch(const std::exception& e)
     {
-        std::cerr << "WE ADD NOT A CGI\n";
         return (1);
     }
     return (0);

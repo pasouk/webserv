@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/09 15:13:36 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/11/10 10:20:36 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,7 +109,6 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 						removePipesFromPoll(arr);
 					}
-					std::cerr << q->formatedResponse << std::endl;
 				}
 				else if (m_fds[i].revents & POLLOUT)
 				{
@@ -128,15 +127,12 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 				{
 					if (readQuery(fd, onResponse) == -2)
 					{
-						std::cerr << "- 2 ZIOUZOUZOU\n\n\n";
 						g_listening = false;
 						break ;
 					}
 				}
 				if (clientNeedsAnswer(fd))
-				{
 					m_fds[i].events |= POLLOUT;
-				}
 				else if (m_fds[i].events & POLLOUT)
 				{
 					m_fds[i].events &= ~POLLOUT;
@@ -270,10 +266,7 @@ void Webserv::sendQuery(int fd)
 				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
 					, (*it).formatedResponse.size() - (*it).byteSent, 0);
 				if (n > 0)
-				{
-					std::cout << (*it).formatedResponse << std::endl;
 					(*it).byteSent += n;
-				}
 				else if (n == -1)
 				{
 					oss << "[server] client fd:" << (*it).fd << ", " << std::strerror(errno);
