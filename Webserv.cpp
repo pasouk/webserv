@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/10 10:20:36 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/11 12:02:57 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,7 +132,12 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 					}
 				}
 				if (clientNeedsAnswer(fd))
-					m_fds[i].events |= POLLOUT;
+				{
+					if (sendQuery(fd) < 0)
+						m_fds[i].events |= POLLOUT;
+					else
+						releaseQueries(fd);
+				}
 				else if (m_fds[i].events & POLLOUT)
 				{
 					m_fds[i].events &= ~POLLOUT;
@@ -144,15 +149,9 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 					logOutMessage(oss);
 					destroyClient(fd);
 				}
-				if (m_fds[i].revents & POLLOUT)
-					sendQuery(fd);
 			}
 		}
 	}
-
-	releaseQueries(fd);
-
-
 	cleanWebserv();
 	oss << "Stop listening";
 	logOutMessage(oss);
@@ -180,7 +179,7 @@ void Webserv::addClient(int fd)
 			oss << std::strerror(errno);
 			logErrMessage(oss);
 		}
-		pfd.events |= POLLIN;
+		pfd.events = POLLIN;
 		pfd.revents = 0;
 		for (j = 0; j < m_fds.size(); ++j)
 			if (m_fds[j].fd == pfd.fd)
@@ -249,12 +248,13 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, ParserHttpReques
 	return (n);
 }
 
-void Webserv::sendQuery(int fd)
+int Webserv::sendQuery(int fd)
 {
 	ssize_t n;
 	query client;
 	std::ostringstream oss;
 
+	n = 0;
 	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
 		if ((*it).fd == fd)
@@ -286,6 +286,7 @@ void Webserv::sendQuery(int fd)
 			}
 		}
 	}
+	return (n);
 }
 
 bool Webserv::clientNeedsAnswer(int fd) const

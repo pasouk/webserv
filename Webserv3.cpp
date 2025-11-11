@@ -6,24 +6,11 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/10 10:10:26 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/11 11:59:51 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
-
-/*bool Webserv::isRunnable(const std::string& file) const
-{
-    size_t  pos; 
-	std::string ext;
-
-	pos = file.find_last_of(".");
-	if (pos != std::string::npos)
-		ext = file.substr(pos + 1, file.length() - pos);
-	if (ext == "py")
-        return (true);
-    return (false);
-}*/
 
 int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q) const
 {

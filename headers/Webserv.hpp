@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/08 09:57:57 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/11 12:02:07 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -115,7 +115,7 @@ private:
 	void printServer(server&) const;
 	void addClient(int);
 	int readQuery(int, void (*)(std::string&, ParserHttpRequest&, server&));
-	void sendQuery(int);
+	int sendQuery(int);
 	void stopListening();
 	void destroyClient(int);
 	void releaseQueries(int);
@@ -133,7 +133,6 @@ private:
 	void addPipeToPoll(pollfd(&)[2]);
 	void removePipesFromPoll(pollfd(&)[2]);
 	int callCGI(const std::string&, std::map<std::string, std::string>&, query&) const;
-	//bool isRunnable(const std::string&) const;
 	bool getCgiQuery(int, query*&);
 };
 
