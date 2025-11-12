@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/11 12:02:57 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/12 10:16:42 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,6 +123,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 			}
 			else if (m_fdType[i] == ACCEPT)
 			{
+				if (m_fds[i].events & POLLOUT)
+					sendQuery(fd);
 				if (m_fds[i].revents & POLLIN)
 				{
 					if (readQuery(fd, onResponse) == -2)
@@ -132,14 +134,10 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 					}
 				}
 				if (clientNeedsAnswer(fd))
-				{
-					if (sendQuery(fd) < 0)
 						m_fds[i].events |= POLLOUT;
-					else
-						releaseQueries(fd);
-				}
 				else if (m_fds[i].events & POLLOUT)
 				{
+					std::cout << "STOP POLLOUT !\n";
 					m_fds[i].events &= ~POLLOUT;
 					releaseQueries(fd);
 				}
