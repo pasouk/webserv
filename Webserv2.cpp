@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/10 10:07:09 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/14 14:21:55 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,17 +15,19 @@
 int Webserv::responseHook(query& q, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
 {
 	std::map<std::string, std::string> headers;
-	std::string header;
+	std::string header, cgiPath;
 	std::map<std::string, std::string> env;
 	std::stringstream ss;
 	std::ostringstream oss;
+	server s;
+	bool cgiBinary;
 	const pollfd *fds;
 	int ret = 0;
 
+	s = getRightServer(q);
 	q.httpParser->setBodyLine(q.bodyChunks);
-	if (q.cgi == NULL && q.httpParser->isCgiRequest(q.httpParser->getPath()))
+	if (q.cgi == NULL && isCgi(s, q.httpParser->getPath(), cgiPath, cgiBinary))
 	{
-
 		q.httpParser->splitCgiPath(header);
         env["QUERY_STRING"] = header;
         env["PATH_INFO"] = "not implemented";
@@ -42,9 +44,9 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, ParserHttpR
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
 
-		if (callCGI(q.httpParser->getPath(), env, q))
+		if (callCGI(cgiPath, env, q, cgiBinary))
 		{
-			oss << "CGI can't be build.";
+			oss << "CGI can't be build.:";
 			logErrMessage(oss);
 			ret = 1;
 		}
@@ -56,7 +58,7 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, ParserHttpR
 		}
 	}
 	else
-		onResponse(q.formatedResponse, *(q.httpParser), getRightServer(q));
+		onResponse(q.formatedResponse, *(q.httpParser), s);
 	m_queries.push_back(q);
 	//printQuery(q);
 	q.httpRequest.clear();

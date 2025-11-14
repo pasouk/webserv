@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/11 12:02:07 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/14 14:21:49 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ public:
 	locationType			type;
 	std::string				by;
 	std::string				max_body_size;
+	std::string				cgi_pass;
 	std::vector<HttpMethod>	httpMethodsAllowed;
 };
 
@@ -132,8 +133,10 @@ private:
 	bool matchServerName(const std::string&, const std::string&) const;
 	void addPipeToPoll(pollfd(&)[2]);
 	void removePipesFromPoll(pollfd(&)[2]);
-	int callCGI(const std::string&, std::map<std::string, std::string>&, query&) const;
+	int callCGI(const std::string&, std::map<std::string, std::string>&, query&, bool) const;
 	bool getCgiQuery(int, query*&);
+	bool isCgi(const server&, const std::string&, std::string&, bool&);
+	const location* isThereLocation(const server&, std::string&);
 };
 
 #endif

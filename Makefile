@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+         #
+#    By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/11/03 12:19:27 by fbuyl            ###   ########.fr        #
+#    Updated: 2025/11/14 08:39:55 by fabrice          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,7 +25,7 @@ SOURCES = QueryListener.cpp \
 	Webserv2.cpp \
 	Webserv3.cpp \
 	CGI/CGI.cpp \
-	logtime.cpp \
+	utils.cpp \
 	HTTP_parser/ParserHttpRequest.cpp\
 	HTTP_parser/ParsingUtils.cpp \
 	HTTP_parser/ParsingChecks.cpp \

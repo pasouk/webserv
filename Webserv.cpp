@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/12 10:16:42 by fabricebuyl      ###   ########.fr       */
+/*   Updated: 2025/11/13 15:03:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,13 +118,15 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 							const pollfd *fds = q->cgi->getPollfd();
 							pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 							removePipesFromPoll(arr);
+							break ;
 						}
 				}
 			}
 			else if (m_fdType[i] == ACCEPT)
 			{
 				if (m_fds[i].events & POLLOUT)
-					sendQuery(fd);
+					if (sendQuery(fd) == -1)
+						releaseQueries(fd);
 				if (m_fds[i].revents & POLLIN)
 				{
 					if (readQuery(fd, onResponse) == -2)
@@ -137,7 +139,6 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 						m_fds[i].events |= POLLOUT;
 				else if (m_fds[i].events & POLLOUT)
 				{
-					std::cout << "STOP POLLOUT !\n";
 					m_fds[i].events &= ~POLLOUT;
 					releaseQueries(fd);
 				}
@@ -305,6 +306,7 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 	std::vector<const Node*> _location;
 	std::vector<const Node*> _limit_except;
 	std::vector<const Node*> _max_body_size;
+	std::vector<const Node*> _cgi_pass;
 	std::vector<server> servers;
 	std::vector<std::string> args;
 	std::ostringstream oss;
@@ -372,12 +374,12 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 		_location = parser->getDirectives("location", static_cast<const NodeBlock*>(*it));
 		for (std::vector<const Node*>::const_iterator it1 = _location.begin(); it1 != _location.end(); ++it1)
 		{
+			loc.concatOrReplace = (*it1)->getArgs()[0];
 			loc.type = NONE;
-			loc.concatOrReplace = "none";
 			loc.by = "none";
 			loc.max_body_size = "not define";
+			loc.cgi_pass = "none";
 			loc.httpMethodsAllowed.clear();
-			loc.concatOrReplace = (*it1)->getArgs()[0];
 			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
 				if ((*it2)->getParent() == *it1)
 				{
@@ -393,6 +395,9 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 			for (std::vector<const Node*>::const_iterator it2 = _max_body_size.begin(); it2 != _max_body_size.end(); ++it2)
 				if ((*it2)->getParent() == *it1)
 					loc.max_body_size = (*it2)->getArgs()[0];
+			_cgi_pass = parser->getDirectives("cgi_pass", static_cast<const NodeBlock*>(*it1));
+			if (_cgi_pass.size())
+				loc.cgi_pass = _cgi_pass[0]->getArgs()[0];
 			_limit_except = parser->getDirectives("limit_except", static_cast<const NodeBlock*>(*it1));
 			if (_limit_except.size())
 			{

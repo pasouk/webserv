@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/10 10:19:16 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/13 15:15:26 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,7 +117,7 @@ void CGI::closeFDS()
         close(m_pipe_out[0]);        
 }
 
-int CGI::writeCGI(std::pair<char*, ssize_t>& chunk) const
+int CGI::writeCGI(std::pair<char*, ssize_t>& chunk)
 {
     std::ostringstream oss;
     ssize_t written, total, n;
@@ -138,13 +138,13 @@ int CGI::writeCGI(std::pair<char*, ssize_t>& chunk) const
     return (n);
 }
 
-int CGI::readCGI(std::string& response) const
+int CGI::readCGI(std::string& response)
 {
     std::ostringstream oss;
-    static char buff[2];
+    static char buff[READBUFFERSIZE];
     int n;
     
-    while ((n = read(m_pipe_in[0], buff, 2)) > 0)
+    while ((n = read(m_pipe_in[0], buff, READBUFFERSIZE)) > 0)
     {
         buff[n] = '\0';
         response += buff;

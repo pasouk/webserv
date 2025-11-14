@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/07 18:32:10 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/13 10:11:35 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,11 +61,15 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 			}
 			/*std::cout << "LOCATION " << i << ": MAX BODY SIZE: " << s.locations[i].max_body_size << std::endl;
 			std::cout << "LOCATION " << i << ": ALLOWED METHOD(S): " << std::endl;
+			std::cout << "LOCATION " << i << ": CGI_PASS: " << s.locations[i].cgi_pass << std::endl;
+			std::cout << "LOCATION " << i << ": PATH: " << path << std::endl;
 			for (size_t j = 0; j < s.locations[i].httpMethodsAllowed.size(); ++j)
 				std::cout << methods_map[s.locations[i].httpMethodsAllowed[j]].name << " ";
 			std::cout << std::endl;*/
 		}
 	}
+
+
 	//response
     HttpResponse response1(r, r.getError());
     response1.setRoot(root);

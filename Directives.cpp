@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/05 06:59:11 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/13 10:57:18 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -269,4 +269,23 @@ bool Deny::areArgsValid(const std::vector<std::string>& args, std::string& err) 
 	if (args[0] == "all")
 		return (true);
 	return (err = "only \"all\" argument is allowed for now.", false);
+}
+
+CgiPass::CgiPass() : Directives(false, 1, 1, "cgi_pass")
+{
+	m_memberships.push_back("location");
+}
+
+bool CgiPass::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^/([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
 }

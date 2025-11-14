@@ -6,20 +6,75 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/11 11:59:51 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/14 15:10:29 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q) const
+const location* Webserv::isThereLocation(const server& s, std::string& path)
+{
+    size_t pos;
+
+    for (size_t i = 0; i < s.locations.size(); ++i)
+    {
+        pos = path.find(s.locations[i].concatOrReplace);
+        if (pos != std::string::npos)
+        {
+            if (s.locations[i].type == ROOT)
+                path.replace(pos, s.locations[i].concatOrReplace.size()
+                    , s.locations[i].by + s.locations[i].concatOrReplace);
+            else if (s.locations[i].type == ALIAS)
+                path.replace(pos, s.locations[i].concatOrReplace.size(), s.locations[i].by);
+            if (RELATIVE)
+                if (path[0] == '/')
+                    path = path.substr(1, path.length() - 1);
+            return (&s.locations[i]);
+        }
+    }
+    return (NULL);
+}
+
+bool Webserv::isCgi(const server& s, const std::string& httpMethodArg, std::string& path, bool& binary)
+{
+    const location* l;
+
+    path = httpMethodArg;
+    binary = false;
+    if ((l = isThereLocation(s, path)) != NULL && l->cgi_pass != "none")
+    {
+        path = l->cgi_pass + getFilename(httpMethodArg);
+        if (is_elf_binary(l->cgi_pass.c_str()) || is_macho_binary(l->cgi_pass.c_str()))
+        {
+            path = l->cgi_pass;
+            binary = true;
+        }
+        //std::cout << "IS BINARY: " << binary << std::endl;
+        //std::cout << l->cgi_pass << std::endl;
+        //std::cout << httpMethodArg << std::endl;
+        return (true);
+    }
+    return (false);
+}
+
+int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q, bool isBinary) const
 {
     std::string addDot;
-    addDot = "." + file;
 
     try
     {
-        q.cgi = new CGI(addDot, env, q.fd);
+        if (isBinary)
+        {
+            std::cout << "IS BINARY\n";
+            addDot = "." + q.httpParser->getPath();
+            q.cgi = new CGI(file, addDot, env, q.fd);
+        }
+        else
+        {
+            std::cout << "IS NOT BINARY\n";
+            addDot = "." + file;
+            q.cgi = new CGI(addDot, env, q.fd);
+        }
     }
     catch(const std::exception& e)
     {

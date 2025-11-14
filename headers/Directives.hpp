@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/05 07:00:54 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/13 09:48:27 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,6 +104,12 @@ class Deny : public Directives //only "all" argument is valid for now, not use, 
 { 
 public:
 	Deny();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
+class CgiPass : public Directives
+{
+public: 
+	CgiPass();
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 

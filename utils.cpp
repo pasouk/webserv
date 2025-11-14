@@ -1,16 +1,72 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   logtime.cpp                                        :+:      :+:    :+:   */
+/*   utils.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 13:33:02 by fabrice           #+#    #+#             */
-/*   Updated: 2025/10/20 09:56:08 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/14 08:37:43 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "logtime.hpp"
+#include "utils.hpp"
+#include <stdio.h>
+#include <stdbool.h>
+
+bool is_elf_binary(const char *path)
+{
+    unsigned char magic[4];
+    FILE *f = fopen(path, "rb");
+
+    if (!f) return false;
+    if (fread(magic, 1, 4, f) != 4)
+    {
+        fclose(f);
+        return false;
+    }
+    fclose(f);
+    return magic[0] == 0x7F &&
+           magic[1] == 'E' &&
+           magic[2] == 'L' &&
+           magic[3] == 'F';
+}
+
+bool is_macho_binary(const char *path)
+{
+    unsigned char magic[4];
+    FILE *f = fopen(path, "rb");
+
+    if (!f) return false;
+    if (fread(magic, 1, 4, f) != 4)
+    {
+        fclose(f);
+        return false;
+    }
+    fclose(f);
+    return (
+        (magic[0] == 0xFE && magic[1] == 0xED && magic[2] == 0xFA &&
+        (magic[3] == 0xCF || magic[3] == 0xCE)) ||
+        (magic[0] == 0xCF && magic[1] == 0xFA && magic[2] == 0xED && magic[3] == 0xFE)
+    );
+}
+
+bool is_executable(const char *path)
+{
+    return access(path, X_OK) == 0;
+}
+
+bool is_path(const char *path)
+{
+    struct stat s;
+    return stat(path, &s) == 0; 
+}
+
+std::string getFilename(const std::string& path)
+{
+    size_t pos = path.find_last_of("/\\");
+    return (pos == std::string::npos) ? path : path.substr(pos + 1);
+}
 
 std::string currentDateTime()
 {

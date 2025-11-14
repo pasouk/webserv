@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/08 09:53:24 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/14 08:42:19 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,10 +22,12 @@
 #include <map>
 #include <fcntl.h>
 #include <poll.h>
-#include "logtime.hpp"
+#include "utils.hpp"
 
 #ifndef CGI_H
 # define CGI_H
+
+# define READBUFFERSIZE 1024
 
 /*CGi norm (RFC 3875)
 | Name                  | Description                                      | Example                            |
@@ -48,8 +50,8 @@ public:
     CGI(std::string, std::string, std::map<std::string, std::string>&, int);    //script whithout shebang
     CGI(std::string, std::map<std::string, std::string>&, int);                 //binary/script (with shebang)
 
-    int writeCGI(std::pair<char*, ssize_t>&) const;
-    int readCGI(std::string&) const;
+    int writeCGI(std::pair<char*, ssize_t>&);
+    int readCGI(std::string&);
     const pollfd* getPollfd() const;
     int getFd() const;
     pid_t getPid() const;
