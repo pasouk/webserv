@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/13 15:03:06 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/15 14:06:02 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,10 +63,11 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&, server&))
+void Webserv::startListening(void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
 {
 	static pollfd pfd;
 	static rlimit limit;
+	std::string CgiAnswer;
 	query* q;
 	int fd;
 	std::ostringstream oss;
@@ -103,11 +104,12 @@ void Webserv::startListening(void (*onResponse)(std::string&, ParserHttpRequest&
 			{
 				if (m_fds[i].revents & POLLIN)
 				{
-					if (q->cgi->readCGI(q->formatedResponse) <= 0)
+					if (q->cgi->readCGI(CgiAnswer) <= 0)
 					{
 						const pollfd *fds = q->cgi->getPollfd();
 						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 						removePipesFromPoll(arr);
+						onResponse(q->formatedResponse, &CgiAnswer, *q->httpParser, getRightServer(*q));
 					}
 				}
 				else if (m_fds[i].revents & POLLOUT)
@@ -201,7 +203,7 @@ void Webserv::addClient(int fd)
 	}
 }
 
-int Webserv::readQuery(int fd, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
+int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
 {
 	static char *buffers;
 	static bool bBody;

@@ -11,8 +11,6 @@
 /* ************************************************************************** */
 
 #include "utils.hpp"
-#include <stdio.h>
-#include <stdbool.h>
 
 bool is_elf_binary(const char *path)
 {
@@ -31,8 +29,6 @@ bool is_elf_binary(const char *path)
            magic[2] == 'L' &&
            magic[3] == 'F';
 }
-#include <cstdio>
-#include <cstdint>
 
 bool is_macho_binary(const char* path)
 {

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/13 10:11:35 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/15 14:09:56 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onResponse(std::string& response, ParserHttpRequest& r, server& s)
+void onResponse(std::string& response, std::string* CgiResponse, ParserHttpRequest& r, server& s)
 {	
 	(void)response;
 	std::string path;
@@ -69,14 +69,21 @@ void onResponse(std::string& response, ParserHttpRequest& r, server& s)
 		}
 	}
 
-
-	//response
-    HttpResponse response1(r, r.getError());
-    response1.setRoot(root);
-	//response1.setServerMethods(s.httpMethodsAllowed);
-    response1.HttpResponseManager();
-	response = response1.getFormatedResponse();
-	//std::cout << response << std::endl;
+	if (CgiResponse)
+	{
+		std::cout << "IT'S A CGI ANSWER !";
+		response = *CgiResponse;
+	}
+	else
+	{
+		//response
+		HttpResponse response1(r, r.getError());
+		response1.setRoot(root);
+		//response1.setServerMethods(s.httpMethodsAllowed);
+		response1.HttpResponseManager();
+		response = response1.getFormatedResponse();
+		//std::cout << response << std::endl;
+	}
 }
 
 int main(int argc, char *argv[])

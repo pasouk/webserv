@@ -6,13 +6,13 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/14 14:21:55 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/15 14:00:47 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-int Webserv::responseHook(query& q, void (*onResponse)(std::string&, ParserHttpRequest&, server&))
+int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
 {
 	std::map<std::string, std::string> headers;
 	std::string header, cgiPath;
@@ -43,7 +43,6 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, ParserHttpR
 		header = headers["Content-Length"];
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
-
 		if (callCGI(cgiPath, env, q, cgiBinary))
 		{
 			oss << "CGI can't be build.:";
@@ -58,7 +57,7 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, ParserHttpR
 		}
 	}
 	else
-		onResponse(q.formatedResponse, *(q.httpParser), s);
+		onResponse(q.formatedResponse, NULL, *(q.httpParser), s);
 	m_queries.push_back(q);
 	//printQuery(q);
 	q.httpRequest.clear();
@@ -87,7 +86,7 @@ std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 }
 
 int Webserv::tcpStream(char* buffer, ssize_t n, query& q
-	, void (*onResponse)(std::string&, ParserHttpRequest&, server&), bool& bDelete)
+	, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&), bool& bDelete)
 {
 	std::map<std::string, std::string> headers;
 	std::stringstream ss;

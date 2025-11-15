@@ -10,14 +10,16 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef LOGTIME_HPP
-# define LOGTIME_HPP
+#ifndef UTILS_HPP
+# define UTILS_HPP
 # include <iostream>
 # include <ctime>
 # include <iomanip>
 # include <sstream>
 # include <unistd.h>
 # include <sys/stat.h>
+# include <stdint.h>
+# include <stdio.h>
 
 bool is_elf_binary(const char *path);
 bool is_macho_binary(const char *path);

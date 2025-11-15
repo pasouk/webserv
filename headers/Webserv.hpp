@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/14 14:21:49 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/15 13:57:56 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,7 +95,7 @@ public:
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening(void (*)(std::string&, ParserHttpRequest&, server&));
+	void startListening(void (*)(std::string&, std::string*, ParserHttpRequest&, server&));
 	void printServers();
 	void printQuery(query&) const;
 	void cleanWebserv();
@@ -115,15 +115,15 @@ private:
 	std::vector<server> createServers(const ConfigParser*);
 	void printServer(server&) const;
 	void addClient(int);
-	int readQuery(int, void (*)(std::string&, ParserHttpRequest&, server&));
+	int readQuery(int, void (*)(std::string&, std::string*, ParserHttpRequest&, server&));
 	int sendQuery(int);
 	void stopListening();
 	void destroyClient(int);
 	void releaseQueries(int);
 	void releaseQuery(query*&);
-	int responseHook(query&,  void (*)(std::string&, ParserHttpRequest&, server&));
+	int responseHook(query&,  void (*)(std::string&, std::string*, ParserHttpRequest&, server&));
 	int tcpStream(char* buffer, ssize_t, query&
-		, void (*)(std::string&, ParserHttpRequest&, server&), bool&);
+		, void (*)(std::string&, std::string*, ParserHttpRequest&, server&), bool&);
 	bool clientNeedsAnswer(int) const;
 	bool keepAlive(int, double);
 	bool getClient(int, query&);
