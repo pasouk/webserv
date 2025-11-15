@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv3.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fabricebuyl <fabricebuyl@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/14 15:10:29 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/15 09:16:54 by fabricebuyl      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,9 +49,6 @@ bool Webserv::isCgi(const server& s, const std::string& httpMethodArg, std::stri
             path = l->cgi_pass;
             binary = true;
         }
-        //std::cout << "IS BINARY: " << binary << std::endl;
-        //std::cout << l->cgi_pass << std::endl;
-        //std::cout << httpMethodArg << std::endl;
         return (true);
     }
     return (false);

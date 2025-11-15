@@ -31,25 +31,38 @@ bool is_elf_binary(const char *path)
            magic[2] == 'L' &&
            magic[3] == 'F';
 }
+#include <cstdio>
+#include <cstdint>
 
-bool is_macho_binary(const char *path)
+bool is_macho_binary(const char* path)
 {
-    unsigned char magic[4];
-    FILE *f = fopen(path, "rb");
-
+    uint32_t magic = 0;
+    FILE* f = fopen(path, "rb");
     if (!f) return false;
-    if (fread(magic, 1, 4, f) != 4)
-    {
+
+    if (fread(&magic, 1, sizeof(magic), f) != sizeof(magic)) {
         fclose(f);
         return false;
     }
     fclose(f);
-    return (
-        (magic[0] == 0xFE && magic[1] == 0xED && magic[2] == 0xFA &&
-        (magic[3] == 0xCF || magic[3] == 0xCE)) ||
-        (magic[0] == 0xCF && magic[1] == 0xFA && magic[2] == 0xED && magic[3] == 0xFE)
-    );
+    switch (magic) {
+        // Mach-O thin
+        case 0xFEEDFACE: // MH_MAGIC   (32-bit)
+        case 0xFEEDFACF: // MH_MAGIC_64 (64-bit)
+        case 0xCEFAEDFE: // MH_CIGAM   (32-bit swapped)
+        case 0xCFFAEDFE: // MH_CIGAM_64 (64-bit swapped)
+
+        // FAT binaries
+        case 0xCAFEBABE: // FAT_MAGIC
+        case 0xBEBAFECA: // FAT_CIGAM
+        case 0xCAFEBABF: // FAT_MAGIC_64
+        case 0xBFBAFECA: // FAT_CIGAM_64
+            return true;
+        default:
+            return false;
+    }
 }
+
 
 bool is_executable(const char *path)
 {
