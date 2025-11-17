@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/15 14:06:02 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/17 14:34:35 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,6 +110,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 						removePipesFromPoll(arr);
 						onResponse(q->formatedResponse, &CgiAnswer, *q->httpParser, getRightServer(*q));
+						CgiAnswer = "";
 					}
 				}
 				else if (m_fds[i].revents & POLLOUT)

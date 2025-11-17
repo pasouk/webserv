@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/15 13:27:25 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/17 11:24:20 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,19 +29,6 @@
 
 # define READBUFFERSIZE 1024
 
-/*CGi norm (RFC 3875)
-| Name                  | Description                                      | Example                            |
-| --------------------- | ------------------------------------------------ | ---------------------------------- |
-| **`REQUEST_METHOD`**  | HTTP use method                                  | `GET`, `POST`, `HEAD`, `PUT`, etc. |
-| **`SCRIPT_NAME`**     | CGI root path script                             | `/cgi-bin/mon_script.cgi`          |
-| **`SERVER_NAME`**     | Domain name or IP address server                 | `example.com`                      |
-| **`SERVER_PORT`**     | Request TCP Port                                 | `80`, `443`, etc.                  |
-| **`SERVER_PROTOCOL`** | Protocol HTTP version                            | `HTTP/1.1`, `HTTP/2.0`             |
-| **`SERVER_SOFTWARE`** | Web server identifiant                           | `nginx/1.24.0`, `Apache/2.4.58`    |
-| **`QUERY_STRING`**    | HTTP data client                                 |                                    |
-| **`PATH_INFO`**       |                                                  |                                    |
-| **`CONTENT_LENGTH`**  | HTTP body length                                 |                                    |
-*/
 class Webserv;
 class CGI
 {

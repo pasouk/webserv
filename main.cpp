@@ -6,13 +6,16 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/15 14:09:56 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/17 15:40:38 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 #include "ParserHttp.hpp"
 #include "HTTP_response/HttpResponse.hpp"
+
+
+#include <string> //remove it
 
 bool g_listening = true;
 
@@ -71,8 +74,19 @@ void onResponse(std::string& response, std::string* CgiResponse, ParserHttpReque
 
 	if (CgiResponse)
 	{
-		std::cout << "IT'S A CGI ANSWER !";
-		response = *CgiResponse;
+		std::stringstream ss;
+		ss << CgiResponse->length();
+
+		std::cout << "IT'S A CGI ANSWER !\n";
+		std::string responseBuild =
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: " + ss.str() + "\r\n"
+			"Connection: close\r\n"
+			"\r\n";
+		response = responseBuild + *CgiResponse;
+	
+		//std::cout << "ANSWER:" << response << std::endl;
 	}
 	else
 	{

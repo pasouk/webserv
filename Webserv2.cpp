@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/15 14:00:47 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/17 15:36:59 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string
 	std::map<std::string, std::string> headers;
 	std::string header, cgiPath;
 	std::map<std::string, std::string> env;
-	std::stringstream ss;
 	std::ostringstream oss;
 	server s;
 	bool cgiBinary;
@@ -26,21 +25,21 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string
 
 	s = getRightServer(q);
 	q.httpParser->setBodyLine(q.bodyChunks);
+	//curl "http://localhost:8080/cgi-bin/hello.py/foo"
 	if (q.cgi == NULL && isCgi(s, q.httpParser->getPath(), cgiPath, cgiBinary))
 	{
 		q.httpParser->splitCgiPath(header);
-        env["QUERY_STRING"] = header;
-        env["PATH_INFO"] = "not implemented";
-		env["SCRIPT_NAME"] = q.httpParser->getPath();
-        env["REQUEST_METHOD"] = methods_map[q.httpParser->getMethod()].name;
-		ss << q.port;
-		env["SERVER_PORT"] = ss.str();
-		env["SERVER_NAME"] = q.hostName;
-		env["SERVER_SOFTWARE"] = "webserv/1.0";
-		env["SERVER_PROTOCOL"] = q.httpParser->getVersion();
+		env["SCRIPT_NAME"] = "/cgi-bin/hello.py";//q.httpParser->getPath();
+        env["PATH_INFO"] = "/foo";//"";
+		env["SCRIPT_FILENAME"] = "/home/fabrice/Documents/webserv/cgi-bin/hello.py";//"";
+		env["REQUEST_METHOD"] = "GET";//methods_map[q.httpParser->getMethod()].name;
+		env["QUERY_STRING"] = "";//header;
 		env["CONTENT_LENGTH"] = "0";
+		env["SERVER_PROTOCOL"] = "HTTP/1.1";
+		env["SERVER_NAME"] = "localhost";
+		env["SERVER_PORT"] = "8080";
 		headers = q.httpParser->getHeaders();
-		header = headers["Content-Length"];
+		header = headers["Content-Length"]; 
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
 		if (callCGI(cgiPath, env, q, cgiBinary))

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/15 13:27:53 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/17 15:56:34 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>
         if (isBinary)
         {
             std::cout << "IS BINARY\n";
-            addDot = "." + q.httpParser->getPath();
+            addDot = "/home/fabrice/Documents/webserv/cgi-bin/hello.py"; //+ getFilename(q.httpParser->getPath());  //"." + q.httpParser->getPath();
             q.cgi = new CGI(file, addDot, env, q.fd);
         }
         else

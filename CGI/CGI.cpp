@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/15 13:28:12 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/17 15:57:39 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -203,6 +203,12 @@ void CGI::cgi(char* argv[], char* envp[])
     dup2(m_pipe_out[0], STDIN_FILENO);
     closeFDS();
     initFDS();
+    //std::cout << "PATH: " << argv[1]  << std::endl;
+    /*for (int i = 0; argv[i] != NULL; ++i)
+        std::cout << argv[i] << std::endl;
+    std::cout << std::endl;
+    for (int i = 0; envp[i] != NULL; ++i)
+        std::cout << envp[i] << std::endl;*/
     execve(argv[0], argv, envp);
     oss << argv[0] << ": " << std::strerror(errno) << std::endl;
     logErrMessage(oss);
