@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/17 15:36:59 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/18 12:34:34 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string
 	s = getRightServer(q);
 	q.httpParser->setBodyLine(q.bodyChunks);
 	//curl "http://localhost:8080/cgi-bin/hello.py/foo"
+	//./tester http://localhost:8080
 	if (q.cgi == NULL && isCgi(s, q.httpParser->getPath(), cgiPath, cgiBinary))
 	{
 		q.httpParser->splitCgiPath(header);
