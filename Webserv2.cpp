@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv2.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/18 12:34:34 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/20 13:35:45 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -176,23 +176,9 @@ int Webserv::tcpStream(char* buffer, ssize_t n, query& q
 
 void Webserv::releaseQueries(int fd)
 {
-	query* q;
-
-	for (size_t j = 0; j < m_queries.size(); ++j)
+	for (size_t j = 0; j < m_queries.size();)
 	{
 		if (m_queries[j].fd == fd)
-		{
-			q = &m_queries[j];
-			releaseQuery(q);
-		}
-	}
-}
-
-void Webserv::releaseQuery(query*& q)
-{
-	for (size_t j = 0; j < m_queries.size(); ++j)
-	{
-		if (&(m_queries[j]) == q)
 		{
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
 				delete [](m_queries[j].bodyChunks[k].first);
@@ -212,12 +198,13 @@ void Webserv::releaseQuery(query*& q)
 			}
 			m_queries.erase(m_queries.begin() + j);
 		}
+		else
+			j++;
 	}
 }
 
 void Webserv::destroyClient(int fd)
 {
-	shutdown(fd, SHUT_WR);
 	close(fd);
 	releaseQueries(fd);
 	for (size_t j = 0; j < m_clients.size(); ++j)

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/18 10:40:49 by fbuyl            ###   ########.fr       */
+/*   Updated: 2025/11/20 12:56:04 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -139,11 +139,13 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 					}
 				}
 				if (clientNeedsAnswer(fd))
-						m_fds[i].events |= POLLOUT;
+					m_fds[i].events |= POLLOUT;
 				else if (m_fds[i].events & POLLOUT)
 				{
 					m_fds[i].events &= ~POLLOUT;
-					releaseQueries(fd);
+					oss << "Deconnected client fd:" << m_fds[i].fd;
+					logOutMessage(oss);
+					//destroyClient(fd);
 				}
 				if (!keepAlive(fd, m_keepalive_timeout))
 				{
@@ -294,8 +296,10 @@ int Webserv::sendQuery(int fd)
 bool Webserv::clientNeedsAnswer(int fd) const
 {
 	for (std::vector<query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+	{
 		if ((*it).fd == fd && !(*it).formatedResponse.empty())
 			return (true);
+	}
 	return (false);
 }
 
