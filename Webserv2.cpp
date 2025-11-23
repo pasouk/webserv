@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/20 13:35:45 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/23 10:18:02 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,10 @@
 int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
 {
 	std::map<std::string, std::string> headers;
-	std::string header, cgiPath;
+	std::string header, cgiPath, interpreter;
 	std::map<std::string, std::string> env;
 	std::ostringstream oss;
 	server s;
-	bool cgiBinary;
 	const pollfd *fds;
 	int ret = 0;
 
@@ -27,12 +26,11 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string
 	q.httpParser->setBodyLine(q.bodyChunks);
 	//curl "http://localhost:8080/cgi-bin/hello.py/foo"
 	//./tester http://localhost:8080
-	if (q.cgi == NULL && isCgi(s, q.httpParser->getPath(), cgiPath, cgiBinary))
+	if (q.cgi == NULL && isCgi(s, q.httpParser->getPath(), cgiPath, interpreter))
 	{
 		q.httpParser->splitCgiPath(header);
 		env["SCRIPT_NAME"] = "/cgi-bin/hello.py";//q.httpParser->getPath();
-        env["PATH_INFO"] = "/foo";//"";
-		env["SCRIPT_FILENAME"] = "/home/fabrice/Documents/webserv/cgi-bin/hello.py";//"";
+        env["PATH_INFO"] = "";
 		env["REQUEST_METHOD"] = "GET";//methods_map[q.httpParser->getMethod()].name;
 		env["QUERY_STRING"] = "";//header;
 		env["CONTENT_LENGTH"] = "0";
@@ -43,7 +41,7 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string
 		header = headers["Content-Length"]; 
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
-		if (callCGI(cgiPath, env, q, cgiBinary))
+		if (callCGI(cgiPath, env, q, interpreter))
 		{
 			oss << "CGI can't be build.:";
 			logErrMessage(oss);

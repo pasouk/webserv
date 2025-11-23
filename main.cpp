@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/19 16:07:24 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/22 13:48:03 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,16 +77,16 @@ void onResponse(std::string& response, std::string* CgiResponse, ParserHttpReque
 		std::stringstream ss;
 		ss << CgiResponse->length();
 
-		std::cout << "IT'S A CGI ANSWER !\n";
 		std::string responseBuild =
 			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: " + ss.str() + "\r\n"
+			"Content-Type: text/plain\r\n"
+			"Content-Length: 2\r\n"
 			"Connection: close\r\n"
-			"\r\n";
-		response = responseBuild + *CgiResponse;
+			"\r\n"
+			"OK";
+		response = responseBuild;
 	
-		//std::cout << "ANSWER:" << response << std::endl;
+		std::cout << "CGI ANSWER:" << *CgiResponse << std::endl;
 	}
 	else
 	{

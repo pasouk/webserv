@@ -6,15 +6,16 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/17 15:56:34 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/23 16:15:11 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-const location* Webserv::isThereLocation(const server& s, std::string& path)
+const location* Webserv::buildPathFromLocation(const server& s, std::string& path)
 {
     size_t pos;
+    std::string by;
 
     for (size_t i = 0; i < s.locations.size(); ++i)
     {
@@ -22,10 +23,27 @@ const location* Webserv::isThereLocation(const server& s, std::string& path)
         if (pos != std::string::npos)
         {
             if (s.locations[i].type == ROOT)
+            {
+                by = s.locations[i].by;
+                if (s.locations[i].by[s.locations[i].by.length() - 1] == '/')
+                    by = s.locations[i].by.substr(0, s.locations[i].by.length() - 1);
                 path.replace(pos, s.locations[i].concatOrReplace.size()
-                    , s.locations[i].by + s.locations[i].concatOrReplace);
+                    , by + s.locations[i].concatOrReplace);
+            }
             else if (s.locations[i].type == ALIAS)
-                path.replace(pos, s.locations[i].concatOrReplace.size(), s.locations[i].by);
+            {
+                by = s.locations[i].by;
+                if (s.locations[i].by[s.locations[i].by.length() - 1] != '/')
+                    by = s.locations[i].by + "/";
+                path.replace(pos, s.locations[i].concatOrReplace.size(), by);
+            }
+            else
+            {
+                by = s.root;
+                if (s.root[s.root.length() - 1] == '/')
+                    by = s.root.substr(0, s.root.length() - 1);
+                path = by + path;
+            }
             if (RELATIVE)
                 if (path[0] == '/')
                     path = path.substr(1, path.length() - 1);
@@ -35,42 +53,43 @@ const location* Webserv::isThereLocation(const server& s, std::string& path)
     return (NULL);
 }
 
-bool Webserv::isCgi(const server& s, const std::string& httpMethodArg, std::string& path, bool& binary)
+bool Webserv::isCgi(const server& s, const std::string& httpMethodArg, std::string& path, std::string& interpreter)
 {
     const location* l;
 
     path = httpMethodArg;
-    binary = false;
-    if ((l = isThereLocation(s, path)) != NULL && l->cgi_pass != "none")
+    interpreter = "";
+    if ((l = buildPathFromLocation(s, path)) != NULL && l->cgi_pass != "none")
     {
-        path = l->cgi_pass + getFilename(httpMethodArg);
-        if (is_elf_binary(l->cgi_pass.c_str()) || is_macho_binary(l->cgi_pass.c_str()))
-        {
-            path = l->cgi_pass;
-            binary = true;
-        }
+        path = "/" + path;
+        if (!is_elf_binary(path.c_str()) || !is_macho_binary(path.c_str()))
+            interpreter = l->cgi_pass;
+        std::cout << "PATH :" << path << std::endl;
+        std::cout << "INTERPRETER: " << interpreter << std::endl;
         return (true);
     }
     return (false);
 }
 
-int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q, bool isBinary) const
+int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q, std::string& interpreter) const
 {
-    std::string addDot;
+    std::string dotFile;
 
+
+    std::cout << "FILE: " << file << std::endl;
     try
     {
-        if (isBinary)
+        dotFile = "." + file;
+        if (interpreter.empty())
         {
             std::cout << "IS BINARY\n";
-            addDot = "/home/fabrice/Documents/webserv/cgi-bin/hello.py"; //+ getFilename(q.httpParser->getPath());  //"." + q.httpParser->getPath();
-            q.cgi = new CGI(file, addDot, env, q.fd);
+            q.cgi = new CGI(dotFile, env, q.fd);
         }
         else
         {
             std::cout << "IS NOT BINARY\n";
-            addDot = "." + file;
-            q.cgi = new CGI(addDot, env, q.fd);
+            std::cout << "INTERPRETER:" << interpreter << std::endl;
+            q.cgi = new CGI(interpreter, dotFile, env, q.fd);
         }
     }
     catch(const std::exception& e)

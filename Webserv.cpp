@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/20 12:56:04 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/11/23 14:00:04 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,10 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 	QueryListener* ql;
 	server server;
 
+	char cwd[1024];
+	getcwd(cwd, sizeof(cwd));      // lire le CWD
+	chdir("/chemin/vers/binaire"); // changer le CWD
+	
 	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
 	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
 
@@ -145,7 +149,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 					m_fds[i].events &= ~POLLOUT;
 					oss << "Deconnected client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
-					//destroyClient(fd);
+					destroyClient(fd);
 				}
 				if (!keepAlive(fd, m_keepalive_timeout))
 				{
@@ -404,7 +408,12 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 					loc.max_body_size = (*it2)->getArgs()[0];
 			_cgi_pass = parser->getDirectives("cgi_pass", static_cast<const NodeBlock*>(*it1));
 			if (_cgi_pass.size())
-				loc.cgi_pass = _cgi_pass[0]->getArgs()[0];
+			{
+				if (_cgi_pass[0]->getArgs().size())
+					loc.cgi_pass = _cgi_pass[0]->getArgs()[0];
+				else
+					loc.cgi_pass = "";
+			}
 			_limit_except = parser->getDirectives("limit_except", static_cast<const NodeBlock*>(*it1));
 			if (_limit_except.size())
 			{
