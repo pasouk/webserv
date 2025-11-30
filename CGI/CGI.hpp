@@ -10,22 +10,23 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <deque>
-#include <unistd.h>
-#include <iomanip>
-#include <sys/types.h>
-#include <stdexcept>
-#include <cstring>
-#include <sys/wait.h>
-#include <cerrno>
-#include <stdlib.h>
-#include <map>
-#include <fcntl.h>
-#include <poll.h>
-#include "utils.hpp"
 
 #ifndef CGI_H
 # define CGI_H
+
+# include <deque>
+# include <unistd.h>
+# include <iomanip>
+# include <sys/types.h>
+# include <stdexcept>
+# include <cstring>
+# include <sys/wait.h>
+# include <cerrno>
+# include <stdlib.h>
+# include <map>
+# include <fcntl.h>
+# include <poll.h>
+# include "utils.hpp"
 
 # define READBUFFERSIZE 1024
 

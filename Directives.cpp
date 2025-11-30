@@ -103,7 +103,7 @@ Alias::Alias() : Directives(false, 1, 1, "alias")
 bool Alias::areArgsValid(const std::vector<std::string>& args, std::string& err) const
 {
 	regex_t regex;
-	std::string pattern("^/([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$");
+	std::string pattern("^(?:/|\\.\\/|\\.\\./)?(?:[A-Za-z0-9._*?-]+/)*$");
 	
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{
@@ -124,7 +124,7 @@ Root::Root() : Directives(false, 1, 1, "root")
 bool Root::areArgsValid(const std::vector<std::string>& args, std::string& err) const
 {
 	regex_t regex;
-	std::string pattern("^/([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$");
+	std::string pattern("^(?:/|\\.\\/|\\.\\./)?(?:[A-Za-z0-9._*?-]+/)*$");
 	
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{
@@ -150,7 +150,7 @@ Location::Location() : Directives(true, 1, 1, "location")
 bool Location::areArgsValid(const std::vector<std::string>& args, std::string& err) const
 {
 	regex_t regex;
-	std::string pattern("^/([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$");
+	std::string pattern("^/([A-Za-z0-9._*?-]+/)*([A-Za-z0-9._*?-]+)?$");
 	
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{
@@ -279,7 +279,7 @@ CgiPass::CgiPass() : Directives(false, 0, 1, "cgi_pass")
 bool CgiPass::areArgsValid(const std::vector<std::string>& args, std::string& err) const
 {
 	regex_t regex;
-	std::string pattern("^/([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$");
+	std::string pattern("^(/|\\.\\/|\\.\\./)?([A-Za-z0-9._*?-]+(/)?)*$");
 	
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{

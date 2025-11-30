@@ -20,6 +20,7 @@
 # include <deque>
 # include <map>
 # include <ctime>
+# include <glob.h>
 # include "ParserHttp.hpp"
 # include "CGI.hpp"
 
@@ -134,8 +135,8 @@ private:
 	void removePipesFromPoll(pollfd(&)[2]);
 	int callCGI(const std::string&, std::map<std::string, std::string>&, query&, std::string&) const;
 	bool getCgiQuery(int, query*&);
-	bool isCgi(const server&, const std::string&, std::string&, std::string&);
-	const location* buildPathFromLocation(const server&, std::string&);
+	bool isCgi(server&, const std::string&, std::string&, std::string&);
+	const location* buildPathFromLocation(server&, std::string&);
 };
 
 #endif

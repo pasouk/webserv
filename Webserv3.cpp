@@ -12,13 +12,28 @@
 
 #include "Webserv.hpp"
 
-const location* Webserv::buildPathFromLocation(const server& s, std::string& path)
+const location* Webserv::buildPathFromLocation(server& s, std::string& path)
 {
     size_t pos;
     std::string by;
+    std::string relativeLoc;
+    glob_t g;
 
     for (size_t i = 0; i < s.locations.size(); ++i)
     {
+        relativeLoc = "." + s.locations[i].concatOrReplace;
+        if (!glob(relativeLoc.c_str(), 0, NULL, &g))
+        {
+            for (size_t j = 0; j < g.gl_pathc; ++j)
+            {
+                if (path == g.gl_pathv[j] + 1)
+                {
+                    s.locations[i].concatOrReplace = path;
+                    break ;
+                }
+            }
+        }
+        globfree(&g);
         pos = path.find(s.locations[i].concatOrReplace);
         if (pos != std::string::npos)
         {
@@ -47,13 +62,14 @@ const location* Webserv::buildPathFromLocation(const server& s, std::string& pat
             if (RELATIVE)
                 if (path[0] == '/')
                     path = path.substr(1, path.length() - 1);
+
             return (&s.locations[i]);
         }
     }
     return (NULL);
 }
 
-bool Webserv::isCgi(const server& s, const std::string& httpMethodArg, std::string& path, std::string& interpreter)
+bool Webserv::isCgi(server& s, const std::string& httpMethodArg, std::string& path, std::string& interpreter)
 {
     const location* l;
 
@@ -61,11 +77,8 @@ bool Webserv::isCgi(const server& s, const std::string& httpMethodArg, std::stri
     interpreter = "";
     if ((l = buildPathFromLocation(s, path)) != NULL && l->cgi_pass != "none")
     {
-        path = "/" + path;
         if (!is_elf_binary(path.c_str()) || !is_macho_binary(path.c_str()))
             interpreter = l->cgi_pass;
-        std::cout << "PATH :" << path << std::endl;
-        std::cout << "INTERPRETER: " << interpreter << std::endl;
         return (true);
     }
     return (false);
@@ -73,24 +86,21 @@ bool Webserv::isCgi(const server& s, const std::string& httpMethodArg, std::stri
 
 int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q, std::string& interpreter) const
 {
-    std::string dotFile;
+	std::ostringstream oss;
 
-
-    std::cout << "FILE: " << file << std::endl;
     try
     {
-        dotFile = "." + file;
         if (interpreter.empty())
         {
-            std::cout << "IS BINARY\n";
-            q.cgi = new CGI(dotFile, env, q.fd);
+			oss << "[cgi] " << file << " is running";
+            q.cgi = new CGI(file, env, q.fd);
         }
         else
         {
-            std::cout << "IS NOT BINARY\n";
-            std::cout << "INTERPRETER:" << interpreter << std::endl;
-            q.cgi = new CGI(interpreter, dotFile, env, q.fd);
+			oss << "[cgi] " << interpreter << " makes " << file << " run" ;
+            q.cgi = new CGI(interpreter, file, env, q.fd);
         }
+		logErrMessage(oss);
     }
     catch(const std::exception& e)
     {

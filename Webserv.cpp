@@ -69,8 +69,8 @@ Webserv::~Webserv()
 
 void Webserv::startListening(void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
 {
-	static pollfd pfd;
-	static rlimit limit;
+	pollfd pfd;
+	rlimit limit;
 	std::string CgiAnswer;
 	query* q;
 	int fd;
@@ -212,15 +212,17 @@ void Webserv::addClient(int fd)
 
 int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
 {
-	static char *buffers;
-	static bool bBody;
 	std::ostringstream oss;
+	char *buffers;
+	bool bBody;
 	query client;
 	bool bDelete;
 	ssize_t n;
 	
 	n = 0;
 	bDelete = true;
+	bBody = false;
+	buffers = NULL;
 	if (getClient(fd, client))
 	{
 		client.lifeTime = std::time(NULL);
@@ -238,12 +240,18 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 				if(tcpStream(buffers, n, client, onResponse, bDelete))
 				{
 					if (bDelete)
+					{
 						delete [](buffers);
+						buffers = NULL;
+					}
 					return (-2);
 				}
 				client.bodySize ? bBody = true : bBody = false;
 				if (bDelete)
+				{
 					delete [](buffers);
+					buffers = NULL;
+				}
 			}
 		} while(n > 0);
 		if (n == -1)
@@ -281,9 +289,10 @@ int Webserv::sendQuery(int fd)
 					logOutMessage(oss);
 					break ;
 				}
-				else
+				else if (n == 0)
 				{
-					destroyClient(fd);
+					oss << "[server] client fd:" << (*it).fd << ", send 0 byte";
+					logOutMessage(oss);
 					break ;
 				}
 			}

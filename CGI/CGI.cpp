@@ -129,7 +129,7 @@ int CGI::writeCGI(std::pair<char*, ssize_t>& chunk)
         n = write(m_pipe_out[1], chunk.first + written, total - written);
         if (n == -1)
         {
-            oss << "[CGI] client fd:" << m_fd_client << ", " << std::strerror(errno);
+            oss << "[cgi] client fd:" << m_fd_client << ", " << std::strerror(errno);
             logErrMessage(oss);
             break;
         }
@@ -151,7 +151,7 @@ int CGI::readCGI(std::string& response)
     }
     if (n == - 1)
     {
-        oss << "[CGI] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        oss << "[cgi] client fd:" << m_fd_client << ", " << std::strerror(errno);
         logErrMessage(oss);
     }
     return (n);
@@ -167,7 +167,7 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
         return  (1);
     if (fcntl(m_pipe_in[0], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[1], F_SETFL, O_NONBLOCK) == -1)
     {
-        oss << "[CGI] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        oss << "[cgi] client fd:" << m_fd_client << ", " << std::strerror(errno);
 	    logErrMessage(oss);
     }
     poll[0].fd = m_pipe_out[1];
@@ -199,11 +199,23 @@ void CGI::cgi(char* argv[], char* envp[])
 {
     std::ostringstream oss;
     std::string fileName;
+//    glob_t g;
+//    int i;
 
     dup2(m_pipe_in[1], STDOUT_FILENO);
     dup2(m_pipe_out[0], STDIN_FILENO);
     closeFDS();
     initFDS();
+/*    i = 1;
+    if (argv[i] == NULL)
+        i = 0;
+    if (!glob(argv[i], 0, NULL, &g) && g.gl_pathc >= 1) //get the first file of the list
+        argv[i] = g.gl_pathv[0];
+    else
+    {
+        oss << argv[i] << ": " << std::strerror(errno) << std::endl;
+        logErrMessage(oss);           
+    }*/
     fileName = argv[0];
     argv[0] = const_cast<char*>(getFilename(fileName).data());
 

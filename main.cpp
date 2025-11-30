@@ -86,7 +86,7 @@ void onResponse(std::string& response, std::string* CgiResponse, ParserHttpReque
 			"OK";
 		response = responseBuild;
 	
-		std::cout << "CGI ANSWER:" << *CgiResponse << std::endl;
+		std::cout << "CGI ANSWER:\n" << *CgiResponse << std::endl;
 	}
 	else
 	{
