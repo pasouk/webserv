@@ -13,7 +13,6 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 NAME = webserv
-RELATIVE = true
 
 SOURCES = QueryListener.cpp \
 	ConfigParser.cpp \
@@ -44,7 +43,7 @@ OBJECTS = $(SOURCES:.cpp=.o)
 all: $(NAME)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -DRELATIVE=$(RELATIVE) -I./headers -I./HTTP_parser -I./HTTP_response -I./CGI -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response -I./CGI -c $< -o $@
 
 $(NAME): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response -I./CGI  -o $(NAME) $(OBJECTS)

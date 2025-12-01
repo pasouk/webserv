@@ -29,48 +29,6 @@ void onResponse(std::string& response, std::string* CgiResponse, ParserHttpReque
 {	
 	(void)response;
 	std::string path;
-	std::string root;
-	size_t pos;
-
-	//alias/root location -> update path.
-	root = s.root;
-	if (RELATIVE) //to get a relative path to the project.
-		if (root[0] == '/')
-			root = root.substr(1, root.length() - 1);
-	if (s.locations.size())
-	{
-		path = r.getPath();
-		for (size_t i = 0; i < s.locations.size(); ++i)
-		{
-			pos = path.find(s.locations[i].concatOrReplace);
-			if (pos != std::string::npos)
-			{
-				if (s.locations[i].type == ROOT)
-				{
-					path.replace(pos, s.locations[i].concatOrReplace.size()
-						, s.locations[i].by + s.locations[i].concatOrReplace);
-					//std::cout << "LOCATION " << i << ": ROOT: " << path << std::endl;
-				}
-				else if (s.locations[i].type == ALIAS)
-				{
-					path.replace(pos, s.locations[i].concatOrReplace.size(), s.locations[i].by);
-					//std::cout << "LOCATION " << i << ": ALIAS: " << path << std::endl;
-				}
-				if (RELATIVE) //to get a relative path to the project.
-					if (path[0] == '/')
-						path = path.substr(1, path.length() - 1);
-				r.setPath(path);
-				root = "";
-			}
-			/*std::cout << "LOCATION " << i << ": MAX BODY SIZE: " << s.locations[i].max_body_size << std::endl;
-			std::cout << "LOCATION " << i << ": ALLOWED METHOD(S): " << std::endl;
-			std::cout << "LOCATION " << i << ": CGI_PASS: " << s.locations[i].cgi_pass << std::endl;
-			std::cout << "LOCATION " << i << ": PATH: " << path << std::endl;
-			for (size_t j = 0; j < s.locations[i].httpMethodsAllowed.size(); ++j)
-				std::cout << methods_map[s.locations[i].httpMethodsAllowed[j]].name << " ";
-			std::cout << std::endl;*/
-		}
-	}
 
 	if (CgiResponse)
 	{
@@ -92,7 +50,7 @@ void onResponse(std::string& response, std::string* CgiResponse, ParserHttpReque
 	{
 		//response
 		HttpResponse response1(r, r.getError());
-		response1.setRoot(root);
+		response1.setRoot(s.root);
 		//response1.setServerMethods(s.httpMethodsAllowed);
 		response1.HttpResponseManager();
 		response = response1.getFormatedResponse();

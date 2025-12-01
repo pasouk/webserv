@@ -24,9 +24,6 @@
 # include "ParserHttp.hpp"
 # include "CGI.hpp"
 
-# ifndef RELATIVE
-#  define RELATIVE true
-# endif
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
 # define KEEPALIVE_TIMEOUT 65

@@ -16,24 +16,17 @@ const location* Webserv::buildPathFromLocation(server& s, std::string& path)
 {
     size_t pos;
     std::string by;
-    std::string relativeLoc;
+    std::string fileLocation, pathLocation;
+    location *loc;
     glob_t g;
 
+    loc = NULL;
     for (size_t i = 0; i < s.locations.size(); ++i)
     {
-        relativeLoc = "." + s.locations[i].concatOrReplace;
-        if (!glob(relativeLoc.c_str(), 0, NULL, &g))
-        {
-            for (size_t j = 0; j < g.gl_pathc; ++j)
-            {
-                if (path == g.gl_pathv[j] + 1)
-                {
-                    s.locations[i].concatOrReplace = path;
-                    break ;
-                }
-            }
-        }
-        globfree(&g);
+        fileLocation = getFilename(s.locations[i].concatOrReplace.c_str());
+        if (!fileLocation.empty())
+            s.locations[i].concatOrReplace = s.locations[i].concatOrReplace.substr(0
+                , s.locations[i].concatOrReplace.length() - fileLocation.length());
         pos = path.find(s.locations[i].concatOrReplace);
         if (pos != std::string::npos)
         {
@@ -42,28 +35,38 @@ const location* Webserv::buildPathFromLocation(server& s, std::string& path)
                 by = s.locations[i].by;
                 if (s.locations[i].by[s.locations[i].by.length() - 1] == '/')
                     by = s.locations[i].by.substr(0, s.locations[i].by.length() - 1);
-                path.replace(pos, s.locations[i].concatOrReplace.size()
-                    , by + s.locations[i].concatOrReplace);
+                pathLocation = by + s.locations[i].concatOrReplace;
+                path.replace(pos, s.locations[i].concatOrReplace.size(), pathLocation);
             }
             else if (s.locations[i].type == ALIAS)
             {
                 by = s.locations[i].by;
                 if (s.locations[i].by[s.locations[i].by.length() - 1] != '/')
                     by = s.locations[i].by + "/";
-                path.replace(pos, s.locations[i].concatOrReplace.size(), by);
+                pathLocation = by;
+                path.replace(pos, s.locations[i].concatOrReplace.size(), pathLocation);
             }
             else
             {
                 by = s.root;
                 if (s.root[s.root.length() - 1] == '/')
                     by = s.root.substr(0, s.root.length() - 1);
-                path = by + path;
+                pathLocation = by;
+                path = pathLocation + path;
             }
-            if (RELATIVE)
-                if (path[0] == '/')
-                    path = path.substr(1, path.length() - 1);
-
-            return (&s.locations[i]);
+            if (!glob((pathLocation + fileLocation).c_str(), 0, NULL, &g))
+            {
+                for (size_t j = 0; j < g.gl_pathc; ++j)
+                {
+                    if (path == g.gl_pathv[j])
+                    {
+                        loc = &s.locations[i];
+                        break ;
+                    }
+                }
+            }
+            globfree(&g);
+            return (loc);
         }
     }
     return (NULL);
