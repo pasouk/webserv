@@ -118,19 +118,19 @@ private:
 	void stopListening();
 	void destroyClient(int);
 	void releaseQueries(int);
-	int responseHook(query&,  void (*)(std::string&, std::string*, ParserHttpRequest&, server&));
-	int tcpStream(char* buffer, ssize_t, query&
+	int responseHook(query*&,  void (*)(std::string&, std::string*, ParserHttpRequest&, server&));
+	int tcpStream(char* buffer, ssize_t, query*&
 		, void (*)(std::string&, std::string*, ParserHttpRequest&, server&), bool&);
 	bool clientNeedsAnswer(int) const;
 	bool keepAlive(int, double);
-	bool getClient(int, query&);
+	bool getClient(int, query*&);
 	std::pair<char*, ssize_t> removeChunk(char*, ssize_t);
 	const std::vector<std::string> getDiretiveValue(const Node*, const std::vector<const Node*>) const;
-	server& getRightServer(query&);
+	server& getRightServer(query*&);
 	bool matchServerName(const std::string&, const std::string&) const;
 	void addPipeToPoll(pollfd(&)[2]);
 	void removePipesFromPoll(pollfd(&)[2]);
-	int callCGI(const std::string&, std::map<std::string, std::string>&, query&, std::string&) const;
+	int callCGI(const std::string&, std::map<std::string, std::string>&, query*&, std::string&) const;
 	bool getCgiQuery(int, query*&);
 	bool isCgi(server&, const std::string&, std::string&, std::string&);
 	const location* buildPathFromLocation(server&, std::string&);

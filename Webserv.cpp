@@ -73,7 +73,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 	rlimit limit;
 	std::string CgiAnswer;
 	query* q;
-	int fd;
+	int fd, n;
 	std::ostringstream oss;
 
 	//check system queue size
@@ -94,6 +94,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 	logOutMessage(oss);
 	while (g_listening)
 	{
+		//usleep(1000);
 		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
 		{
 			g_listening = false;
@@ -103,7 +104,10 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 		{
 			fd = m_fds[i].fd;
 			if (m_fdType[i] == SOCKET && (m_fds[i].revents & POLLIN))
+			{
 				addClient(fd);
+				break ;
+			}
 			else if (m_fdType[i] == PIPE && getCgiQuery(fd, q))
 			{
 				if (m_fds[i].revents & POLLIN)
@@ -113,8 +117,9 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 						const pollfd *fds = q->cgi->getPollfd();
 						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 						removePipesFromPoll(arr);
-						onResponse(q->formatedResponse, &CgiAnswer, *q->httpParser, getRightServer(*q));
+						onResponse(q->formatedResponse, &CgiAnswer, *q->httpParser, getRightServer(q));
 						CgiAnswer = "";
+						break ;
 					}
 				}
 				else if (m_fds[i].revents & POLLOUT)
@@ -131,12 +136,16 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 			}
 			else if (m_fdType[i] == ACCEPT)
 			{
-				if (m_fds[i].events & POLLOUT)
+				if (m_fds[i].revents & POLLOUT)
 					if (sendQuery(fd) == -1)
+					{
 						releaseQueries(fd);
+						break ;
+					}
 				if (m_fds[i].revents & POLLIN)
 				{
-					if (readQuery(fd, onResponse) == -2)
+					n  = readQuery(fd, onResponse);
+					if (n == -2)
 					{
 						g_listening = false;
 						break ;
@@ -150,12 +159,14 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 					oss << "Deconnected client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
 					destroyClient(fd);
+					break ;
 				}
 				if (!keepAlive(fd, m_keepalive_timeout))
 				{
 					oss << "Deconnected client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
 					destroyClient(fd);
+					break ;
 				}
 			}
 		}
@@ -176,7 +187,7 @@ void Webserv::addClient(int fd)
 	char ip[INET_ADDRSTRLEN];
 
 	for (std::vector<const QueryListener*>::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
-	{					
+	{	
 		serverAddress = (*it)->getServerAddress();
 		serverlen = sizeof(serverAddress);
 		pfd.fd = accept(fd, (struct sockaddr*)&serverAddress, &serverlen);
@@ -215,7 +226,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 	std::ostringstream oss;
 	char *buffers;
 	bool bBody;
-	query client;
+	query *client;
 	bool bDelete;
 	ssize_t n;
 	
@@ -225,7 +236,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 	buffers = NULL;
 	if (getClient(fd, client))
 	{
-		client.lifeTime = std::time(NULL);
+		client->lifeTime = std::time(NULL);
 		do
 		{
 			buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
@@ -234,7 +245,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 				cleanWebserv();
 				throw std::bad_alloc();
 			}
-			if ((n = read(client.fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
+			if ((n = read(client->fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
 			{
 				buffers[n] = '\0';
 				if(tcpStream(buffers, n, client, onResponse, bDelete))
@@ -246,7 +257,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 					}
 					return (-2);
 				}
-				client.bodySize ? bBody = true : bBody = false;
+				client->bodySize ? bBody = true : bBody = false;
 				if (bDelete)
 				{
 					delete [](buffers);
@@ -256,7 +267,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 		} while(n > 0);
 		if (n == -1)
 		{
-			oss << "[server] client fd:" << client.fd << ", " << std::strerror(errno);
+			oss << "[server] client fd:" << client->fd << ", " << std::strerror(errno);
 			logOutMessage(oss);
 		}
 		delete [](buffers);
@@ -267,7 +278,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 int Webserv::sendQuery(int fd)
 {
 	ssize_t n;
-	query client;
+	query *client;
 	std::ostringstream oss;
 
 	n = 0;
@@ -278,7 +289,7 @@ int Webserv::sendQuery(int fd)
 			while ((*it).byteSent < (*it).formatedResponse.size())
 			{
 				if(getClient(fd, client))
-					client.lifeTime = std::time(NULL);
+					client->lifeTime = std::time(NULL);
 				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
 					, (*it).formatedResponse.size() - (*it).byteSent, 0);
 				if (n > 0)

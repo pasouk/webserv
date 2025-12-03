@@ -12,7 +12,7 @@
 
 #include "Webserv.hpp"
 
-int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
+int Webserv::responseHook(query*& q, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
 {
 	std::map<std::string, std::string> headers;
 	std::string header, cgiPath, interpreter;
@@ -23,12 +23,12 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string
 	int ret = 0;
 
 	s = getRightServer(q);
-	q.httpParser->setBodyLine(q.bodyChunks);
+	q->httpParser->setBodyLine(q->bodyChunks);
 	//curl "http://localhost:8080/cgi-bin/hello.py/foo"
 	//./tester http://localhost:8080
-	if (q.cgi == NULL && isCgi(s, q.httpParser->getPath(), cgiPath, interpreter))
+	if (q->cgi == NULL && isCgi(s, q->httpParser->getPath(), cgiPath, interpreter))
 	{
-		q.httpParser->splitCgiPath(header);
+		q->httpParser->splitCgiPath(header);
 		env["SCRIPT_NAME"] = "/cgi-bin/hello.py";//q.httpParser->getPath();
         env["PATH_INFO"] = "";
 		env["REQUEST_METHOD"] = "GET";//methods_map[q.httpParser->getMethod()].name;
@@ -37,7 +37,7 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string
 		env["SERVER_PROTOCOL"] = "HTTP/1.1";
 		env["SERVER_NAME"] = "localhost";
 		env["SERVER_PORT"] = "8080";
-		headers = q.httpParser->getHeaders();
+		headers = q->httpParser->getHeaders();
 		header = headers["Content-Length"]; 
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
@@ -49,21 +49,21 @@ int Webserv::responseHook(query& q, void (*onResponse)(std::string&, std::string
 		}
 		else
 		{
-			fds = q.cgi->getPollfd();
+			fds = q->cgi->getPollfd();
 			pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
 			addPipeToPoll(arr);
 		}
 	}
 	else
-		onResponse(q.formatedResponse, NULL, *(q.httpParser), s);
-	m_queries.push_back(q);
-	//printQuery(q);
-	q.httpRequest.clear();
-	q.bodySize = 0;
-	q.byteSent = 0;
-	q.httpParser = NULL;
-	q.cgi = NULL;
-	q.bodyChunks.clear();
+		onResponse(q->formatedResponse, NULL, *(q->httpParser), s);
+	m_queries.push_back(*q);
+	//printQuery(*q);
+	q->httpRequest.clear();
+	q->bodySize = 0;
+	q->byteSent = 0;
+	q->httpParser = NULL;
+	q->cgi = NULL;
+	q->bodyChunks.clear();
 	return (ret);
 }
 
@@ -83,7 +83,7 @@ std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 	return (chunk);
 }
 
-int Webserv::tcpStream(char* buffer, ssize_t n, query& q
+int Webserv::tcpStream(char* buffer, ssize_t n, query*& q
 	, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&), bool& bDelete)
 {
 	std::map<std::string, std::string> headers;
@@ -92,14 +92,15 @@ int Webserv::tcpStream(char* buffer, ssize_t n, query& q
 	std::string header;
 	std::pair<char*, ssize_t> chunk;
 
+
 	bDelete = true;
-	if (q.bodySize)
+	if (q->bodySize)
 	{
-		if (i + q.bodySize < n)
+		if (i + q->bodySize < n)
 		{
-			chunk = removeChunk(&buffer[i], q.bodySize);
-			q.bodyChunks.push_back(chunk);
-			i += q.bodySize;
+			chunk = removeChunk(&buffer[i], q->bodySize);
+			q->bodyChunks.push_back(chunk);
+			i += q->bodySize;
 			if (responseHook(q, onResponse))
 				return (1);
 		}
@@ -107,10 +108,10 @@ int Webserv::tcpStream(char* buffer, ssize_t n, query& q
 		{
 			chunk.second = n;
 			chunk.first = buffer;
-			q.bodyChunks.push_back(chunk);
+			q->bodyChunks.push_back(chunk);
 			bDelete = false;
-			q.bodySize -= n;
-			if (q.bodySize == 0)
+			q->bodySize -= n;
+			if (q->bodySize == 0)
 				if(responseHook(q, onResponse))
 					return (1);
 			i += n;
@@ -118,41 +119,43 @@ int Webserv::tcpStream(char* buffer, ssize_t n, query& q
 	}
 	while (i < n)
 	{
-		q.httpRequest += buffer[i];
-		if (q.httpRequest.find("\r\n\r\n") != std::string::npos)
+		//std::cout << q.httpRequest << std::endl;
+		q->httpRequest += buffer[i];
+		if (q->httpRequest.find("\r\n\r\n") != std::string::npos)
 		{
+			std::cout << "GOT IT\n";
 			if (i < n)
 			{
-				q.httpParser = new (std::nothrow)ParserHttpRequest(q.httpRequest);
-				if (q.httpParser == NULL)
+				q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
+				if (q->httpParser == NULL)
 					return (1);
-				headers = q.httpParser->getHeaders();
+				headers = q->httpParser->getHeaders();
 				header = headers["Content-Length"];
-				q.bodySize = 0;
+				q->bodySize = 0;
 				if (!header.empty())
 				{
 					ss.clear();
 					ss << header;
-					ss >> q.bodySize;
+					ss >> q->bodySize;
 				}
-				if (q.bodySize > 0)
+				if (q->bodySize > 0)
 				{
 					if (++i < n)
 					{
-						if (i + q.bodySize < n)
+						if (i + q->bodySize < n)
 						{
-							chunk = removeChunk(&buffer[i], q.bodySize);
-							q.bodyChunks.push_back(chunk);
-							i += q.bodySize - 1;
+							chunk = removeChunk(&buffer[i], q->bodySize);
+							q->bodyChunks.push_back(chunk);
+							i += q->bodySize - 1;
 							if (responseHook(q, onResponse))
 								return (1);
 						}
 						else
 						{
 							chunk = removeChunk(&buffer[i], n - i);
-							q.bodyChunks.push_back(chunk);
-							q.bodySize -= n - i;
-							if (q.bodySize == 0)
+							q->bodyChunks.push_back(chunk);
+							q->bodySize -= n - i;
+							if (q->bodySize == 0)
 								if (responseHook(q, onResponse))
 									return (1);
 							i = n;
@@ -224,14 +227,14 @@ bool Webserv::keepAlive(int fd, double sec)
 {
 	std::ostringstream oss;
 	double delay;
-	query client;
+	query *client;
 
 	if (getClient(fd, client))
 	{
-		delay = (std::time(NULL) - client.lifeTime);
+		delay = (std::time(NULL) - client->lifeTime);
 		if ( delay >= sec)
 		{
-			oss << "Client fd:" << client.fd << ", no request for " << delay << " sec ...";
+			oss << "Client fd:" << client->fd << ", no request for " << delay << " sec ...";
 			logOutMessage(oss);
 			return (false);
 		}
@@ -240,15 +243,15 @@ bool Webserv::keepAlive(int fd, double sec)
 	return (true);
 }
 
-bool Webserv::getClient(int fd, query& client)
+bool Webserv::getClient(int fd, query*& client)
 {
 	for (size_t j = 0; j < m_clients.size(); ++j)
 		if (fd == m_clients[j].fd)
-			return (client = m_clients[j], true);
+			return (client = &m_clients[j], true);
 	return (false);
 }
 
-server& Webserv::getRightServer(query& q)
+server& Webserv::getRightServer(query*& q)
 {
 	std::map<std::string, std::string> headers;
 	std::ostringstream oss;
@@ -258,17 +261,17 @@ server& Webserv::getRightServer(query& q)
 	for (std::vector<server>::iterator s = m_servers.begin(); s != m_servers.end(); ++s)
 	{
 		for (size_t i = 0; i < (*s).hosts.size(); ++i)
-			if ((*s).hosts[i] == q.host && (*s).ports[i] == q.port)
+			if ((*s).hosts[i] == q->host && (*s).ports[i] == q->port)
 			{
 				if (!bFind)
 					ret = &*s;
 				for (std::vector<std::string>::iterator ser_name = (*s).server_names.begin()
 					; ser_name != (*s).server_names.end(); ++ser_name)
 				{
-					headers = q.httpParser->getHeaders();
+					headers = q->httpParser->getHeaders();
 					if (matchServerName(headers["Host"], *ser_name))
 					{
-						q.hostName = *ser_name;
+						q->hostName = *ser_name;
 						if (bFind)
 						{
 							oss << "conflicting server name \"" << *ser_name << "\", first server will be ignored";

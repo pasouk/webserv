@@ -87,7 +87,7 @@ bool Webserv::isCgi(server& s, const std::string& httpMethodArg, std::string& pa
     return (false);
 }
 
-int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query& q, std::string& interpreter) const
+int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, query*& q, std::string& interpreter) const
 {
 	std::ostringstream oss;
 
@@ -96,12 +96,12 @@ int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>
         if (interpreter.empty())
         {
 			oss << "[cgi] " << file << " is running";
-            q.cgi = new CGI(file, env, q.fd);
+            q->cgi = new CGI(file, env, q->fd);
         }
         else
         {
 			oss << "[cgi] " << interpreter << " makes " << file << " run" ;
-            q.cgi = new CGI(interpreter, file, env, q.fd);
+            q->cgi = new CGI(interpreter, file, env, q->fd);
         }
 		logErrMessage(oss);
     }
