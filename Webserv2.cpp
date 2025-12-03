@@ -123,7 +123,6 @@ int Webserv::tcpStream(char* buffer, ssize_t n, query*& q
 		q->httpRequest += buffer[i];
 		if (q->httpRequest.find("\r\n\r\n") != std::string::npos)
 		{
-			std::cout << "GOT IT\n";
 			if (i < n)
 			{
 				q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
