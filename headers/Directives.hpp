@@ -51,7 +51,6 @@ class ServerName : public Directives
 {
 public:
 	ServerName();
-	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 class Alias : public Directives
 {

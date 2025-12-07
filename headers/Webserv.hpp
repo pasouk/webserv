@@ -46,7 +46,7 @@ enum fdType
 	PIPE
 };
 
-struct location
+struct s_location
 {
 public:
 	std::string				concatOrReplace;
@@ -57,7 +57,7 @@ public:
 	std::vector<HttpMethod>	httpMethodsAllowed;
 };
 
-struct query
+struct s_query
 {	
 	int							fd;
 	time_t						lifeTime;
@@ -73,14 +73,21 @@ struct query
 	std::deque<std::pair<char*, ssize_t> >	bodyChunks;
 };
 
-struct server
+struct s_server
 {
-	std::vector<location>			locations;
+	std::vector<s_location>			locations;
 	std::vector<std::string>		server_names;
 	std::vector<uint16_t> 			ports;
 	std::vector<std::string>		hosts;
 	std::string						root;
 	std::string						max_body_size;
+};
+
+struct s_http_path
+{
+	std::string	path_updated;
+	std::string query_string;
+	std::string path_info;
 };
 
 class Webserv
@@ -93,47 +100,48 @@ public:
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening(void (*)(std::string&, std::string*, ParserHttpRequest&, server&));
+	void startListening(void (*)(std::string&, std::string*, ParserHttpRequest&, s_server&));
 	void printServers();
-	void printQuery(query&) const;
+	void printQuery(s_query&) const;
 	void cleanWebserv();
 
 private:
 	size_t m_keepalive_timeout;
 	size_t m_client_buffers_size[2];	//0: header, 1: body
-	std::vector<server> m_servers;		//servers list
-	std::vector<query> m_clients;		//connected clients
-	std::vector<query> m_queries;
+	std::vector<s_server> m_servers;		//servers list
+	std::vector<s_query> m_clients;		//connected clients
+	std::vector<s_query> m_queries;
 	std::vector<pollfd> m_fds;
 	std::vector<fdType> m_fdType;
 	std::vector<const QueryListener*> m_listeners;
 
 private:
 	QueryListener* createListener(u_int16_t, const std::string&);
-	std::vector<server> createServers(const ConfigParser*);
-	void printServer(server&) const;
+	std::vector<s_server> createServers(const ConfigParser*);
+	void printServer(s_server&) const;
 	void addClient(int);
-	int readQuery(int, void (*)(std::string&, std::string*, ParserHttpRequest&, server&));
+	int readQuery(int, void (*)(std::string&, std::string*, ParserHttpRequest&, s_server&));
 	int sendQuery(int);
 	void stopListening();
 	void destroyClient(int);
 	void releaseQueries(int);
-	int responseHook(query*&,  void (*)(std::string&, std::string*, ParserHttpRequest&, server&));
-	int tcpStream(char* buffer, ssize_t, query*&
-		, void (*)(std::string&, std::string*, ParserHttpRequest&, server&), bool&);
+	int responseHook(s_query*&,  void (*)(std::string&, std::string*, ParserHttpRequest&, s_server&));
+	int tcpStream(char* buffer, ssize_t, s_query*&
+		, void (*)(std::string&, std::string*, ParserHttpRequest&, s_server&), bool&);
 	bool clientNeedsAnswer(int) const;
 	bool keepAlive(int, double);
-	bool getClient(int, query*&);
+	bool getClient(int, s_query*&);
 	std::pair<char*, ssize_t> removeChunk(char*, ssize_t);
 	const std::vector<std::string> getDiretiveValue(const Node*, const std::vector<const Node*>) const;
-	server& getRightServer(query*&);
+	s_server& getRightServer(s_query*&);
 	bool matchServerName(const std::string&, const std::string&) const;
 	void addPipeToPoll(pollfd(&)[2]);
 	void removePipesFromPoll(pollfd(&)[2]);
-	int callCGI(const std::string&, std::map<std::string, std::string>&, query*&, std::string&) const;
-	bool getCgiQuery(int, query*&);
-	bool isCgi(server&, const std::string&, std::string&, std::string&);
-	const location* buildPathFromLocation(server&, std::string&);
+	int callCGI(const std::string&, std::map<std::string, std::string>&, s_query*&, std::string&) const;
+	bool getCgiQuery(int, s_query*&);
+	bool isCgi(s_server&, const std::string&, std::string&, std::string&);
+	const s_location* buildPathFromLocation(s_server&, std::string&) const ;
+	const s_http_path parseHttpPath(s_server, const std::string&);
 };
 
 #endif

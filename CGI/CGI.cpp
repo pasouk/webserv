@@ -26,10 +26,10 @@ CGI::~CGI()
     logOutMessage(oss);
 }
 
-CGI::CGI(std::string interpreter, std::string script, std::map<std::string, std::string>& env, int fd)
+CGI::CGI(std::string binary, std::string script, std::map<std::string, std::string>& env, int fd)
     : m_fd_client(fd), m_envp(NULL), m_id_cgi(-1)
 {    
-    const char* argv[3] = {interpreter.data(), script.data(), NULL};
+    const char* argv[3] = {binary.data(), script.data(), NULL};
     initFDS();
     setEnvp(env);
     if (buildChild(const_cast<char**>(argv), m_envp, m_poll))
@@ -219,12 +219,12 @@ void CGI::cgi(char* argv[], char* envp[])
     fileName = argv[0];
     argv[0] = const_cast<char*>(getFilename(fileName).data());
 
-    /*std::cout << "FILENAME: " << fileName << std::endl;
+    /*std::cerr << "FILENAME: " << fileName << std::endl;
     for (int i = 0; argv[i] != NULL; ++i)
-        std::cout << argv[i] << std::endl;
-    std::cout << std::endl;
+        std::cerr << argv[i] << std::endl;
+    std::cerr << std::endl;
     for (int i = 0; envp[i] != NULL; ++i)
-        std::cout << envp[i] << std::endl;*/
+        std::cerr << envp[i] << std::endl;*/
         
     execve(fileName.data(), argv, envp);
     oss << fileName << ": " << std::strerror(errno) << std::endl;

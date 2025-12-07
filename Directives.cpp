@@ -81,20 +81,6 @@ ServerName::ServerName() : Directives(false, 0, MAX_ARGS, "server_name")
 	m_memberships.push_back("server");
 }
 
-bool ServerName::areArgsValid(const std::vector<std::string>& args, std::string& err) const
-{
-	regex_t regex;
-	std::string pattern("^(\\*\\.)?([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}$");
-	
-	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
-	{
-		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
-			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
-				return (err = (*it), regfree(&regex), false);
-	}
-	return (regfree(&regex), true);
-}
-
 Alias::Alias() : Directives(false, 1, 1, "alias")
 {
 	m_memberships.push_back("location");

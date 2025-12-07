@@ -19,7 +19,7 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 	std::vector<const Node*> KeepaliveTimeout;
 	std::ostringstream oss;
 	QueryListener* ql;
-	server server;
+	s_server server;
 
 	char cwd[1024];
 	getcwd(cwd, sizeof(cwd));      // lire le CWD
@@ -67,12 +67,12 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
+void Webserv::startListening(void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, s_server&))
 {
 	pollfd pfd;
 	rlimit limit;
 	std::string CgiAnswer;
-	query* q;
+	s_query* q;
 	int fd, n;
 	std::ostringstream oss;
 
@@ -94,7 +94,6 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 	logOutMessage(oss);
 	while (g_listening)
 	{
-		//usleep(1000);
 		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
 		{
 			g_listening = false;
@@ -180,7 +179,7 @@ void Webserv::addClient(int fd)
 {
 	static sockaddr_in serverAddress;
 	static socklen_t serverlen;
-	static query query;
+	static s_query query;
 	static pollfd pfd;
 	std::ostringstream oss;
 	size_t j;
@@ -221,12 +220,12 @@ void Webserv::addClient(int fd)
 	}
 }
 
-int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, server&))
+int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, s_server&))
 {
 	std::ostringstream oss;
 	char *buffers;
 	bool bBody;
-	query *client;
+	s_query *client;
 	bool bDelete;
 	ssize_t n;
 	
@@ -278,11 +277,11 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 int Webserv::sendQuery(int fd)
 {
 	ssize_t n;
-	query *client;
+	s_query *client;
 	std::ostringstream oss;
 
 	n = 0;
-	for (std::vector<query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+	for (std::vector<s_query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
 		if ((*it).fd == fd)
 		{
@@ -319,7 +318,7 @@ int Webserv::sendQuery(int fd)
 
 bool Webserv::clientNeedsAnswer(int fd) const
 {
-	for (std::vector<query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+	for (std::vector<s_query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
 		if ((*it).fd == fd && !(*it).formatedResponse.empty())
 			return (true);
@@ -327,7 +326,7 @@ bool Webserv::clientNeedsAnswer(int fd) const
 	return (false);
 }
 
-std::vector<server> Webserv::createServers(const ConfigParser* parser)
+std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 {
 	std::vector<const Node*> _servers;
 	std::vector<const Node*> _listens;
@@ -338,14 +337,14 @@ std::vector<server> Webserv::createServers(const ConfigParser* parser)
 	std::vector<const Node*> _limit_except;
 	std::vector<const Node*> _max_body_size;
 	std::vector<const Node*> _cgi_pass;
-	std::vector<server> servers;
+	std::vector<s_server> servers;
 	std::vector<std::string> args;
 	std::ostringstream oss;
 	std::string _host;
-	location loc;
+	s_location loc;
 	QueryListener* ql;
 	uint16_t _port;
-	server _server;
+	s_server _server;
 
 	if (parser == NULL)
 	{

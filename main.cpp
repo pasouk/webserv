@@ -25,7 +25,7 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onResponse(std::string& response, std::string* CgiResponse, ParserHttpRequest& r, server& s)
+void onResponse(std::string& response, std::string* CgiResponse, ParserHttpRequest& r, s_server& s)
 {	
 	(void)response;
 	std::string path;
