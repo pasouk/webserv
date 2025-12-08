@@ -69,12 +69,12 @@ const s_location* Webserv::buildPathFromLocation(s_server& s, std::string& path)
                         break ;
                     }
                 }
-                if (j == g.gl_pathc)
+                /*if (j == g.gl_pathc)
                 {
-                    //oss << "[server] " << path << " doesn't exist";
-                    //logErrMessage(oss);
+                    oss << "[server] " << path << " doesn't exist";
+                    logErrMessage(oss);
                     loc = NULL;
-                }
+                }*/
             }
             globfree(&g);
             return (loc);
@@ -89,6 +89,7 @@ bool Webserv::isCgi(s_server& s, const std::string& httpMethodArg, std::string& 
 
     path = httpMethodArg;
     binary = "";
+
 
     if ((l = buildPathFromLocation(s, path)) != NULL && l->cgi_pass != "none")
     {
@@ -163,12 +164,15 @@ bool Webserv::getCgiQuery(int fd, s_query*& q)
             buildPathFromLocation(s, buff);
             if (is_executable(buff.c_str()))
             {
-                 httppath.path_info = path.substr(paths.length(), httppath.path_updated.length() - paths.length());
+                httppath.path_info = path.substr(paths.length(), httppath.path_updated.length() - paths.length());
                 httppath.path_updated = paths;
             }
         }
         if (!paths.empty())
             paths.erase(paths.size() - 1);
     }
+    std::cerr << "PATH: " <<  httppath.path_updated << std::endl;
+    std::cerr << "INFO: " << httppath.path_info << std::endl;
+    std::cerr << "STRI: " <<httppath.query_string << std::endl;
     return (httppath);
 }

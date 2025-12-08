@@ -28,7 +28,6 @@ void handle_sigint(int sig)
 void onResponse(std::string& response, std::string* CgiResponse, ParserHttpRequest& r, s_server& s)
 {	
 	(void)response;
-	std::string path;
 
 	if (CgiResponse)
 	{

@@ -15,9 +15,14 @@
 /*
 curl -X POST "http://localhost:8080/cgi-bin/test.bla/coucou?zozo=2" -d "message=Hello+World"
 */
+/*
+curl -X POST "http://localhost:8080/cgi_tester/cgi-bin/test.bla" -d "message=Hello+World"
+*/
 //./tester http://localhost:8080
 //curl "http://localhost:4098/cgi-bin/python/cgi1.py/foo/youpla/houp?name=toto&age=12"
 //curl "http://localhost:4098/cgi-bin/python/cgi1.py?name=toto&age=12"
+//curl -X POST "http://localhost:8080/cgi-bin/cgi_tester?name=toto&age=12" -d "message=Hello+World"
+//curl -X POST "http://localhost:8080/cgi-bin/cgi_tester/foo?name=toto&age=12" -d "message=Hello+World"
 int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, s_server&))
 {
 	std::map<std::string, std::string> headers;
@@ -35,8 +40,8 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::str
 	http_path = parseHttpPath(s, q->httpParser->getPath());
 	if (q->cgi == NULL && isCgi(s, http_path.path_updated, cgiPath, binary))
 	{
-		env["SCRIPT_NAME"] = http_path.path_updated;
-        env["PATH_INFO"] = http_path.path_info;
+		env["SCRIPT_FILENAME"] = cgiPath;
+        env["PATH_INFO"] = cgiPath;//http_path.path_info;
 		env["QUERY_STRING"] = http_path.query_string;
 		env["SERVER_PROTOCOL"] = q->httpParser->getVersion();
 		ss << q->port;
