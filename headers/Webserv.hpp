@@ -139,9 +139,10 @@ private:
 	void removePipesFromPoll(pollfd(&)[2]);
 	int callCGI(const std::string&, std::map<std::string, std::string>&, s_query*&, std::string&) const;
 	bool getCgiQuery(int, s_query*&);
-	bool isCgi(s_server&, const std::string&, std::string&, std::string&);
-	const s_location* buildPathFromLocation(s_server&, std::string&) const ;
-	const s_http_path parseHttpPath(s_server, const std::string&);
+	bool isCgi(s_location*, s_server&, const std::string&, std::string&, std::string&);
+	void updatePathFromLocation(s_location&, s_server&, std::string&) const ;
+	const s_http_path parseHttpPath(s_location*, s_server, const std::string&);
+	s_location* getLocationFromServer(s_server&, const std::string&);
 };
 
 #endif

@@ -27,23 +27,19 @@ void handle_sigint(int sig)
 
 void onResponse(std::string& response, std::string* CgiResponse, ParserHttpRequest& r, s_server& s)
 {	
-	(void)response;
+	std::stringstream ss;
 
 	if (CgiResponse)
 	{
-		std::stringstream ss;
-		ss << CgiResponse->length();
-
+		ss << (*CgiResponse).length();
 		std::string responseBuild =
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Type: text/plain\r\n"
-			"Content-Length: 2\r\n"
+			"Content-Length: " + ss.str() + "\r\n"
 			"Connection: close\r\n"
 			"\r\n"
-			"OK";
+			+ *CgiResponse;
 		response = responseBuild;
-	
-		std::cout << "CGI ANSWER:\n" << *CgiResponse << std::endl;
 	}
 	else
 	{

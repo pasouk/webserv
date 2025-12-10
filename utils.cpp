@@ -62,12 +62,19 @@ bool is_macho_binary(const char* path)
 
 bool is_executable(const char *path)
 {
+    struct stat st;
+
+    if (stat(path, &st) != 0)
+        return false;
+    if (!S_ISREG(st.st_mode))
+        return false;
     return access(path, X_OK) == 0;
 }
 
 bool is_path(const char *path)
 {
     struct stat s;
+    
     return stat(path, &s) == 0; 
 }
 

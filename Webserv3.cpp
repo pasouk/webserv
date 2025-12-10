@@ -12,87 +12,95 @@
 
 #include "Webserv.hpp"
 
-const s_location* Webserv::buildPathFromLocation(s_server& s, std::string& path) const
+s_location* Webserv::getLocationFromServer(s_server& s, const std::string& path)
+{
+    size_t len;
+    s_location* loc;
+
+    loc = NULL;
+    len = 0;
+    for (size_t i = 0; i < s.locations.size(); ++i)
+    {
+        if (path.find(s.locations[i].concatOrReplace) != std::string::npos)
+        {
+            if (s.locations[i].concatOrReplace.length() > len)
+            {
+                len = path.find(s.locations[i].concatOrReplace);
+                loc = &s.locations[i];
+            }
+        }
+    }
+    return (loc);
+}
+
+void Webserv::updatePathFromLocation(s_location& l, s_server& s, std::string& path) const
 {
     size_t pos;
     std::string by;
     std::string fileLocation, pathLocation;
-    s_location *loc;
     glob_t g;
 	std::ostringstream oss;
 
-    loc = NULL;
-    for (size_t i = 0; i < s.locations.size(); ++i)
+    fileLocation = getFilename(l.concatOrReplace.c_str());
+    if (!fileLocation.empty())
+        l.concatOrReplace = l.concatOrReplace.substr(0
+            , l.concatOrReplace.length() - fileLocation.length());
+    pos = path.find(l.concatOrReplace);
+    if (pos != std::string::npos)
     {
-        fileLocation = getFilename(s.locations[i].concatOrReplace.c_str());
-        if (!fileLocation.empty())
-            s.locations[i].concatOrReplace = s.locations[i].concatOrReplace.substr(0
-                , s.locations[i].concatOrReplace.length() - fileLocation.length());
-        pos = path.find(s.locations[i].concatOrReplace);
-        if (pos != std::string::npos)
+        if (l.type == ROOT)
         {
-            if (s.locations[i].type == ROOT)
-            {
-                by = s.locations[i].by;
-                if (s.locations[i].by[s.locations[i].by.length() - 1] == '/')
-                    by = s.locations[i].by.substr(0, s.locations[i].by.length() - 1);
-                pathLocation = by + s.locations[i].concatOrReplace;
-                path.replace(pos, s.locations[i].concatOrReplace.size(), pathLocation);
-                loc = &s.locations[i];
-            }
-            else if (s.locations[i].type == ALIAS)
-            {
-                by = s.locations[i].by;
-                if (s.locations[i].by[s.locations[i].by.length() - 1] != '/')
-                    by = s.locations[i].by + "/";
-                pathLocation = by;
-                path.replace(pos, s.locations[i].concatOrReplace.size(), pathLocation);
-                loc = &s.locations[i];
-            }
-            else
-            {
-                by = s.root;
-                if (s.root[s.root.length() - 1] == '/')
-                    by = s.root.substr(0, s.root.length() - 1);
-                pathLocation = by;
-                path = pathLocation + path;
-                loc = &s.locations[i];
-            }
-            if (!glob((pathLocation + fileLocation).c_str(), 0, NULL, &g))
-            {
-                size_t j;
-                for (j = 0; j < g.gl_pathc; ++j)
-                {
-                    if (path == g.gl_pathv[j])
-                    {
-                        loc = &s.locations[i];
-                        break ;
-                    }
-                }
-                /*if (j == g.gl_pathc)
-                {
-                    oss << "[server] " << path << " doesn't exist";
-                    logErrMessage(oss);
-                    loc = NULL;
-                }*/
-            }
-            globfree(&g);
-            return (loc);
+            by = l.by;
+            if (l.by[l.by.length() - 1] == '/')
+                by = l.by.substr(0, l.by.length() - 1);
+            pathLocation = by + l.concatOrReplace;
+            path.replace(pos, l.concatOrReplace.size(), pathLocation);
         }
+        else if (l.type == ALIAS)
+        {
+            by = l.by;
+            if (l.by[l.by.length() - 1] != '/')
+                by = l.by + "/";
+            pathLocation = by;
+            path.replace(pos, l.concatOrReplace.size(), pathLocation);
+        }
+        else
+        {
+            by = s.root;
+            if (s.root[s.root.length() - 1] == '/')
+                by = s.root.substr(0, s.root.length() - 1);
+            pathLocation = by;
+            path = pathLocation + path;
+        }
+        if (!glob((pathLocation + fileLocation).c_str(), 0, NULL, &g))
+        {
+            size_t j;
+            for (j = 0; j < g.gl_pathc; ++j)
+            {
+                if (path == g.gl_pathv[j])
+                {
+                    break ;
+                }
+            }
+            /*if (j == g.gl_pathc)
+            {
+                oss << "[server] " << path << " doesn't exist";
+                logErrMessage(oss);
+                loc = NULL;
+            }*/
+        }
+        globfree(&g);
     }
-    return (NULL);
 }
 
-bool Webserv::isCgi(s_server& s, const std::string& httpMethodArg, std::string& path, std::string& binary)
+bool Webserv::isCgi(s_location* l, s_server& s, const std::string& httpMethodArg, std::string& path, std::string& binary)
 {
-    const s_location* l;
-
     path = httpMethodArg;
     binary = "";
 
-
-    if ((l = buildPathFromLocation(s, path)) != NULL && l->cgi_pass != "none")
+    if (l && l->cgi_pass != "none")
     {
+        updatePathFromLocation(*l, s, path);
         if (!is_elf_binary(path.c_str()) || !is_macho_binary(path.c_str()))
             binary = l->cgi_pass;
         return (true);
@@ -113,7 +121,7 @@ int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>
         }
         else
         {
-			oss << "[cgi] " << binary << " use " << file << " as argument" ;
+			oss << "[cgi] " << binary << " use " << file;
             q->cgi = new CGI(binary, file, env, q->fd);
         }
 		logErrMessage(oss);
@@ -141,7 +149,7 @@ bool Webserv::getCgiQuery(int fd, s_query*& q)
     }
     return (false);
 }
- const s_http_path Webserv::parseHttpPath(s_server s, const std::string& path)
+ const s_http_path Webserv::parseHttpPath(s_location* l, s_server s, const std::string& path)
  {
     s_http_path httppath;
     size_t pos_s;
@@ -155,15 +163,16 @@ bool Webserv::getCgiQuery(int fd, s_query*& q)
         httppath.query_string = path.substr(pos_s + 1, path.length() - pos_s + 1);
         httppath.path_updated = path.substr(0, pos_s);
     }
-    paths = httppath.path_updated;
+    paths = httppath.path_updated; 
     for (c = httppath.path_updated.end(); c != httppath.path_updated.begin(); --c)
     {
         if (*c == '/' || c == httppath.path_updated.end())
         {
             buff = paths;
-            buildPathFromLocation(s, buff);
+            if (l)
+                updatePathFromLocation(*l, s, buff);
             if (is_executable(buff.c_str()))
-            {
+            {               
                 httppath.path_info = path.substr(paths.length(), httppath.path_updated.length() - paths.length());
                 httppath.path_updated = paths;
             }
@@ -171,8 +180,5 @@ bool Webserv::getCgiQuery(int fd, s_query*& q)
         if (!paths.empty())
             paths.erase(paths.size() - 1);
     }
-    std::cerr << "PATH: " <<  httppath.path_updated << std::endl;
-    std::cerr << "INFO: " << httppath.path_info << std::endl;
-    std::cerr << "STRI: " <<httppath.query_string << std::endl;
     return (httppath);
 }

@@ -12,17 +12,21 @@
 
 #include "Webserv.hpp"
 
+//CGI TESTS
 /*
-curl -X POST "http://localhost:8080/cgi-bin/test.bla/coucou?zozo=2" -d "message=Hello+World"
+curl -X POST "http://localhost:8080/cgi-bin/test.bla?zozo=2" -d "PATH_INFO is set to /cgi-bin/test.bla"
+curl -X POST "http://localhost:8080/cgi-bin/python/hello.py?zozo=2" -d "PATH_INFO is set to /cgi-bin/python/hello.py"
+curl -X POST "http://localhost:8080/cgi-bin/python/hello.py/c++?zozo=2" -d "PATH_INFO is set to /c++"
+curl -X POST "http://localhost:8080/cgi-bin/test.bla" -d "message=Hello+World"
+curl -X POST "http://localhost:8080/cgi-bin/cgi_tester" -d "message=Hello+World"
+./tester http://localhost:8080
+curl "http://localhost:4098/cgi-bin/python/cgi1.py/foo/youpla/houp?name=toto&age=12"
+curl "http://localhost:4098/cgi-bin/python/hello.py/foo/youpla/houp?name=toto&age=12"
+curl "http://localhost:4098/cgi-bin/python/cgi1.py?name=toto&age=12"
+curl -X POST "http://localhost:8080/cgi-bin/cgi_tester?name=toto&age=12" -d "message=Hello+World"
+curl -X POST "http://localhost:8080/cgi-bin/cgi_tester/foo?name=toto&age=12" -d "message=Hello+World"
+curl -X POST "http://localhost:8080/cgi-bin/cgi_tester/foo?name=toto&age=12" -d "Hello World !"
 */
-/*
-curl -X POST "http://localhost:8080/cgi_tester/cgi-bin/test.bla" -d "message=Hello+World"
-*/
-//./tester http://localhost:8080
-//curl "http://localhost:4098/cgi-bin/python/cgi1.py/foo/youpla/houp?name=toto&age=12"
-//curl "http://localhost:4098/cgi-bin/python/cgi1.py?name=toto&age=12"
-//curl -X POST "http://localhost:8080/cgi-bin/cgi_tester?name=toto&age=12" -d "message=Hello+World"
-//curl -X POST "http://localhost:8080/cgi-bin/cgi_tester/foo?name=toto&age=12" -d "message=Hello+World"
 int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, s_server&))
 {
 	std::map<std::string, std::string> headers;
@@ -31,17 +35,21 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::str
 	std::ostringstream oss;
 	std::stringstream ss;
 	s_http_path http_path;
+	s_location* l;
 	s_server s;
 	const pollfd *fds;
 	int ret = 0;
 
-	s = getRightServer(q);
 	q->httpParser->setBodyLine(q->bodyChunks);
-	http_path = parseHttpPath(s, q->httpParser->getPath());
-	if (q->cgi == NULL && isCgi(s, http_path.path_updated, cgiPath, binary))
+	s = getRightServer(q);
+	l = getLocationFromServer(s, q->httpParser->getPath());
+	http_path = parseHttpPath(l, s, q->httpParser->getPath());
+	if (q->cgi == NULL && isCgi(l, s, http_path.path_updated, cgiPath, binary))
 	{
 		env["SCRIPT_FILENAME"] = cgiPath;
-        env["PATH_INFO"] = cgiPath;//http_path.path_info;
+        env["PATH_INFO"] = http_path.path_info;
+		if (env["PATH_INFO"].empty())
+			env["PATH_INFO"] = cgiPath;
 		env["QUERY_STRING"] = http_path.query_string;
 		env["SERVER_PROTOCOL"] = q->httpParser->getVersion();
 		ss << q->port;
@@ -284,7 +292,7 @@ s_server& Webserv::getRightServer(s_query*& q)
 						q->hostName = *ser_name;
 						if (bFind)
 						{
-							oss << "conflicting server name \"" << *ser_name << "\", first server will be ignored";
+							oss << "conflicting server name \"" << *ser_name << "\", first server will be used";
 							logOutMessage(oss);
 							return (*ret);
 						}
