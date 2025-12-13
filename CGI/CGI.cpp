@@ -129,7 +129,7 @@ int CGI::writeCGI(std::pair<char*, ssize_t>& chunk)
         n = write(m_pipe_out[1], chunk.first + written, total - written);
         if (n == -1)
         {
-            oss << "[cgi] client fd:" << m_fd_client << ", " << std::strerror(errno);
+            oss << "[cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
             logErrMessage(oss);
             break;
         }
@@ -151,7 +151,7 @@ int CGI::readCGI(std::string& response)
     }
     if (n == - 1)
     {
-        oss << "[cgi] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        oss << "[cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
         logErrMessage(oss);
     }
     return (n);

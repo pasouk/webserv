@@ -49,8 +49,9 @@ enum fdType
 struct s_location
 {
 public:
-	std::string				concatOrReplace;
+	bool					is_cgi;
 	locationType			type;
+	std::string				concatOrReplace;
 	std::string				by;
 	std::string				max_body_size;
 	std::string				cgi_pass;
@@ -85,6 +86,7 @@ struct s_server
 
 struct s_http_path
 {
+	std::string location;
 	std::string	path_updated;
 	std::string query_string;
 	std::string path_info;
@@ -140,7 +142,7 @@ private:
 	int callCGI(const std::string&, std::map<std::string, std::string>&, s_query*&, std::string&) const;
 	bool getCgiQuery(int, s_query*&);
 	bool isCgi(s_location*, s_server&, const std::string&, std::string&, std::string&);
-	void updatePathFromLocation(s_location&, s_server&, std::string&) const ;
+	bool updatePathAndLocation(s_location&, std::string&, const s_server&) const ;
 	const s_http_path parseHttpPath(s_location*, s_server, const std::string&);
 	s_location* getLocationFromServer(s_server&, const std::string&);
 };

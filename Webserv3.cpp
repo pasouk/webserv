@@ -15,17 +15,22 @@
 s_location* Webserv::getLocationFromServer(s_server& s, const std::string& path)
 {
     size_t len;
-    s_location* loc;
+    s_location  *loc, l;
+    std::string fileName;
 
     loc = NULL;
     len = 0;
     for (size_t i = 0; i < s.locations.size(); ++i)
     {
-        if (path.find(s.locations[i].concatOrReplace) != std::string::npos)
+        l = s.locations[i];
+        fileName = getFilename(l.concatOrReplace.c_str());
+        if (!fileName.empty())
+            l.concatOrReplace = l.concatOrReplace.substr(0, l.concatOrReplace.length() - fileName.length());
+        if (path.find(l.concatOrReplace) != std::string::npos)
         {
-            if (s.locations[i].concatOrReplace.length() > len)
+            if (l.concatOrReplace.length() > len)
             {
-                len = path.find(s.locations[i].concatOrReplace);
+                len = l.concatOrReplace.length();
                 loc = &s.locations[i];
             }
         }
@@ -33,18 +38,18 @@ s_location* Webserv::getLocationFromServer(s_server& s, const std::string& path)
     return (loc);
 }
 
-void Webserv::updatePathFromLocation(s_location& l, s_server& s, std::string& path) const
+bool Webserv::updatePathAndLocation(s_location& l, std::string& path, const s_server& s) const
 {
-    size_t pos;
+    size_t pos, j;
     std::string by;
-    std::string fileLocation, pathLocation;
+    std::string fileName, pathLocation;
     glob_t g;
-	std::ostringstream oss;
+    bool bValidPath;
 
-    fileLocation = getFilename(l.concatOrReplace.c_str());
-    if (!fileLocation.empty())
-        l.concatOrReplace = l.concatOrReplace.substr(0
-            , l.concatOrReplace.length() - fileLocation.length());
+    bValidPath = true;
+    fileName = getFilename(l.concatOrReplace.c_str());
+    if (!fileName.empty())
+        l.concatOrReplace = l.concatOrReplace.substr(0, l.concatOrReplace.length() - fileName.length());
     pos = path.find(l.concatOrReplace);
     if (pos != std::string::npos)
     {
@@ -72,35 +77,38 @@ void Webserv::updatePathFromLocation(s_location& l, s_server& s, std::string& pa
             pathLocation = by;
             path = pathLocation + path;
         }
-        if (!glob((pathLocation + fileLocation).c_str(), 0, NULL, &g))
+        if (!fileName.empty())
         {
-            size_t j;
-            for (j = 0; j < g.gl_pathc; ++j)
+            bValidPath = false;
+            if (!glob((pathLocation + fileName).c_str(), 0, NULL, &g))
             {
-                if (path == g.gl_pathv[j])
-                {
-                    break ;
-                }
+                for (j = 0; j < g.gl_pathc; ++j)
+                    if (std::string(g.gl_pathv[j]).find(path) != std::string::npos)
+                    {
+                        bValidPath = true;
+                        break ;
+                    }
             }
-            /*if (j == g.gl_pathc)
-            {
-                oss << "[server] " << path << " doesn't exist";
-                logErrMessage(oss);
-                loc = NULL;
-            }*/
+            globfree(&g);
         }
-        globfree(&g);
     }
+    return (bValidPath);
 }
 
 bool Webserv::isCgi(s_location* l, s_server& s, const std::string& httpMethodArg, std::string& path, std::string& binary)
 {
+    std::ostringstream oss;
+
     path = httpMethodArg;
     binary = "";
-
-    if (l && l->cgi_pass != "none")
+    if (l && l->is_cgi)
     {
-        updatePathFromLocation(*l, s, path);
+        if (!updatePathAndLocation(*l, path, s))
+        {
+            oss << "[server] " << path << " not found\n";
+            logErrMessage(oss);
+            return (false);
+        }
         if (!is_elf_binary(path.c_str()) || !is_macho_binary(path.c_str()))
             binary = l->cgi_pass;
         return (true);
@@ -116,13 +124,13 @@ int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>
     {
         if (binary.empty())
         {
-			oss << "[cgi] " << file << " is running";
             q->cgi = new CGI(file, env, q->fd);
+			oss << "[cgi:" << q->cgi->getPid() << "] " << file << " is running";
         }
         else
         {
-			oss << "[cgi] " << binary << " use " << file;
             q->cgi = new CGI(binary, file, env, q->fd);
+			oss << "[cgi:" << q->cgi->getPid() << "] " << binary << " use " << file;
         }
 		logErrMessage(oss);
     }
@@ -149,36 +157,40 @@ bool Webserv::getCgiQuery(int fd, s_query*& q)
     }
     return (false);
 }
- const s_http_path Webserv::parseHttpPath(s_location* l, s_server s, const std::string& path)
- {
-    s_http_path httppath;
+const s_http_path Webserv::parseHttpPath(s_location* l, s_server s, const std::string& path)
+{
+    s_http_path httpPath;
     size_t pos_s;
-	std::string paths, buff;
+	std::string paths, pathNotRef;
     std::string::const_iterator c;
-
-    httppath.path_updated = path;
+    s_location lNotRef;
+       
+    httpPath.path_updated = path;
     pos_s = path.find("?");
     if (pos_s != std::string::npos)
     { 
-        httppath.query_string = path.substr(pos_s + 1, path.length() - pos_s + 1);
-        httppath.path_updated = path.substr(0, pos_s);
+        httpPath.query_string = path.substr(pos_s + 1, path.length() - pos_s + 1);
+        httpPath.path_updated = path.substr(0, pos_s);
     }
-    paths = httppath.path_updated; 
-    for (c = httppath.path_updated.end(); c != httppath.path_updated.begin(); --c)
+    paths = httpPath.path_updated;
+    for (c = httpPath.path_updated.end(); c != httpPath.path_updated.begin(); --c)
     {
-        if (*c == '/' || c == httppath.path_updated.end())
+        if (*c == '/' || c == httpPath.path_updated.end())
         {
-            buff = paths;
+            pathNotRef = paths;
             if (l)
-                updatePathFromLocation(*l, s, buff);
-            if (is_executable(buff.c_str()))
+            {
+                lNotRef = *l;
+                updatePathAndLocation(lNotRef, pathNotRef, s);
+            }
+            if (is_executable(pathNotRef.c_str()))
             {               
-                httppath.path_info = path.substr(paths.length(), httppath.path_updated.length() - paths.length());
-                httppath.path_updated = paths;
+                httpPath.path_info = path.substr(paths.length(), httpPath.path_updated.length() - paths.length());
+                httpPath.path_updated = paths;
             }
         }
         if (!paths.empty())
             paths.erase(paths.size() - 1);
     }
-    return (httppath);
+    return (httpPath);
 }

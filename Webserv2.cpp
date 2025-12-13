@@ -14,6 +14,7 @@
 
 //CGI TESTS
 /*
+curl -X POST "http://localhost:8080/cgi_tester/c++?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi-bin/test.bla?zozo=2" -d "PATH_INFO is set to /cgi-bin/test.bla"
 curl -X POST "http://localhost:8080/cgi-bin/python/hello.py?zozo=2" -d "PATH_INFO is set to /cgi-bin/python/hello.py"
 curl -X POST "http://localhost:8080/cgi-bin/python/hello.py/c++?zozo=2" -d "PATH_INFO is set to /c++"
@@ -34,7 +35,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::str
 	std::map<std::string, std::string> env;
 	std::ostringstream oss;
 	std::stringstream ss;
-	s_http_path http_path;
+	s_http_path httpPath;
 	s_location* l;
 	s_server s;
 	const pollfd *fds;
@@ -43,14 +44,14 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::str
 	q->httpParser->setBodyLine(q->bodyChunks);
 	s = getRightServer(q);
 	l = getLocationFromServer(s, q->httpParser->getPath());
-	http_path = parseHttpPath(l, s, q->httpParser->getPath());
-	if (q->cgi == NULL && isCgi(l, s, http_path.path_updated, cgiPath, binary))
+	httpPath = parseHttpPath(l, s, q->httpParser->getPath());
+	if (q->cgi == NULL && isCgi(l, s, httpPath.path_updated, cgiPath, binary))
 	{
 		env["SCRIPT_FILENAME"] = cgiPath;
-        env["PATH_INFO"] = http_path.path_info;
+        env["PATH_INFO"] = httpPath.path_info;
 		if (env["PATH_INFO"].empty())
 			env["PATH_INFO"] = cgiPath;
-		env["QUERY_STRING"] = http_path.query_string;
+		env["QUERY_STRING"] = httpPath.query_string;
 		env["SERVER_PROTOCOL"] = q->httpParser->getVersion();
 		ss << q->port;
 		env["SERVER_PORT"] = ss.str();

@@ -124,13 +124,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 				else if (m_fds[i].revents & POLLOUT)
 				{
 					for (size_t i = 0; i < q->bodyChunks.size(); ++i)
-						if (q->cgi->writeCGI(q->bodyChunks[i]) <= 0)
-						{
-							const pollfd *fds = q->cgi->getPollfd();
-							pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-							removePipesFromPoll(arr);
-							break ;
-						}
+						q->cgi->writeCGI(q->bodyChunks[i]);
 				}
 			}
 			else if (m_fdType[i] == ACCEPT)
@@ -405,6 +399,7 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 		for (std::vector<const Node*>::const_iterator it1 = _location.begin(); it1 != _location.end(); ++it1)
 		{
 			loc.concatOrReplace = (*it1)->getArgs()[0];
+			loc.is_cgi = false;
 			loc.type = NONE;
 			loc.by = "none";
 			loc.max_body_size = "not define";
@@ -428,6 +423,7 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 			_cgi_pass = parser->getDirectives("cgi_pass", static_cast<const NodeBlock*>(*it1));
 			if (_cgi_pass.size())
 			{
+				loc.is_cgi = true;
 				if (_cgi_pass[0]->getArgs().size())
 					loc.cgi_pass = _cgi_pass[0]->getArgs()[0];
 				else

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 #read CGI variables
 script_name = os.environ.get("SCRIPT_NAME", "")
