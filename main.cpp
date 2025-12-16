@@ -25,10 +25,98 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
+void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::string& mappedPath, s_location& foundLocation)
+{
+    mappedPath = r.getPath();
+    root = s.root;
+    std::cout << "[DEBUG resolvePath] Initial - path='" << mappedPath << "' root='" << root << "'" << std::endl;
+
+    if (s.locations.empty())
+    {
+        std::cout << "[DEBUG resolvePath] No locations, returning with root='" << root << "'" << std::endl;
+        return;
+    }
+
+    // --------------------------
+    // 1) Find LONGEST matching prefix
+    // --------------------------
+    int bestIndex = -1;
+    size_t bestLen = 0;
+
+    for (size_t i = 0; i < s.locations.size(); ++i)
+    {
+        const std::string &prefix = s.locations[i].concatOrReplace;
+
+        if (mappedPath.compare(0, prefix.size(), prefix) == 0)
+        {
+            if (prefix.size() > bestLen)
+            {
+                bestLen = prefix.size();
+                bestIndex = (int)i;
+            }
+        }
+    }
+
+    if (bestIndex == -1)
+    {
+        std::cout << "[DEBUG resolvePath] No matching location, using default root='" << root << "'" << std::endl;
+        foundLocation = s_location();  // Initialize with empty location
+        return;
+    }
+
+    const s_location &loc = s.locations[bestIndex];
+    foundLocation = loc;  // Store the found location
+    std::cout << "[DEBUG resolvePath] Matched location " << bestIndex << " with prefix='" << loc.concatOrReplace << "'" << std::endl;
+
+    // Remainder after removing prefix
+    size_t prefix_len = loc.concatOrReplace.size();
+    std::string remainder;
+
+    if (mappedPath.size() > prefix_len)
+        remainder = mappedPath.substr(prefix_len);
+
+    // --------------------------
+    // 2) TYPE ROOT
+    // --------------------------
+    if (loc.type == ROOT)
+    {
+        root = loc.by;
+        std::cout << "[DEBUG resolvePath] ROOT location - new root='" << root << "'" << std::endl;
+
+        std::string newReqPath = remainder;
+
+        if (newReqPath.empty())
+            newReqPath = "/";
+        else if (newReqPath[0] != '/')
+            newReqPath = "/" + newReqPath;
+
+        std::cout << "[DEBUG resolvePath] ROOT location - new path='" << newReqPath << "'" << std::endl;
+        r.setPath(newReqPath);
+        mappedPath = newReqPath;
+    }
+
+    // --------------------------
+    // 3) TYPE ALIAS
+    // --------------------------
+    else if (loc.type == ALIAS)
+    {
+        std::string newReqPath = loc.by;
+        std::cout << "[DEBUG resolvePath] ALIAS location - new path='" << newReqPath << "' root='" << root << "'" << std::endl;
+
+        r.setPath(newReqPath);
+        mappedPath = newReqPath;
+    }
+    std::cout << "[DEBUG resolvePath] Final - path='" << mappedPath << "' root='" << root << "'" << std::endl;
+}
+
 void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server& s)
 {	
 	std::ostringstream oss;
 	std::stringstream ss;
+	std::string path;
+	std::string root;
+	s_location foundLoc;
+	resolvePath(r, s, root, path, foundLoc);
 
 	//MAXENCE:
 	//si cgi different de NULL:
@@ -69,12 +157,15 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	{
 		//ICI CE N'EST PAS UN CGI
 		//response
+		std::cout << "[DEBUG onResponse] After resolvePath - root='" << root << "' path='" << path << "'" << std::endl;
 		HttpResponse response1(r, r.getError());
-		response1.setRoot(s.root);
+		response1.setRoot(root);
+		response1.setMatchedLocation(foundLoc);
+		response1.setLocations(s.locations);
 		//response1.setServerMethods(s.httpMethodsAllowed);
 		response1.HttpResponseManager();
 		response = response1.getFormatedResponse();
-		//std::cout << response << std::endl;
+		std::cout << Colors::CYAN << response << Colors::RESET << std::endl;
 	}
 }
 

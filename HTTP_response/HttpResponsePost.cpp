@@ -220,6 +220,16 @@ void HttpResponse::buildPost()
         return;
     }
 
+    // Enforce client/body size limit (location or server default)
+    size_t declaredLen = 0;
+    std::stringstream ssLen(contentLen);
+    ssLen >> declaredLen;
+    if (declaredLen > _LocationMaxBodySize)
+    {
+        HttpResponseError(413, "Request Entity Too Large");
+        return;
+    }
+
     if(!contentVal.empty())
     {
         fileName = extractFileName(contentVal);
