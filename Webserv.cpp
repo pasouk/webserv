@@ -67,11 +67,10 @@ Webserv::~Webserv()
 	cleanWebserv();
 }
 
-void Webserv::startListening(void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, s_server&))
+void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&))
 {
 	pollfd pfd;
 	rlimit limit;
-	std::string CgiAnswer;
 	s_query* q;
 	int fd, n;
 	std::ostringstream oss;
@@ -111,20 +110,23 @@ void Webserv::startListening(void (*onResponse)(std::string&, std::string*, Pars
 			{
 				if (m_fds[i].revents & POLLIN)
 				{
-					if (q->cgi->readCGI(CgiAnswer) <= 0)
+					if (q->cgi->readCGI() <= 0)
 					{
-						const pollfd *fds = q->cgi->getPollfd();
-						pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-						removePipesFromPoll(arr);
-						onResponse(q->formatedResponse, &CgiAnswer, *q->httpParser, getRightServer(q));
-						CgiAnswer = "";
+						onResponse(q->formatedResponse, q->cgi, *q->httpParser, getRightServer(q));
+						delete (q->cgi);
+						q->cgi = NULL;
 						break ;
 					}
 				}
 				else if (m_fds[i].revents & POLLOUT)
 				{
 					for (size_t i = 0; i < q->bodyChunks.size(); ++i)
-						q->cgi->writeCGI(q->bodyChunks[i]);
+						if (q->cgi->writeCGI(q->bodyChunks[i]) < 0)
+						{
+							delete (q->cgi);
+							q->cgi = NULL;
+							break ;
+						}
 				}
 			}
 			else if (m_fdType[i] == ACCEPT)
@@ -214,7 +216,7 @@ void Webserv::addClient(int fd)
 	}
 }
 
-int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, s_server&))
+int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&))
 {
 	std::ostringstream oss;
 	char *buffers;
@@ -260,8 +262,8 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, std::string*, Pa
 		} while(n > 0);
 		if (n == -1)
 		{
-			oss << "[server] client fd:" << client->fd << ", " << std::strerror(errno);
-			logOutMessage(oss);
+			oss << "client fd:" << client->fd << ", " << std::strerror(errno);
+			logErrMessage(oss);
 		}
 		delete [](buffers);
 	}
@@ -289,13 +291,13 @@ int Webserv::sendQuery(int fd)
 					(*it).byteSent += n;
 				else if (n == -1)
 				{
-					oss << "[server] client fd:" << (*it).fd << ", " << std::strerror(errno);
-					logOutMessage(oss);
+					oss << "client fd:" << (*it).fd << ", " << std::strerror(errno);
+					logErrMessage(oss);
 					break ;
 				}
 				else if (n == 0)
 				{
-					oss << "[server] client fd:" << (*it).fd << ", send 0 byte";
+					oss << "client fd:" << (*it).fd << ", send 0 byte";
 					logOutMessage(oss);
 					break ;
 				}

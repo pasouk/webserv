@@ -31,21 +31,6 @@
 
 extern bool g_listening;
 
-enum locationType
-{
-    ROOT,
-    ALIAS,
-	PROXY_PASS,
-	NONE
-};
-
-enum fdType
-{
-	SOCKET,
-	ACCEPT,
-	PIPE
-};
-
 struct s_location
 {
 public:
@@ -102,7 +87,7 @@ public:
 
 	Webserv& operator=(const Webserv&);
 	
-	void startListening(void (*)(std::string&, std::string*, ParserHttpRequest&, s_server&));
+	void startListening(void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&));
 	void printServers();
 	void printQuery(s_query&) const;
 	void cleanWebserv();
@@ -122,14 +107,14 @@ private:
 	std::vector<s_server> createServers(const ConfigParser*);
 	void printServer(s_server&) const;
 	void addClient(int);
-	int readQuery(int, void (*)(std::string&, std::string*, ParserHttpRequest&, s_server&));
+	int readQuery(int, void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&));
 	int sendQuery(int);
 	void stopListening();
 	void destroyClient(int);
 	void releaseQueries(int);
-	int responseHook(s_query*&,  void (*)(std::string&, std::string*, ParserHttpRequest&, s_server&));
+	int responseHook(s_query*&,  void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&));
 	int tcpStream(char* buffer, ssize_t, s_query*&
-		, void (*)(std::string&, std::string*, ParserHttpRequest&, s_server&), bool&);
+		, void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&), bool&);
 	bool clientNeedsAnswer(int) const;
 	bool keepAlive(int, double);
 	bool getClient(int, s_query*&);
@@ -137,14 +122,12 @@ private:
 	const std::vector<std::string> getDiretiveValue(const Node*, const std::vector<const Node*>) const;
 	s_server& getRightServer(s_query*&);
 	bool matchServerName(const std::string&, const std::string&) const;
-	void addPipeToPoll(pollfd(&)[2]);
-	void removePipesFromPoll(pollfd(&)[2]);
-	int callCGI(const std::string&, std::map<std::string, std::string>&, s_query*&, std::string&) const;
+	int createCGI(const std::string&, std::map<std::string, std::string>&, s_query*&, std::string&);
 	bool getCgiQuery(int, s_query*&);
 	bool isCgi(s_location*, s_server&, const std::string&, std::string&, std::string&);
 	bool updatePathAndLocation(s_location&, std::string&, const s_server&) const ;
 	const s_http_path parseHttpPath(s_location*, s_server, const std::string&);
-	s_location* getLocationFromServer(s_server&, const std::string&);
+	s_location* getLocationFromServer(s_server&, const ParserHttpRequest&);
 };
 
 #endif

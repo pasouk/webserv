@@ -14,6 +14,10 @@
 
 //CGI TESTS
 /*
+//GETY
+curl "http://localhost:8080/cgi-bin/python/add.py?a=5&b=3"
+
+//POST
 curl -X POST "http://localhost:8080/cgi_tester/c++?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi-bin/test.bla?zozo=2" -d "PATH_INFO is set to /cgi-bin/test.bla"
 curl -X POST "http://localhost:8080/cgi-bin/python/hello.py?zozo=2" -d "PATH_INFO is set to /cgi-bin/python/hello.py"
@@ -28,7 +32,7 @@ curl -X POST "http://localhost:8080/cgi-bin/cgi_tester?name=toto&age=12" -d "mes
 curl -X POST "http://localhost:8080/cgi-bin/cgi_tester/foo?name=toto&age=12" -d "message=Hello+World"
 curl -X POST "http://localhost:8080/cgi-bin/cgi_tester/foo?name=toto&age=12" -d "Hello World !"
 */
-int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, s_server&))
+int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&))
 {
 	std::map<std::string, std::string> headers;
 	std::string header, cgiPath, binary;
@@ -38,12 +42,11 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::str
 	s_http_path httpPath;
 	s_location* l;
 	s_server s;
-	const pollfd *fds;
 	int ret = 0;
 
 	q->httpParser->setBodyLine(q->bodyChunks);
 	s = getRightServer(q);
-	l = getLocationFromServer(s, q->httpParser->getPath());
+	l = getLocationFromServer(s, *q->httpParser);
 	httpPath = parseHttpPath(l, s, q->httpParser->getPath());
 	if (q->cgi == NULL && isCgi(l, s, httpPath.path_updated, cgiPath, binary))
 	{
@@ -62,21 +65,14 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, std::str
 		header = headers["Content-Length"]; 
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
-		if (callCGI(cgiPath, env, q, binary))
+		if (createCGI(cgiPath, env, q, binary))
 		{
 			oss << "CGI can't be build.:";
 			logErrMessage(oss);
 			ret = 1;
 		}
-		else
-		{
-			fds = q->cgi->getPollfd();
-			pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-			addPipeToPoll(arr);
-		}
 	}
-	else
-		onResponse(q->formatedResponse, NULL, *(q->httpParser), s);
+	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
 	m_queries.push_back(*q);
 	//printQuery(*q);
 	q->httpRequest.clear();
@@ -105,7 +101,7 @@ std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 }
 
 int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
-	, void (*onResponse)(std::string&, std::string*, ParserHttpRequest&, s_server&), bool& bDelete)
+	, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&), bool& bDelete)
 {
 	std::map<std::string, std::string> headers;
 	std::stringstream ss;
@@ -210,9 +206,6 @@ void Webserv::releaseQueries(int fd)
 			}
 			if (m_queries[j].cgi)
 			{
-				const pollfd *fds = m_queries[j].cgi->getPollfd();
-				pollfd (&arr)[2] = *reinterpret_cast<pollfd (*)[2]>(const_cast<pollfd *>(fds));
-				removePipesFromPoll(arr);
 				delete (m_queries[j].cgi);
 				m_queries[j].cgi = NULL;
 			}
@@ -325,33 +318,6 @@ bool Webserv::matchServerName(const std::string& host, const std::string& ser) c
 	if (_host == _ser)
 		return (true);
 	return (false);
-}
-
-void Webserv::addPipeToPoll(pollfd(&poll)[2])
-{
-	m_fds.push_back(poll[0]);
-	m_fdType.push_back(PIPE);
-	m_fds.push_back(poll[1]);
-	m_fdType.push_back(PIPE);
-}
-
-void Webserv::removePipesFromPoll(pollfd(&poll)[2])
-{
-	for (size_t i = 0; i < m_fds.size(); ++i)
-		if (m_fds[i].fd == poll[1].fd)
-		{
-			m_fds.erase(m_fds.begin() + i);
-			m_fdType.erase(m_fdType.begin() + i);
-			break ;
-		}
-	for (size_t i = 0; i < m_fds.size(); ++i)
-		if (m_fds[i].fd == poll[0].fd)
-		{
-			m_fds.erase(m_fds.begin() + i);
-			m_fdType.erase(m_fdType.begin() + i);
-			break ;
-		}
-
 }
 
 void Webserv::printQuery(s_query& query) const

@@ -25,24 +25,49 @@ void handle_sigint(int sig)
 	g_listening = false;
 }
 
-void onResponse(std::string& response, std::string* CgiResponse, ParserHttpRequest& r, s_server& s)
+void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server& s)
 {	
+	std::ostringstream oss;
 	std::stringstream ss;
 
-	if (CgiResponse)
+	//MAXENCE:
+	//si cgi different de NULL:
+	//cela veux dire qu'un CGI a été crée mais PAS ENCORE EXCUTE.
+	//il a été crée parceque la requete A MATCH UNE LOCATION CONTENANT UNE DIRECTIVE "cgi_pass"
+	if (cgi)
 	{
-		ss << (*CgiResponse).length();
-		std::string responseBuild =
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/plain\r\n"
-			"Content-Length: " + ss.str() + "\r\n"
-			"Connection: close\r\n"
-			"\r\n"
-			+ *CgiResponse;
-		response = responseBuild;
+		if (cgi->wasExecuted() == false)
+		{
+			//TODO
+			//ici tu peux faire ce que tu veux avant l'execution du CGI
+			if (cgi->runCGI())
+			{
+				oss << "client fd:" << cgi->getFd() << ", cgi failed to run";
+				logErrMessage(oss);
+
+				//TODO:
+				//il y a eu une erreur, CGI détruit.
+			}
+		}
+		else
+		{
+			//TODO
+			//ici l'execution c'est bien déroulée et tu as la reponse du CGI avec cgi->getResponse()
+			//je renvoi ca pour mes tests, libre a toi de modifier.
+			ss << cgi->getResponse().length();
+			std::string responseBuild =
+				"HTTP/1.1 200 OK\r\n"
+				"Content-Type: text/plain\r\n"
+				"Content-Length: " + ss.str() + "\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+				+ cgi->getResponse();
+			response = responseBuild;
+		}
 	}
 	else
 	{
+		//ICI CE N'EST PAS UN CGI
 		//response
 		HttpResponse response1(r, r.getError());
 		response1.setRoot(s.root);

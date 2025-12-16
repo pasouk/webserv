@@ -26,38 +26,67 @@
 # include <map>
 # include <fcntl.h>
 # include <poll.h>
+# include <vector>
 # include "utils.hpp"
 
 # define READBUFFERSIZE 1024
+
+enum locationType
+{
+    ROOT,
+    ALIAS,
+	PROXY_PASS,
+	NONE
+};
+
+enum fdType
+{
+	SOCKET,
+	ACCEPT,
+	PIPE
+};
 
 class Webserv;
 class CGI
 {
 public:
     ~CGI();
-    CGI(std::string, std::string, std::map<std::string, std::string>&, int);    //script whithout shebang
-    CGI(std::string, std::map<std::string, std::string>&, int);                 //binary/script (with shebang)
-
+    CGI(std::string, std::string, std::map<std::string, std::string>&
+        , int, std::vector<pollfd>&, std::vector<fdType>&); //script without shebang
+    CGI(std::string, std::map<std::string, std::string>&
+        , int, std::vector<pollfd>&, std::vector<fdType>&); //binary/script (with shebang)
+    int runCGI();
     int writeCGI(std::pair<char*, ssize_t>&);
-    int readCGI(std::string&);
+    int readCGI();
     const pollfd* getPollfd() const;
+    const std::string& getResponse() const;
     int getFd() const;
     pid_t getPid() const;
+    bool wasExecuted() const;
 
 private:
     void cgi(char**, char**);
-    int buildChild(char**, char**, pollfd(&)[2]);
+    int buildCGI(/*std::vector<pollfd>& fds, std::vector<fdType>& fdtype*/);
     void initFDS();
     void closeFDS();
     void deleteEnvp();
     void setEnvp(std::map<std::string, std::string>);
+	void addPipeToPoll(std::vector<pollfd>& fds, std::vector<fdType>& fdtype);
+	void removePipesFromPoll(std::vector<pollfd>& fds, std::vector<fdType>& fdtype);
 
 private:
+    bool    m_executed;
     int     m_fd_client;
     char**  m_envp;
     pid_t   m_id_cgi;
+    std::vector<pollfd>& m_fds;
+    std::vector<fdType>& m_fdtype;
     int     m_pipe_in[2];
     int     m_pipe_out[2];
     pollfd  m_poll[2];
+    char**  m_argv;
+    std::string m_binary;
+    std::string m_script;
+    std::string m_response;
 };
 #endif

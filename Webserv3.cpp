@@ -12,12 +12,13 @@
 
 #include "Webserv.hpp"
 
-s_location* Webserv::getLocationFromServer(s_server& s, const std::string& path)
+s_location* Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest& http)
 {
     size_t len;
     s_location  *loc, l;
-    std::string fileName;
+    std::string fileName, path;
 
+    path = http.getPath();
     loc = NULL;
     len = 0;
     for (size_t i = 0; i < s.locations.size(); ++i)
@@ -35,6 +36,16 @@ s_location* Webserv::getLocationFromServer(s_server& s, const std::string& path)
             }
         }
     }
+    if (loc)
+    {
+        for (size_t i = 0; i < loc->httpMethodsAllowed.size(); ++i)
+        {
+            if (loc->httpMethodsAllowed[i] == http.getMethod())
+                return (loc);
+        }
+        if (loc->httpMethodsAllowed.size())
+            return (NULL);
+    }  
     return (loc);
 }
 
@@ -105,10 +116,10 @@ bool Webserv::isCgi(s_location* l, s_server& s, const std::string& httpMethodArg
     {
         if (!updatePathAndLocation(*l, path, s))
         {
-            oss << "[server] " << path << " not found\n";
+            oss << path << " not found\n";
             logErrMessage(oss);
             return (false);
-        }
+        }      
         if (!is_elf_binary(path.c_str()) || !is_macho_binary(path.c_str()))
             binary = l->cgi_pass;
         return (true);
@@ -116,7 +127,7 @@ bool Webserv::isCgi(s_location* l, s_server& s, const std::string& httpMethodArg
     return (false);
 }
 
-int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>& env, s_query*& q, std::string& binary) const
+int Webserv::createCGI(const std::string& file, std::map<std::string, std::string>& env, s_query*& q, std::string& binary)
 {
 	std::ostringstream oss;
 
@@ -124,15 +135,15 @@ int Webserv::callCGI(const std::string& file, std::map<std::string, std::string>
     {
         if (binary.empty())
         {
-            q->cgi = new CGI(file, env, q->fd);
-			oss << "[cgi:" << q->cgi->getPid() << "] " << file << " is running";
+            q->cgi = new CGI(file, env, q->fd, m_fds, m_fdType);
+			oss << "client fd:" << q->fd << ", " << file << " is build";
         }
         else
         {
-            q->cgi = new CGI(binary, file, env, q->fd);
-			oss << "[cgi:" << q->cgi->getPid() << "] " << binary << " use " << file;
+            q->cgi = new CGI(binary, file, env, q->fd, m_fds, m_fdType);
+			oss << "client fd:" << q->fd << ", " << file << " is build";
         }
-		logErrMessage(oss);
+		logOutMessage(oss);
     }
     catch(const std::exception& e)
     {
@@ -182,6 +193,7 @@ const s_http_path Webserv::parseHttpPath(s_location* l, s_server s, const std::s
             {
                 lNotRef = *l;
                 updatePathAndLocation(lNotRef, pathNotRef, s);
+                std::cout << "A:" << pathNotRef << std::endl;
             }
             if (is_executable(pathNotRef.c_str()))
             {               

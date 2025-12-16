@@ -18,31 +18,62 @@ CGI::~CGI()
     int status;
     std::ostringstream oss;
 
+    removePipesFromPoll(m_fds, m_fdtype);
     closeFDS();
     deleteEnvp();
-    kill(m_id_cgi, SIGTERM);
-    waitpid(m_id_cgi, &status, 0);
-    oss << "Terminated CGI by server, pid: " << m_id_cgi;
-    logOutMessage(oss);
+    delete [](m_argv);
+    if (m_id_cgi != -1)
+    {
+        kill(m_id_cgi, SIGTERM);
+        waitpid(m_id_cgi, &status, 0);
+        oss << "Terminated CGI by server, pid: " << m_id_cgi;
+        logOutMessage(oss);
+    }
 }
 
-CGI::CGI(std::string binary, std::string script, std::map<std::string, std::string>& env, int fd)
-    : m_fd_client(fd), m_envp(NULL), m_id_cgi(-1)
-{    
-    const char* argv[3] = {binary.data(), script.data(), NULL};
+CGI::CGI(std::string binary, std::string script, std::map<std::string, std::string>& env
+    , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
+    : m_executed(false), m_fd_client(fd), m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType)
+{  
+    m_binary = binary;
+    m_script = script;
+    m_argv = new (std::nothrow) char*[3];
+    if (m_argv == NULL)
+         throw std::runtime_error(std::strerror(errno));       
+    m_argv[0] = const_cast<char*>(m_binary.c_str());
+    m_argv[1] = const_cast<char*>(m_script.c_str());
+    m_argv[2] = NULL;
     initFDS();
     setEnvp(env);
-    if (buildChild(const_cast<char**>(argv), m_envp, m_poll))
+    if (buildCGI())
+    {
+        delete [](m_argv);
         throw std::runtime_error(std::strerror(errno));
+    }
 }
 
-CGI::CGI(std::string binary, std::map<std::string, std::string>& env, int fd) : m_fd_client(fd), m_envp(NULL), m_id_cgi(-1)
+CGI::CGI(std::string binary, std::map<std::string, std::string>& env
+    , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
+    : m_executed(false), m_fd_client(fd), m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType)
 {
-    const char* argv[2] = {binary.data(), NULL};
+    m_binary = binary;
+    m_argv = new (std::nothrow) char*[2];
+    if (m_argv == NULL)
+         throw std::runtime_error(std::strerror(errno));       
+    m_argv[0] = const_cast<char*>(m_binary.c_str());
+    m_argv[1] = NULL;
     initFDS();
     setEnvp(env);
-    if (buildChild(const_cast<char**>(argv), m_envp, m_poll))
+    if (buildCGI(/*pollfd, pipeType)*/))
+    {
+        delete [](m_argv);
         throw std::runtime_error(std::strerror(errno));
+    }
+}
+
+const std::string& CGI::getResponse() const
+{
+    return (m_response);
 }
 
 int CGI::getFd() const
@@ -53,6 +84,11 @@ int CGI::getFd() const
 pid_t CGI::getPid() const
 {
     return (m_id_cgi);
+}
+
+bool CGI::wasExecuted() const
+{
+    return (m_executed);
 }
 
 void CGI::setEnvp(std::map<std::string, std::string> env)
@@ -95,6 +131,7 @@ void CGI::deleteEnvp()
     while (m_envp[++i] != NULL)
         delete [](m_envp[i]);
     delete [](m_envp);
+    m_envp = NULL;
 }
 
 void CGI::initFDS()
@@ -138,7 +175,7 @@ int CGI::writeCGI(std::pair<char*, ssize_t>& chunk)
     return (n);
 }
 
-int CGI::readCGI(std::string& response)
+int CGI::readCGI()
 {
     std::ostringstream oss;
     static char buff[READBUFFERSIZE];
@@ -147,7 +184,8 @@ int CGI::readCGI(std::string& response)
     while ((n = read(m_pipe_in[0], buff, READBUFFERSIZE)) > 0)
     {
         buff[n] = '\0';
-        response += buff;
+        m_response += buff;
+        m_executed = true;
     }
     if (n == - 1)
     {
@@ -157,7 +195,7 @@ int CGI::readCGI(std::string& response)
     return (n);
 }
 
-int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
+int CGI::buildCGI(/*std::vector<pollfd>& fds, std::vector<fdType>& fdtype*/)
 {
     std::ostringstream oss;
     
@@ -170,29 +208,60 @@ int CGI::buildChild(char* argv[], char* envp[], pollfd (&poll)[2])
         oss << "[cgi] client fd:" << m_fd_client << ", " << std::strerror(errno);
 	    logErrMessage(oss);
     }
-    poll[0].fd = m_pipe_out[1];
-    poll[0].events = POLLOUT;
-    poll[0].revents = 0;
-    poll[1].fd = m_pipe_in[0];
-    poll[1].events = POLLIN;
-    poll[1].revents = 0;
-    m_id_cgi = fork();
+    m_poll[0].fd = m_pipe_out[1];
+    m_poll[0].events = POLLOUT;
+    m_poll[0].revents = 0;
+    m_poll[1].fd = m_pipe_in[0];
+    m_poll[1].events = POLLIN;
+    m_poll[1].revents = 0;
+    return (0);
+    /*m_id_cgi = fork();
     if (m_id_cgi == 0)
     {
         cgi(argv, envp);
+        removePipesFromPoll(fds, fdtype);
         closeFDS();
         deleteEnvp();
         return (1);
     }
     else if (m_id_cgi == -1)
     {
+        removePipesFromPoll(fds, fdtype);   
         closeFDS();
         deleteEnvp();
         return (1);
     }
     close(m_pipe_in[1]);
     close(m_pipe_out[0]);
-    return (0); 
+    return (0);*/
+}
+
+int CGI::runCGI()
+{
+    std::ostringstream oss;
+
+    addPipeToPoll(m_fds, m_fdtype);
+    m_id_cgi = fork();
+    if (m_id_cgi == 0)
+    {
+        cgi(m_argv, m_envp);
+        removePipesFromPoll(m_fds, m_fdtype);
+        closeFDS();
+        deleteEnvp();
+        return (1);
+    }
+    else if (m_id_cgi == -1)
+    {
+        removePipesFromPoll(m_fds, m_fdtype);   
+        closeFDS();
+        deleteEnvp();
+        return (1);
+    }
+	oss << "client fd:" << m_fd_client << ", pid: " << m_id_cgi << " is started";
+    logOutMessage(oss);
+    close(m_pipe_in[1]);
+    close(m_pipe_out[0]);
+    return (0);    
 }
 
 void CGI::cgi(char* argv[], char* envp[])
@@ -234,4 +303,31 @@ void CGI::cgi(char* argv[], char* envp[])
 const pollfd* CGI::getPollfd() const
 {
     return (&m_poll[0]);
+}
+
+void CGI::addPipeToPoll(std::vector<pollfd>& fds, std::vector<fdType>& fdtype)
+{
+	fds.push_back(m_poll[0]);
+	fdtype.push_back(PIPE);
+	fds.push_back(m_poll[1]);
+	fdtype.push_back(PIPE);
+}
+
+void CGI::removePipesFromPoll(std::vector<pollfd>& fds, std::vector<fdType>& fdtype)
+{
+	for (size_t i = 0; i < fds.size(); ++i)
+		if (fds[i].fd == m_poll[1].fd)
+		{
+			fds.erase(fds.begin() + i);
+			fdtype.erase(fdtype.begin() + i);
+			break ;
+		}
+	for (size_t i = 0; i < fds.size(); ++i)
+		if (fds[i].fd == m_poll[0].fd)
+		{
+			fds.erase(fds.begin() + i);
+			fdtype.erase(fdtype.begin() + i);
+			break ;
+		}
+
 }
