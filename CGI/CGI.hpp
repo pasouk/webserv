@@ -29,7 +29,7 @@
 # include <vector>
 # include "utils.hpp"
 
-# define READBUFFERSIZE 1024
+# define READBUFFERSIZE 3
 
 enum locationType
 {
@@ -66,7 +66,7 @@ public:
 
 private:
     void cgi(char**, char**);
-    int buildCGI(/*std::vector<pollfd>& fds, std::vector<fdType>& fdtype*/);
+    int buildCGI();
     void initFDS();
     void closeFDS();
     void deleteEnvp();

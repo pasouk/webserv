@@ -195,7 +195,7 @@ int CGI::readCGI()
     return (n);
 }
 
-int CGI::buildCGI(/*std::vector<pollfd>& fds, std::vector<fdType>& fdtype*/)
+int CGI::buildCGI()
 {
     std::ostringstream oss;
     
@@ -215,25 +215,6 @@ int CGI::buildCGI(/*std::vector<pollfd>& fds, std::vector<fdType>& fdtype*/)
     m_poll[1].events = POLLIN;
     m_poll[1].revents = 0;
     return (0);
-    /*m_id_cgi = fork();
-    if (m_id_cgi == 0)
-    {
-        cgi(argv, envp);
-        removePipesFromPoll(fds, fdtype);
-        closeFDS();
-        deleteEnvp();
-        return (1);
-    }
-    else if (m_id_cgi == -1)
-    {
-        removePipesFromPoll(fds, fdtype);   
-        closeFDS();
-        deleteEnvp();
-        return (1);
-    }
-    close(m_pipe_in[1]);
-    close(m_pipe_out[0]);
-    return (0);*/
 }
 
 int CGI::runCGI()
@@ -257,10 +238,10 @@ int CGI::runCGI()
         deleteEnvp();
         return (1);
     }
-	oss << "client fd:" << m_fd_client << ", pid: " << m_id_cgi << " is started";
-    logOutMessage(oss);
     close(m_pipe_in[1]);
     close(m_pipe_out[0]);
+    oss << "client fd:" << m_fd_client << ", pid: " << m_id_cgi << " is started";
+    logOutMessage(oss);
     return (0);    
 }
 

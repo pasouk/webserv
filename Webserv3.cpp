@@ -193,7 +193,6 @@ const s_http_path Webserv::parseHttpPath(s_location* l, s_server s, const std::s
             {
                 lNotRef = *l;
                 updatePathAndLocation(lNotRef, pathNotRef, s);
-                std::cout << "A:" << pathNotRef << std::endl;
             }
             if (is_executable(pathNotRef.c_str()))
             {               
