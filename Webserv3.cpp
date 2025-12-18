@@ -120,7 +120,7 @@ bool Webserv::isCgi(s_location* l, s_server& s, const std::string& httpMethodArg
             logErrMessage(oss);
             return (false);
         }      
-        if (!is_elf_binary(path.c_str()) || !is_macho_binary(path.c_str()))
+        //if (!is_elf_binary(path.c_str()) || !is_macho_binary(path.c_str()))
             binary = l->cgi_pass;
         return (true);
     }
@@ -141,7 +141,7 @@ int Webserv::createCGI(const std::string& file, std::map<std::string, std::strin
         else
         {
             q->cgi = new CGI(binary, file, env, q->fd, m_fds, m_fdType);
-			oss << "client fd:" << q->fd << ", " << file << " is build";
+			oss << "client fd:" << q->fd << ", " << binary << " use " << file << " as argument";
         }
 		logOutMessage(oss);
     }

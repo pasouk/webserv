@@ -18,6 +18,7 @@
 curl "http://localhost:8080/cgi-bin/python/add.py?a=5&b=3"
 
 //POST
+curl -X POST "http://localhost:8080/directory/youpi.bla" -d "youpi"
 curl -X POST "http://localhost:8080/cgi_tester/c++?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi-bin/test.bla?zozo=2" -d "PATH_INFO is set to /cgi-bin/test.bla"
 curl -X POST "http://localhost:8080/cgi-bin/python/hello.py?zozo=2" -d "PATH_INFO is set to /cgi-bin/python/hello.py"
@@ -109,7 +110,6 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	std::string header;
 	std::pair<char*, ssize_t> chunk;
 
-
 	bDelete = true;
 	if (q->bodySize)
 	{
@@ -119,7 +119,7 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 			q->bodyChunks.push_back(chunk);
 			i += q->bodySize;
 			if (responseHook(q, onResponse))
-				return (1);
+				return (-1);
 		}
 		else
 		{
@@ -129,8 +129,10 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 			bDelete = false;
 			q->bodySize -= n;
 			if (q->bodySize == 0)
+			{
 				if(responseHook(q, onResponse))
-					return (1);
+					return (-1);
+			}
 			i += n;
 		}
 	}
@@ -143,7 +145,7 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 			{
 				q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
 				if (q->httpParser == NULL)
-					return (1);
+					return (-1);
 				headers = q->httpParser->getHeaders();
 				header = headers["Content-Length"];
 				q->bodySize = 0;
@@ -163,7 +165,7 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 							q->bodyChunks.push_back(chunk);
 							i += q->bodySize - 1;
 							if (responseHook(q, onResponse))
-								return (1);
+								return (-1);
 						}
 						else
 						{
@@ -171,22 +173,24 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 							q->bodyChunks.push_back(chunk);
 							q->bodySize -= n - i;
 							if (q->bodySize == 0)
+							{
 								if (responseHook(q, onResponse))
-									return (1);
+									return (-1);
+							}
 							i = n;
 						}
 					}
 				}
 				else
 					if (responseHook(q, onResponse))
-						return (1);
+						return (-1);
 			}
 			else
 				if (responseHook(q, onResponse))
-					return (1);
+					return (-1);
 		}
 		++i;
-	}			
+	}
 	return (0);
 }
 

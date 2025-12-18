@@ -21,8 +21,6 @@
 # include <stdint.h>
 # include <stdio.h>
 
-bool is_elf_binary(const char *path);
-bool is_macho_binary(const char *path);
 bool is_executable(const char *path);
 bool is_path(const char *path);
 std::string getFilename(const std::string&);

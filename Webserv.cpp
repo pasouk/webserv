@@ -140,6 +140,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 				if (m_fds[i].revents & POLLIN)
 				{
 					n  = readQuery(fd, onResponse);
+					if (n == 0)
+						m_fds[i].events &= ~POLLIN;
 					if (n == -2)
 					{
 						g_listening = false;
@@ -224,6 +226,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 	s_query *client;
 	bool bDelete;
 	ssize_t n;
+	int ret;
 	
 	n = 0;
 	bDelete = true;
@@ -243,7 +246,8 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 			if ((n = read(client->fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
 			{
 				buffers[n] = '\0';
-				if(tcpStream(buffers, n, client, onResponse, bDelete))
+				ret = tcpStream(buffers, n, client, onResponse, bDelete);
+				if(ret < 0)
 				{
 					if (bDelete)
 					{
@@ -260,7 +264,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 				}
 			}
 		} while(n > 0);
-		if (n == -1)
+		if (n != EOF)
 		{
 			oss << "client fd:" << client->fd << ", " << std::strerror(errno);
 			logErrMessage(oss);
