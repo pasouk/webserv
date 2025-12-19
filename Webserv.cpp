@@ -264,7 +264,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 				}
 			}
 		} while(n > 0);
-		if (n != EOF)
+		if (n == -1)
 		{
 			oss << "client fd:" << client->fd << ", " << std::strerror(errno);
 			logErrMessage(oss);
