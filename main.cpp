@@ -117,6 +117,8 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	std::string root;
 	s_location foundLoc;
 
+	resolvePath(r, s, root, path, foundLoc);
+
 	//MAXENCE:
 	//si cgi different de NULL:
 	//cela veux dire qu'un CGI a été crée mais PAS ENCORE EXCUTE.
@@ -127,8 +129,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		{
 			//TODO
 			//ici tu peux faire ce que tu veux avant l'execution du CGI
-			std::cout << "GET A CGI TO RUN !\n";
-
 			if (cgi->runCGI())
 			{
 				oss << "client fd:" << cgi->getFd() << ", cgi failed to run";
@@ -156,8 +156,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	}
 	else
 	{
-		resolvePath(r, s, root, path, foundLoc);
-
 		//ICI CE N'EST PAS UN CGI
 		//response
 		std::cout << "[DEBUG onResponse] After resolvePath - root='" << root << "' path='" << path << "'" << std::endl;
