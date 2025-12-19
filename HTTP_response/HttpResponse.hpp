@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <vector>
+#include "../headers/Webserv.hpp"
 
 class SubPartRequest;
 
@@ -30,6 +31,12 @@ class   HttpResponse
         std::string                                 _formated_response;
         std::string                                 _uploads_dir;
         std::vector<HttpMethod>                     _server_methods;
+        std::vector<s_location>                     _locations;
+        s_location                                  _matchedLocation;
+        size_t                                      _LocationMaxBodySize;
+        std::vector<HttpMethod>                     _LocationMethodsAllowed;
+        std::string                                 _locationIndex;
+        size_t _serverMaxBodySize;
 
     public:
 
@@ -44,6 +51,8 @@ class   HttpResponse
         std::string     getFullPathGet();
         std::string     getContentType(const std::string &rawStr);
         void            setServerMethods(const std::vector<HttpMethod> &serverMethods);
+        void            setLocations(const std::vector<s_location> &locations);
+        void            setMatchedLocation(const s_location& loc);
 
         //Main
         void HttpResponseManager();
@@ -51,6 +60,7 @@ class   HttpResponse
         //GET Method
         void    buildGet();
         void manageGetHeaders();
+        void buildHead();
 
         //POST Method
         void                        handleMultipartPost();
@@ -72,6 +82,8 @@ class   HttpResponse
         void buildFullPathGet();
         bool checkServerMethods(HttpMethod method);
         void HttpResponseError(int code, const std::string& reason);
+        void applyLocationConfig(const s_location& best);
+        s_location matchLocation();
 };
 
 //Generic utils
@@ -82,5 +94,7 @@ std::string toString(size_t n);
 std::string getHeaderValue(const std::string &key, const std::map<std::string, std::string> &headers);
 std::string generateUploadedFileName();
 void managePostHeaders();
+
+
 
 #endif

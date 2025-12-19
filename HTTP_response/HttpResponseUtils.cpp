@@ -52,9 +52,12 @@ bool HttpResponse::checkServerMethods(HttpMethod method)
 
 void HttpResponse::buildFullPathGet() 
 {
+    std::cout << "[DEBUG buildFullPathGet] START - root='" << _root << "' path='" << _ParsedRequest.getPath() << "'" << std::endl;
+    
     if (_root.empty()) 
     {
         _fullPath = _ParsedRequest.getPath();
+        std::cout << "[DEBUG buildFullPathGet] Empty root, using path directly: '" << _fullPath << "'" << std::endl;
         return;
     }
 
@@ -65,12 +68,19 @@ void HttpResponse::buildFullPathGet()
         if (!fullPath.empty() && fullPath[fullPath.size() - 1] == '/' &&
             !_ParsedRequest.getPath().empty() && _ParsedRequest.getPath()[0] == '/')
         {
+            std::cout << "[DEBUG buildFullPathGet] Removing duplicate '/' from root" << std::endl;
             fullPath.erase(fullPath.size() - 1);
         }
     }
 
     fullPath += _ParsedRequest.getPath();
     _fullPath = fullPath;
+    std::cout << "[DEBUG buildFullPathGet] Final fullPath='" << _fullPath << "'" << std::endl;
+    {
+        std::ostringstream oss;
+        oss << "buildFullPathGet -> root:'" << _root << "' path:'" << _ParsedRequest.getPath() << "' full:'" << _fullPath << "'";
+        logOutMessage(oss);
+    }
 }
 
 void HttpResponse::HttpResponseError(int code, const std::string& reason)
@@ -103,6 +113,13 @@ void HttpResponse::HttpResponseError(int code, const std::string& reason)
         _headers["Allow"] = "GET, POST, DELETE";
     }
 
+    if (_status_code == 403)
+    {
+        std::ostringstream oss;
+        oss << "HttpResponseError 403 for path: '" << _ParsedRequest.getPath() << "' raw: '" << _ParsedRequest.getRawPath() << "'";
+        logOutMessage(oss);
+    }
+
     // Construire la réponse formatée maintenant (optionnel)
     // serialize() doit assembler la première ligne + headers + \r\n + body
     serialize();
@@ -128,4 +145,61 @@ std::string HttpResponse::getContentType(const std::string &rawStr)
     else if (extension == "png") return "image/png";
     else if (extension == "pdf") return "application/pdf";
     else return "application/octet-stream";
+}
+
+
+s_location HttpResponse::matchLocation()
+{
+    s_location best;
+    size_t bestMatchLen = 0;
+    const std::string& rawPath = _ParsedRequest.getRawPath();
+
+    for (size_t i = 0; i < _locations.size(); ++i)
+    {
+        const s_location& loc = _locations[i];
+
+        std::cout << Colors::GREEN
+                  << "rawPath: " << rawPath
+                  << "\nconcatOrReplace: " << loc.concatOrReplace
+                  << "\nby: " << loc.by
+                  << Colors::RESET << std::endl << std::endl;
+
+        if (rawPath.compare(0, loc.concatOrReplace.size(), loc.concatOrReplace) == 0)
+        {
+            if (loc.concatOrReplace.size() > bestMatchLen)
+            {
+                best = loc;
+                bestMatchLen = loc.concatOrReplace.size();
+            }
+        }
+    }
+
+    _matchedLocation = best;
+    return best;
+}
+
+void HttpResponse::applyLocationConfig(const s_location& loc)
+{
+    // max_body_size
+    if (!loc.max_body_size.empty())
+    {
+        std::stringstream ss(loc.max_body_size);
+        ss >> _LocationMaxBodySize;
+    }
+    else
+    {
+        _LocationMaxBodySize = _serverMaxBodySize; // valeur par défaut du serveur
+    }
+
+    // allowed methods
+    _LocationMethodsAllowed = loc.httpMethodsAllowed;
+
+    // index file
+    if (!loc.index.empty())
+        _locationIndex = loc.index;
+    else
+        _locationIndex = "index.html";  // default
+
+    // garder la location trouvée pour logs/debug
+    _matchedLocation = loc;
 }

@@ -337,6 +337,7 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 	std::vector<const Node*> _limit_except;
 	std::vector<const Node*> _max_body_size;
 	std::vector<const Node*> _cgi_pass;
+	std::vector<const Node*> _index;
 	std::vector<s_server> servers;
 	std::vector<std::string> args;
 	std::ostringstream oss;
@@ -434,6 +435,12 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 					loc.cgi_pass = _cgi_pass[0]->getArgs()[0];
 				else
 					loc.cgi_pass = "";
+			}
+			_index = parser->getDirectives("index", static_cast<const NodeBlock*>(*it1));
+			if (_index.size())
+			{
+				if (_index[0]->getArgs().size())
+					loc.index = _index[0]->getArgs()[0];
 			}
 			_limit_except = parser->getDirectives("limit_except", static_cast<const NodeBlock*>(*it1));
 			if (_limit_except.size())

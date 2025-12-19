@@ -38,6 +38,11 @@ int ParserHttpRequest::getError() const
     return (_error);
 }
 
+void ParserHttpRequest::setError(int error)
+{
+    _error = error;
+}
+
 HttpMethod ParserHttpRequest::getMethod() const
 {
     return _method;
@@ -46,6 +51,11 @@ HttpMethod ParserHttpRequest::getMethod() const
 std::string ParserHttpRequest::getPath() const
 {
     return _path;
+}
+
+std::string ParserHttpRequest::getRawPath() const
+{
+    return _rawPath;
 }
 
 void ParserHttpRequest::setPath(std::string path)
@@ -223,19 +233,23 @@ void ParserHttpRequest::setBodyLine(const std::deque<std::pair<char*, ssize_t> >
 
 int ParserHttpRequest::parseRequest()
 {
-    std::cout << Colors::GREEN << "Request received :  " << _methodLine << Colors::RESET ;
+    std::cout << Colors::GREEN << "raw request initaly:  " << _rawRequest << Colors::RESET ;
+    //std::cout << Colors::GREEN << "\nbodyLine intialy:  " << _bodyLine << Colors::RESET ;
+
     int ret;
     ret = basicChecks();
     if (ret)
         return ret;
     devideRequest();
+
     ret = parseMethodLine();
     if (ret)
-        return ret;
+     return ret;
     ret = parseHeaderLine();
     if (ret)
         return ret;
     sanitize();
+    _rawPath = _path;
     return 0;
 }
 

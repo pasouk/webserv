@@ -5,6 +5,7 @@ MethodMap methods_map[] = {
     {"GET", GET},
     {"POST", POST},
     {"DELETE", DELETE_},
+    {"HEAD", HEAD},
     {"UNKNOWN",UNKNOWN}
 };
 
@@ -100,7 +101,7 @@ int ParserHttpRequest::checkVersionAndMethod()
     }
     if (_version != "HTTP/1.0" && _version != "HTTP/1.1")
     {
-        std::cout << "Invalid HHTP Request : Unknown version !\n";
+        std::cout << "Invalid HHTP Request : Unknown version : " << _version << std::endl;
         return 400;
     }
     return 0;

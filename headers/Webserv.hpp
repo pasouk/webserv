@@ -40,6 +40,7 @@ public:
 	std::string				by;
 	std::string				max_body_size;
 	std::string				cgi_pass;
+	std::string				index;
 	std::vector<HttpMethod>	httpMethodsAllowed;
 };
 

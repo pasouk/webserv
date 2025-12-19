@@ -17,6 +17,7 @@ enum HttpMethod
     GET,
     POST,
     DELETE_,
+    HEAD,
     UNKNOWN,
 };
 
@@ -27,18 +28,6 @@ struct MethodMap
 };
 
 extern MethodMap methods_map[]; 
-
-enum parsingState
-{
-    INIT,
-    RAWAQUIRED,
-    RAWDEVIDED,
-    FINISHED
-};
-
-//parsingState operator++(parsingState &state, int);
-
-
 
 class ParserHttpRequest
 {
@@ -51,6 +40,7 @@ class ParserHttpRequest
 
         HttpMethod                      _method;
         std::string                     _path;
+        std::string                     _rawPath;
         std::string                     _version;
         std::map<std::string, std::string>   _headers;
 
@@ -74,8 +64,10 @@ class ParserHttpRequest
 
         HttpMethod getMethod() const;
         std::string getPath() const;
+        std::string getRawPath() const;
         std::string getVersion() const;
         void setPath(std::string);
+        void setError(int error);
         const std::map<std::string, std::string>& getHeaders() const;
         
         void splitCgiPath(const std::string &rawPath);
