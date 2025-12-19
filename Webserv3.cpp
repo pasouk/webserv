@@ -120,8 +120,7 @@ bool Webserv::isCgi(s_location* l, s_server& s, const std::string& httpMethodArg
             logErrMessage(oss);
             return (false);
         }      
-        //if (!is_elf_binary(path.c_str()) || !is_macho_binary(path.c_str()))
-            binary = l->cgi_pass;
+        binary = l->cgi_pass;
         return (true);
     }
     return (false);

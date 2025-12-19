@@ -13,12 +13,13 @@
 #include "Webserv.hpp"
 
 //CGI TESTS
+//./tester http://localhost:8080
 /*
 //GETY
 curl "http://localhost:8080/cgi-bin/python/add.py?a=5&b=3"
 
 //POST
-curl -X POST "http://localhost:8080/directory/youpi.bla" -d "youpi"
+curl -X GET "http://localhost:8080/directory/youpi.bla" -d "youpi"
 curl -X POST "http://localhost:8080/cgi_tester/c++?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi-bin/test.bla?zozo=2" -d "PATH_INFO is set to /cgi-bin/test.bla"
 curl -X POST "http://localhost:8080/cgi-bin/python/hello.py?zozo=2" -d "PATH_INFO is set to /cgi-bin/python/hello.py"
