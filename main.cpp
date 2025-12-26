@@ -126,7 +126,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	{
 		if (cgi->wasExecuted() == false)
 		{
-			std::cerr << "WE HAVE A CGI\n";
 			//TODO
 			//ici tu peux faire ce que tu veux avant l'execution du CGI
 			if (cgi->runCGI())

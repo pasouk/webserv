@@ -72,7 +72,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 	pollfd pfd;
 	rlimit limit;
 	s_query* q;
-	int fd, n;
+	int fd;
 	std::ostringstream oss;
 
 	//check system queue size
@@ -134,15 +134,11 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 				if (m_fds[i].revents & POLLOUT)
 					if (sendQuery(fd) == -1)
 					{
-						releaseQueries(fd);
-						break ;
+						m_fds[i].events &= ~POLLOUT;
 					}
 				if (m_fds[i].revents & POLLIN)
 				{
-					n  = readQuery(fd, onResponse);
-					if (n == 0)
-						m_fds[i].events &= ~POLLIN;
-					if (n == -2)
+					if (readQuery(fd, onResponse) == -2)
 					{
 						g_listening = false;
 						break ;
@@ -234,9 +230,9 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 	buffers = NULL;
 	if (getClient(fd, client))
 	{
-		client->lifeTime = std::time(NULL);
 		do
 		{
+			client->lifeTime = std::time(NULL);
 			buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
 			if (buffers == NULL)
 			{
@@ -264,7 +260,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 				}
 			}
 		} while(n > 0);
-		if (n != -1)
+		if (n == -1)
 		{
 			oss << "client fd:" << client->fd << ", " << std::strerror(errno);
 			logErrMessage(oss);
@@ -285,32 +281,33 @@ int Webserv::sendQuery(int fd)
 	{
 		if ((*it).fd == fd)
 		{
-			while ((*it).byteSent < (*it).formatedResponse.size())
+			do
 			{
 				if(getClient(fd, client))
 					client->lifeTime = std::time(NULL);
 				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
 					, (*it).formatedResponse.size() - (*it).byteSent, 0);
 				if (n > 0)
+				{
 					(*it).byteSent += n;
+					if ((*it).byteSent == (*it).formatedResponse.size())
+					{
+						(*it).formatedResponse.clear();
+						break ;
+					}
+				}
 				else if (n == -1)
 				{
 					oss << "client fd:" << (*it).fd << ", " << std::strerror(errno);
 					logErrMessage(oss);
-					break ;
 				}
 				else if (n == 0)
 				{
 					oss << "client fd:" << (*it).fd << ", send 0 byte";
 					logOutMessage(oss);
-					break ;
 				}
 			}
-			if ((*it).byteSent == (*it).formatedResponse.size())
-			{
-				(*it).formatedResponse.clear();
-				break;
-			}
+			while (n > 0);
 		}
 	}
 	return (n);

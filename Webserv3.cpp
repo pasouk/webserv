@@ -12,14 +12,16 @@
 
 #include "Webserv.hpp"
 
-s_location* Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest& http)
+s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest& http)
 {
-    size_t len;
-    s_location  *loc, l;
-    std::string fileName, path;
-
+    size_t len, k;
+    s_location l, m;
+    std::string fileName, filePath, fileLoc, path;
+    std::ostringstream oss;
+    s_http_path httppath;
+    glob_t g; 
+    
     path = http.getPath();
-    loc = NULL;
     len = 0;
     for (size_t i = 0; i < s.locations.size(); ++i)
     {
@@ -32,32 +34,64 @@ s_location* Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
             if (l.concatOrReplace.length() > len)
             {
                 len = l.concatOrReplace.length();
-                loc = &s.locations[i];
+                httppath.location = &s.locations[i]; 
             }
         }
     }
-    if (loc)
+    //std::cout << "BEFORE:" << path << std::endl;
+    updatePathAndLocation(l, path, s);
+    //std::cout << "AFTER: " << path << std::endl;
+    httppath = parseHttpPath(/*loc*/httppath, s, path);
+    //std::cout << "PATH INFO: " << httppath.path_info << std::endl;
+    //std::cout << "PATH UPDA: " << httppath.path_updated << std::endl;
+    //std::cout << "QUERY STR: " << httppath.query_string << std::endl;
+    for (size_t j = 0; j < s.locations.size(); ++j)
     {
-        for (size_t i = 0; i < loc->httpMethodsAllowed.size(); ++i)
+        m = s.locations[j];
+        fileName = getFilename(httppath.path_updated);
+        fileLoc = getFilename(m.concatOrReplace.c_str());
+        filePath = httppath.path_updated.substr(0, httppath.path_updated.length() - fileName.length());                  
+        if (!fileName.empty())
         {
-            if (loc->httpMethodsAllowed[i] == http.getMethod())
-                return (loc);
+            //std::cout << "CHECK: " << filePath << " --> " << fileName << std::endl;
+            //std::cout << " WITH: " << filePath << " --> " << fileLoc << std::endl;
+            if (!glob((filePath + fileLoc).c_str(), 0, NULL, &g))
+            {
+                for (k = 0; k < g.gl_pathc; ++k)
+                    if (g.gl_pathv[k] == filePath + fileName)
+                    {
+                        std::cout << "FOUND: " << g.gl_pathv[k] << std::endl;
+                        httppath.location = &s.locations[j];
+                        break ;
+                    }
+            }
+            globfree(&g);
         }
-        if (loc->httpMethodsAllowed.size())
-            return (NULL);
+    }
+    if (httppath.location)
+    {
+        for (size_t i = 0; i < httppath.location->httpMethodsAllowed.size(); ++i)
+        {
+            if (httppath.location->httpMethodsAllowed[i] == http.getMethod())
+                return (httppath);
+        }
+        if (httppath.location->httpMethodsAllowed.size())
+        {
+			oss << "method: " << methods_map[http.getMethod()].name << " not allowed with "
+                << httppath.location->concatOrReplace << " location";
+		    logOutMessage(oss);
+            httppath.location = NULL;
+        }
     }  
-    return (loc);
+    return (httppath);
 }
 
-bool Webserv::updatePathAndLocation(s_location& l, std::string& path, const s_server& s) const
+/*bool*/void Webserv::updatePathAndLocation(s_location& l, std::string& path, const s_server& s) const
 {
-    size_t pos, j;
+    size_t pos;
     std::string by;
     std::string fileName, pathLocation;
-    glob_t g;
-    bool bValidPath;
 
-    bValidPath = true;
     fileName = getFilename(l.concatOrReplace.c_str());
     if (!fileName.empty())
         l.concatOrReplace = l.concatOrReplace.substr(0, l.concatOrReplace.length() - fileName.length());
@@ -88,42 +122,7 @@ bool Webserv::updatePathAndLocation(s_location& l, std::string& path, const s_se
             pathLocation = by;
             path = pathLocation + path;
         }
-        if (!fileName.empty())
-        {
-            bValidPath = false;
-            if (!glob((pathLocation + fileName).c_str(), 0, NULL, &g))
-            {
-                for (j = 0; j < g.gl_pathc; ++j)
-                    if (std::string(g.gl_pathv[j]).find(path) != std::string::npos)
-                    {
-                        bValidPath = true;
-                        break ;
-                    }
-            }
-            globfree(&g);
-        }
     }
-    return (bValidPath);
-}
-
-bool Webserv::isCgi(s_location* l, s_server& s, const std::string& httpMethodArg, std::string& path, std::string& binary)
-{
-    std::ostringstream oss;
-
-    path = httpMethodArg;
-    binary = "";
-    if (l && l->is_cgi)
-    {
-        if (!updatePathAndLocation(*l, path, s))
-        {
-            oss << path << " not found\n";
-            logErrMessage(oss);
-            return (false);
-        }      
-        binary = l->cgi_pass;
-        return (true);
-    }
-    return (false);
 }
 
 int Webserv::createCGI(const std::string& file, std::map<std::string, std::string>& env, s_query*& q, std::string& binary)
@@ -167,15 +166,16 @@ bool Webserv::getCgiQuery(int fd, s_query*& q)
     }
     return (false);
 }
-const s_http_path Webserv::parseHttpPath(s_location* l, s_server s, const std::string& path)
+const s_http_path& Webserv::parseHttpPath(s_http_path& httpPath, s_server s, std::string& path)
 {
-    s_http_path httpPath;
+    //s_http_path httpPath;
     size_t pos_s;
 	std::string paths, pathNotRef;
     std::string::const_iterator c;
-    s_location lNotRef;
-       
+    s_location lNotRef; 
+
     httpPath.path_updated = path;
+    //httpPath.location = l;
     pos_s = path.find("?");
     if (pos_s != std::string::npos)
     { 
@@ -188,15 +188,15 @@ const s_http_path Webserv::parseHttpPath(s_location* l, s_server s, const std::s
         if (*c == '/' || c == httpPath.path_updated.end())
         {
             pathNotRef = paths;
-            if (l)
+            if (httpPath.location)
             {
-                lNotRef = *l;
+                lNotRef = *httpPath.location;
                 updatePathAndLocation(lNotRef, pathNotRef, s);
             }
             if (is_executable(pathNotRef.c_str()))
             {               
                 httpPath.path_info = path.substr(paths.length(), httpPath.path_updated.length() - paths.length());
-                httpPath.path_updated = paths;
+                httpPath.path_updated = pathNotRef;
             }
         }
         if (!paths.empty())

@@ -33,7 +33,8 @@ extern bool g_listening;
 
 struct s_location
 {
-public:
+	s_location() : is_cgi(NULL), type(NONE) {}
+
 	bool					is_cgi;
 	locationType			type;
 	std::string				concatOrReplace;
@@ -45,18 +46,20 @@ public:
 };
 
 struct s_query
-{	
+{
+	s_query() : fd(-1), cgi(NULL), httpParser(NULL), bodySize(0), port(0) {}
+
 	int							fd;
-	time_t						lifeTime;
-	size_t						byteSent;
+	CGI*						cgi;
+	ParserHttpRequest*			httpParser;
 	ssize_t						bodySize;
 	uint16_t 					port;
+	time_t						lifeTime;
+	size_t						byteSent;
 	std::string					host;
 	std::string					hostName;
 	std::string					httpRequest;
 	std::string 				formatedResponse;
-	ParserHttpRequest*			httpParser;
-	CGI*						cgi;
 	std::deque<std::pair<char*, ssize_t> >	bodyChunks;
 };
 
@@ -72,7 +75,9 @@ struct s_server
 
 struct s_http_path
 {
-	std::string location;
+	s_http_path() : location(NULL) {}
+
+	s_location* location;
 	std::string	path_updated;
 	std::string query_string;
 	std::string path_info;
@@ -125,10 +130,9 @@ private:
 	bool matchServerName(const std::string&, const std::string&) const;
 	int createCGI(const std::string&, std::map<std::string, std::string>&, s_query*&, std::string&);
 	bool getCgiQuery(int, s_query*&);
-	bool isCgi(s_location*, s_server&, const std::string&, std::string&, std::string&);
-	bool updatePathAndLocation(s_location&, std::string&, const s_server&) const ;
-	const s_http_path parseHttpPath(s_location*, s_server, const std::string&);
-	s_location* getLocationFromServer(s_server&, const ParserHttpRequest&);
+	void updatePathAndLocation(s_location&, std::string&, const s_server&) const;
+	const s_http_path& parseHttpPath(s_http_path&, s_server, std::string&);
+	s_http_path getLocationFromServer(s_server&, const ParserHttpRequest&);
 };
 
 #endif

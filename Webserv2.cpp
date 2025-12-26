@@ -12,6 +12,17 @@
 
 #include "Webserv.hpp"
 
+/*
+POST /directory/youpi.bla HTTP/1.1
+Host: localhost:8080
+User-Agent: Go-http-client/1.1
+Transfer-Encoding: chunked
+Content-Type: test/file
+Accept-Encoding: gzip
+*/
+
+
+
 //CGI TESTS
 /*
 //GET
@@ -36,26 +47,33 @@ curl -X POST "http://localhost:8080/cgi-bin/cgi_tester/foo?name=toto&age=12" -d 
 int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&))
 {
 	std::map<std::string, std::string> headers;
-	std::string header, cgiPath, binary;
+	std::string header, /*cgiPath,*/ binary;
 	std::map<std::string, std::string> env;
 	std::ostringstream oss;
 	std::stringstream ss;
 	s_http_path httpPath;
-	s_location* l;
+	//s_location* l;
 	s_server s;
 	int ret;
 
 	ret = 0;
 	q->httpParser->setBodyLine(q->bodyChunks);
 	s = getRightServer(q);
-	l = getLocationFromServer(s, *q->httpParser);
-	httpPath = parseHttpPath(l, s, q->httpParser->getPath());
-	if (q->cgi == NULL && isCgi(l, s, httpPath.path_updated, cgiPath, binary))
+	//l = getLocationFromServer(s, *q->httpParser);
+	httpPath = getLocationFromServer(s, *q->httpParser);
+	//if (l != NULL)
+	//	std::cout << "LOCATION IS: " << l->concatOrReplace << std::endl;
+	//httpPath = parseHttpPath(l, s, q->httpParser->getPath());
+	if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))//isCgi(l, s, httpPath.path_updated, cgiPath, binary))
 	{
-		env["SCRIPT_FILENAME"] = cgiPath;
+
+		std::cout << "LET BUILD A CGI\n";
+
+
+		env["SCRIPT_FILENAME"] = httpPath.path_updated;//cgiPath;
         env["PATH_INFO"] = httpPath.path_info;
 		if (env["PATH_INFO"].empty())
-			env["PATH_INFO"] = cgiPath;
+			env["PATH_INFO"] = httpPath.path_updated;//cgiPath;
 		env["QUERY_STRING"] = httpPath.query_string;
 		env["SERVER_PROTOCOL"] = q->httpParser->getVersion();
 		ss << q->port;
@@ -67,7 +85,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 		header = headers["Content-Length"]; 
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
-		if (createCGI(cgiPath, env, q, binary))
+		if (createCGI(httpPath.path_updated/*cgiPath*/, env, q, /*binary*/httpPath.location->cgi_pass))
 		{
 			oss << "CGI can't be build.:";
 			logErrMessage(oss);
@@ -111,7 +129,6 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	std::string header;
 	std::pair<char*, ssize_t> chunk;
 
-
 	bDelete = true;
 	if (q->bodySize)
 	{
@@ -154,6 +171,7 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 					ss.clear();
 					ss << header;
 					ss >> q->bodySize;
+					std::cout << "Content-Length: " << q->bodySize << std::endl;
 				}
 				if (q->bodySize > 0)
 				{
