@@ -101,6 +101,21 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
     else if (loc.type == ALIAS)
     {
         std::string newReqPath = loc.by;
+        
+        // Concatenate remainder to alias path
+        if (!remainder.empty())
+        {
+            // Ensure proper path separator
+            if (!newReqPath.empty() && newReqPath[newReqPath.size()-1] != '/')
+                newReqPath += "/";
+            if (!remainder.empty() && remainder[0] == '/')
+                remainder = remainder.substr(1);
+            newReqPath += remainder;
+        }
+        
+        // With alias, the path IS the complete path (no root concatenation)
+        root = "";
+        
         std::cout << "[DEBUG resolvePath] ALIAS location - new path='" << newReqPath << "' root='" << root << "'" << std::endl;
 
         r.setPath(newReqPath);
@@ -155,6 +170,29 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	}
 	else
 	{
+		// Check if we need to redirect to add trailing slash for directories
+		std::string requestedPath = r.getPath();
+		if (!requestedPath.empty() && requestedPath[requestedPath.size() - 1] != '/')
+		{
+			// Check if there's a location with trailing slash
+			std::string pathWithSlash = requestedPath + "/";
+			for (size_t i = 0; i < s.locations.size(); ++i)
+			{
+				if (s.locations[i].concatOrReplace == pathWithSlash)
+				{
+					std::cout << "[DEBUG onResponse] Redirecting '" << requestedPath << "' to '" << pathWithSlash << "' with 301" << std::endl;
+					std::ostringstream redirectResponse;
+					redirectResponse << "HTTP/1.1 301 Moved Permanently\r\n"
+						<< "Location: " << pathWithSlash << "\r\n"
+						<< "Content-Length: 0\r\n"
+						<< "Connection: close\r\n"
+						<< "\r\n";
+					response = redirectResponse.str();
+					return;
+				}
+			}
+		}
+
 		resolvePath(r, s, root, path, foundLoc);
 
 		//ICI CE N'EST PAS UN CGI
