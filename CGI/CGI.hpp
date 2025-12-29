@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/17 11:24:20 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/29 12:59:57 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,10 +33,10 @@
 
 enum locationType
 {
-    ROOT,
-    ALIAS,
-	PROXY_PASS,
-	NONE
+    LOCATION_ROOT,
+    LOCATION_ALIAS,
+	LOCATION_PROXY_PASS,
+	LOCATION_NONE
 };
 
 enum fdType

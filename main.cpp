@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/22 13:48:03 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/29 12:59:57 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,7 +78,7 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
     // --------------------------
     // 2) TYPE ROOT
     // --------------------------
-    if (loc.type == ROOT)
+    if (loc.type == LOCATION_ROOT)
     {
         root = loc.by;
         std::cout << "[DEBUG resolvePath] ROOT location - new root='" << root << "'" << std::endl;
@@ -98,7 +98,7 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
     // --------------------------
     // 3) TYPE ALIAS
     // --------------------------
-    else if (loc.type == ALIAS)
+    else if (loc.type == LOCATION_ALIAS)
     {
         std::string newReqPath = loc.by;
         

@@ -6,7 +6,7 @@
 #    By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/11/14 08:39:55 by fabrice          ###   ########.fr        #
+#    Updated: 2025/12/29 14:32:50 by fabrice          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,6 +25,9 @@ SOURCES = QueryListener.cpp \
 	Webserv3.cpp \
 	CGI/CGI.cpp \
 	utils.cpp \
+	TransferEncoding/Chunked.cpp \
+	TransferEncoding/TransferEncoding.cpp \
+	TransferEncoding/ContentLength.cpp \
 	HTTP_parser/ParserHttpRequest.cpp\
 	HTTP_parser/ParsingUtils.cpp \
 	HTTP_parser/ParsingChecks.cpp \
@@ -43,15 +46,18 @@ OBJECTS = $(SOURCES:.cpp=.o)
 all: $(NAME)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response -I./CGI -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response \
+	-I./CGI -I./TransferEncoding -c $< -o $@
 
 $(NAME): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response -I./CGI  -o $(NAME) $(OBJECTS)
+	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response \
+	-I./CGI -I./TransferEncoding -o $(NAME) $(OBJECTS)
 
 clean:
 	rm -f HTTP_parser/*.o
 	rm -f HTTP_response/*.o
 	rm -f CGI/*.o
+	rm -f TransferEncoding/*.o
 	rm -f *.o
 
 fclean: clean

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/23 10:18:02 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/29 14:17:54 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,10 +66,6 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	//httpPath = parseHttpPath(l, s, q->httpParser->getPath());
 	if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))//isCgi(l, s, httpPath.path_updated, cgiPath, binary))
 	{
-
-		std::cout << "LET BUILD A CGI\n";
-
-
 		env["SCRIPT_FILENAME"] = httpPath.path_updated;//cgiPath;
         env["PATH_INFO"] = httpPath.path_info;
 		if (env["PATH_INFO"].empty())
@@ -85,7 +81,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 		header = headers["Content-Length"]; 
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
-		if (createCGI(httpPath.path_updated/*cgiPath*/, env, q, /*binary*/httpPath.location->cgi_pass))
+		if (createCGI(httpPath.path_updated, env, q, httpPath.location->cgi_pass))
 		{
 			oss << "CGI can't be build.:";
 			logErrMessage(oss);
@@ -130,27 +126,30 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	std::pair<char*, ssize_t> chunk;
 
 	bDelete = true;
-	if (q->bodySize)
+	if (q->encoding == ENCODING_NONE)
 	{
-		if (i + q->bodySize < n)
+		if (q->bodySize)
 		{
-			chunk = removeChunk(&buffer[i], q->bodySize);
-			q->bodyChunks.push_back(chunk);
-			i += q->bodySize;
-			if (responseHook(q, onResponse))
-				return (1);
-		}
-		else
-		{
-			chunk.second = n;
-			chunk.first = buffer;
-			q->bodyChunks.push_back(chunk);
-			bDelete = false;
-			q->bodySize -= n;
-			if (q->bodySize == 0)
-				if(responseHook(q, onResponse))
+			if (i + q->bodySize < n)
+			{
+				chunk = removeChunk(&buffer[i], q->bodySize);
+				q->bodyChunks.push_back(chunk);
+				i += q->bodySize;
+				if (responseHook(q, onResponse))
 					return (1);
-			i += n;
+			}
+			else
+			{
+				chunk.second = n;
+				chunk.first = buffer;
+				q->bodyChunks.push_back(chunk);
+				bDelete = false;
+				q->bodySize -= n;
+				if (q->bodySize == 0)
+					if(responseHook(q, onResponse))
+						return (1);
+				i += n;
+			}
 		}
 	}
 	while (i < n)
@@ -163,6 +162,11 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 				q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
 				if (q->httpParser == NULL)
 					return (1);
+
+
+				//bodyManagement(q->bodySize, q->httpParser->getHeaders());
+
+				
 				headers = q->httpParser->getHeaders();
 				header = headers["Content-Length"];
 				q->bodySize = 0;
@@ -171,35 +175,37 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 					ss.clear();
 					ss << header;
 					ss >> q->bodySize;
-					std::cout << "Content-Length: " << q->bodySize << std::endl;
 				}
-				if (q->bodySize > 0)
+				if (q->encoding == ENCODING_NONE)
 				{
-					if (++i < n)
+					if (q->bodySize)
 					{
-						if (i + q->bodySize < n)
+						if (++i < n)
 						{
-							chunk = removeChunk(&buffer[i], q->bodySize);
-							q->bodyChunks.push_back(chunk);
-							i += q->bodySize - 1;
-							if (responseHook(q, onResponse))
-								return (1);
-						}
-						else
-						{
-							chunk = removeChunk(&buffer[i], n - i);
-							q->bodyChunks.push_back(chunk);
-							q->bodySize -= n - i;
-							if (q->bodySize == 0)
+							if (i + q->bodySize < n)
+							{
+								chunk = removeChunk(&buffer[i], q->bodySize);
+								q->bodyChunks.push_back(chunk);
+								i += q->bodySize - 1;
 								if (responseHook(q, onResponse))
 									return (1);
-							i = n;
+							}
+							else
+							{
+								chunk = removeChunk(&buffer[i], n - i);
+								q->bodyChunks.push_back(chunk);
+								q->bodySize -= n - i;
+								if (q->bodySize == 0)
+									if (responseHook(q, onResponse))
+										return (1);
+								i = n;
+							}
 						}
 					}
+					else
+						if (responseHook(q, onResponse))
+							return (1);
 				}
-				else
-					if (responseHook(q, onResponse))
-						return (1);
 			}
 			else
 				if (responseHook(q, onResponse))

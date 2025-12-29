@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/23 16:15:11 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/29 12:59:57 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,7 +98,7 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
     pos = path.find(l.concatOrReplace);
     if (pos != std::string::npos)
     {
-        if (l.type == ROOT)
+        if (l.type == LOCATION_ROOT)
         {
             by = l.by;
             if (l.by[l.by.length() - 1] == '/')
@@ -106,7 +106,7 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
             pathLocation = by + l.concatOrReplace;
             path.replace(pos, l.concatOrReplace.size(), pathLocation);
         }
-        else if (l.type == ALIAS)
+        else if (l.type == LOCATION_ALIAS)
         {
             by = l.by;
             if (l.by[l.by.length() - 1] != '/')
@@ -203,4 +203,29 @@ const s_http_path& Webserv::parseHttpPath(s_http_path& httpPath, s_server s, std
             paths.erase(paths.size() - 1);
     }
     return (httpPath);
+}
+
+void Webserv::bodyManagement(ssize_t& bodySize, const std::map<std::string, std::string>& headers)
+{
+    std::map<std::string, std::string> heds = headers;
+	std::stringstream ss;
+    std::string header;
+
+    header = heds["Transfer-Encoding"];
+    if (header.empty())
+    {
+		header = heds["Content-Length"];
+        if (!header.empty())
+        {
+            ss.clear();
+            ss << header;
+            ss >> bodySize;
+        }
+        else
+            bodySize = 0;
+    }
+    else
+    {
+        
+    }
 }

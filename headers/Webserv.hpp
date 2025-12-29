@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/23 16:15:11 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/29 14:27:50 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@
 # include <glob.h>
 # include "ParserHttp.hpp"
 # include "CGI.hpp"
+# include "TransferEncoding.hpp"
 
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
@@ -33,7 +34,7 @@ extern bool g_listening;
 
 struct s_location
 {
-	s_location() : is_cgi(NULL), type(NONE) {}
+	s_location() : is_cgi(NULL), type(LOCATION_NONE) {}
 
 	bool					is_cgi;
 	locationType			type;
@@ -47,13 +48,15 @@ struct s_location
 
 struct s_query
 {
-	s_query() : fd(-1), cgi(NULL), httpParser(NULL), bodySize(0), port(0) {}
+	s_query() : fd(-1), cgi(NULL), httpParser(NULL), bodySize(0), port(0)
+		,encoding(ENCODING_NONE)  {}
 
 	int							fd;
 	CGI*						cgi;
 	ParserHttpRequest*			httpParser;
 	ssize_t						bodySize;
 	uint16_t 					port;
+	encodingType				encoding;
 	time_t						lifeTime;
 	size_t						byteSent;
 	std::string					host;
@@ -133,6 +136,7 @@ private:
 	void updatePathAndLocation(s_location&, std::string&, const s_server&) const;
 	const s_http_path& parseHttpPath(s_http_path&, s_server, std::string&);
 	s_http_path getLocationFromServer(s_server&, const ParserHttpRequest&);
+	void bodyManagement(ssize_t&, const std::map<std::string, std::string>&);
 };
 
 #endif

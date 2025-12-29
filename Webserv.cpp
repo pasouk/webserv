@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/23 14:00:04 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/29 13:07:03 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -404,7 +404,7 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 		{
 			loc.concatOrReplace = (*it1)->getArgs()[0];
 			loc.is_cgi = false;
-			loc.type = NONE;
+			loc.type = LOCATION_NONE;
 			loc.by = "none";
 			loc.max_body_size = "not define";
 			loc.cgi_pass = "none";
@@ -412,13 +412,13 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
 				if ((*it2)->getParent() == *it1)
 				{
-					loc.type = ROOT;
+					loc.type = LOCATION_ROOT;
 					loc.by = (*it2)->getArgs()[0];
 				}
 			_alias = parser->getDirectives("alias", static_cast<const NodeBlock*>(*it1));
 			if (_alias.size())
 			{
-				loc.type = ALIAS;
+				loc.type = LOCATION_ALIAS;
 				loc.by = _alias[0]->getArgs()[0];
 			}
 			for (std::vector<const Node*>::const_iterator it2 = _max_body_size.begin(); it2 != _max_body_size.end(); ++it2)
