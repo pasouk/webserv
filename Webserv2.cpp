@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/12/29 14:17:54 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/31 14:00:28 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,29 +47,24 @@ curl -X POST "http://localhost:8080/cgi-bin/cgi_tester/foo?name=toto&age=12" -d 
 int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&))
 {
 	std::map<std::string, std::string> headers;
-	std::string header, /*cgiPath,*/ binary;
+	std::string header, binary;
 	std::map<std::string, std::string> env;
 	std::ostringstream oss;
 	std::stringstream ss;
 	s_http_path httpPath;
-	//s_location* l;
 	s_server s;
 	int ret;
 
 	ret = 0;
 	q->httpParser->setBodyLine(q->bodyChunks);
 	s = getRightServer(q);
-	//l = getLocationFromServer(s, *q->httpParser);
 	httpPath = getLocationFromServer(s, *q->httpParser);
-	//if (l != NULL)
-	//	std::cout << "LOCATION IS: " << l->concatOrReplace << std::endl;
-	//httpPath = parseHttpPath(l, s, q->httpParser->getPath());
-	if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))//isCgi(l, s, httpPath.path_updated, cgiPath, binary))
+	if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))
 	{
-		env["SCRIPT_FILENAME"] = httpPath.path_updated;//cgiPath;
+		env["SCRIPT_FILENAME"] = httpPath.path_updated;
         env["PATH_INFO"] = httpPath.path_info;
 		if (env["PATH_INFO"].empty())
-			env["PATH_INFO"] = httpPath.path_updated;//cgiPath;
+			env["PATH_INFO"] = httpPath.path_updated;
 		env["QUERY_STRING"] = httpPath.query_string;
 		env["SERVER_PROTOCOL"] = q->httpParser->getVersion();
 		ss << q->port;
@@ -126,30 +121,12 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	std::pair<char*, ssize_t> chunk;
 
 	bDelete = true;
-	if (q->encoding == ENCODING_NONE)
+	if (q->encoding)
 	{
-		if (q->bodySize)
+		if (q->encoding->loadBody1(buffer, n, q, i, bDelete) == LOAD_CALL_HOOK)
 		{
-			if (i + q->bodySize < n)
-			{
-				chunk = removeChunk(&buffer[i], q->bodySize);
-				q->bodyChunks.push_back(chunk);
-				i += q->bodySize;
-				if (responseHook(q, onResponse))
-					return (1);
-			}
-			else
-			{
-				chunk.second = n;
-				chunk.first = buffer;
-				q->bodyChunks.push_back(chunk);
-				bDelete = false;
-				q->bodySize -= n;
-				if (q->bodySize == 0)
-					if(responseHook(q, onResponse))
-						return (1);
-				i += n;
-			}
+			if (responseHook(q, onResponse))
+				return (1);
 		}
 	}
 	while (i < n)
@@ -161,50 +138,14 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 			{
 				q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
 				if (q->httpParser == NULL)
+					return (1);	
+				q->encoding = bodyManagement(q->bodySize, q->httpParser->getHeaders());
+				if (q->encoding == NULL)
 					return (1);
-
-
-				//bodyManagement(q->bodySize, q->httpParser->getHeaders());
-
-				
-				headers = q->httpParser->getHeaders();
-				header = headers["Content-Length"];
-				q->bodySize = 0;
-				if (!header.empty())
+				if (q->encoding->loadBody2(buffer, n, q, i) == LOAD_CALL_HOOK)
 				{
-					ss.clear();
-					ss << header;
-					ss >> q->bodySize;
-				}
-				if (q->encoding == ENCODING_NONE)
-				{
-					if (q->bodySize)
-					{
-						if (++i < n)
-						{
-							if (i + q->bodySize < n)
-							{
-								chunk = removeChunk(&buffer[i], q->bodySize);
-								q->bodyChunks.push_back(chunk);
-								i += q->bodySize - 1;
-								if (responseHook(q, onResponse))
-									return (1);
-							}
-							else
-							{
-								chunk = removeChunk(&buffer[i], n - i);
-								q->bodyChunks.push_back(chunk);
-								q->bodySize -= n - i;
-								if (q->bodySize == 0)
-									if (responseHook(q, onResponse))
-										return (1);
-								i = n;
-							}
-						}
-					}
-					else
-						if (responseHook(q, onResponse))
-							return (1);
+					if (responseHook(q, onResponse))
+						return (1);
 				}
 			}
 			else
@@ -229,6 +170,11 @@ void Webserv::releaseQueries(int fd)
 			{
 				delete (m_queries[j].httpParser);
 				m_queries[j].httpParser = NULL;
+			}
+			if (m_queries[j].encoding)
+			{
+				delete (m_queries[j].encoding);
+				m_queries[j].encoding = NULL;
 			}
 			if (m_queries[j].cgi)
 			{

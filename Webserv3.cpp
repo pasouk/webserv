@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/12/29 12:59:57 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/31 13:38:56 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -168,14 +168,12 @@ bool Webserv::getCgiQuery(int fd, s_query*& q)
 }
 const s_http_path& Webserv::parseHttpPath(s_http_path& httpPath, s_server s, std::string& path)
 {
-    //s_http_path httpPath;
     size_t pos_s;
 	std::string paths, pathNotRef;
     std::string::const_iterator c;
     s_location lNotRef; 
 
     httpPath.path_updated = path;
-    //httpPath.location = l;
     pos_s = path.find("?");
     if (pos_s != std::string::npos)
     { 
@@ -205,15 +203,17 @@ const s_http_path& Webserv::parseHttpPath(s_http_path& httpPath, s_server s, std
     return (httpPath);
 }
 
-void Webserv::bodyManagement(ssize_t& bodySize, const std::map<std::string, std::string>& headers)
+TransferEncoding* Webserv::bodyManagement(ssize_t& bodySize, const std::map<std::string, std::string>& headers)
 {
+    TransferEncoding* te;
     std::map<std::string, std::string> heds = headers;
 	std::stringstream ss;
     std::string header;
 
-    header = heds["Transfer-Encoding"];
+    te = NULL;
+    /*header = heds["Transfer-Encoding"];
     if (header.empty())
-    {
+    {*/
 		header = heds["Content-Length"];
         if (!header.empty())
         {
@@ -223,9 +223,9 @@ void Webserv::bodyManagement(ssize_t& bodySize, const std::map<std::string, std:
         }
         else
             bodySize = 0;
-    }
+        te = new (std::nothrow)ContentLength();
+    /*}
     else
-    {
-        
-    }
+        te = new (std::nothrow)Chunked();*/
+    return (te);
 }

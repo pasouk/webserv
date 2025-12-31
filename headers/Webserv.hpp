@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/12/29 14:27:50 by fabrice          ###   ########.fr       */
+/*   Updated: 2025/12/31 14:00:51 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,9 +21,8 @@
 # include <map>
 # include <ctime>
 # include <glob.h>
-# include "ParserHttp.hpp"
-# include "CGI.hpp"
-# include "TransferEncoding.hpp"
+# include "ContentLength.hpp"
+# include "Chunked.hpp"
 
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
@@ -31,50 +30,6 @@
 # define MAX_BODY_SIZE 8192
 
 extern bool g_listening;
-
-struct s_location
-{
-	s_location() : is_cgi(NULL), type(LOCATION_NONE) {}
-
-	bool					is_cgi;
-	locationType			type;
-	std::string				concatOrReplace;
-	std::string				by;
-	std::string				max_body_size;
-	std::string				cgi_pass;
-	std::string				index;
-	std::vector<HttpMethod>	httpMethodsAllowed;
-};
-
-struct s_query
-{
-	s_query() : fd(-1), cgi(NULL), httpParser(NULL), bodySize(0), port(0)
-		,encoding(ENCODING_NONE)  {}
-
-	int							fd;
-	CGI*						cgi;
-	ParserHttpRequest*			httpParser;
-	ssize_t						bodySize;
-	uint16_t 					port;
-	encodingType				encoding;
-	time_t						lifeTime;
-	size_t						byteSent;
-	std::string					host;
-	std::string					hostName;
-	std::string					httpRequest;
-	std::string 				formatedResponse;
-	std::deque<std::pair<char*, ssize_t> >	bodyChunks;
-};
-
-struct s_server
-{
-	std::vector<s_location>			locations;
-	std::vector<std::string>		server_names;
-	std::vector<uint16_t> 			ports;
-	std::vector<std::string>		hosts;
-	std::string						root;
-	std::string						max_body_size;
-};
 
 struct s_http_path
 {
@@ -136,7 +91,7 @@ private:
 	void updatePathAndLocation(s_location&, std::string&, const s_server&) const;
 	const s_http_path& parseHttpPath(s_http_path&, s_server, std::string&);
 	s_http_path getLocationFromServer(s_server&, const ParserHttpRequest&);
-	void bodyManagement(ssize_t&, const std::map<std::string, std::string>&);
+	TransferEncoding* bodyManagement(ssize_t&, const std::map<std::string, std::string>&);
 };
 
 #endif
