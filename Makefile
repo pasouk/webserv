@@ -6,7 +6,7 @@
 #    By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2025/12/29 14:32:50 by fabrice          ###   ########.fr        #
+#    Updated: 2026/01/02 14:19:02 by fabrice          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,10 +16,10 @@ NAME = webserv
 
 SOURCES = QueryListener.cpp \
 	ConfigParser.cpp \
-	Node.cpp \
-	NodeDirective.cpp \
-	NodeBlock.cpp \
-	Directives.cpp \
+	ConfigParser/Node.cpp \
+	ConfigParser/NodeDirective.cpp \
+	ConfigParser/NodeBlock.cpp \
+	ConfigParser/Directives.cpp \
 	Webserv.cpp \
 	Webserv2.cpp \
 	Webserv3.cpp \
@@ -47,11 +47,11 @@ all: $(NAME)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response \
-	-I./CGI -I./TransferEncoding -c $< -o $@
+	-I./CGI -I./TransferEncoding -I./ConfigParser -c $< -o $@
 
 $(NAME): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -I./headers -I./HTTP_parser -I./HTTP_response \
-	-I./CGI -I./TransferEncoding -o $(NAME) $(OBJECTS)
+	-I./CGI -I./TransferEncoding -I./ConfigParser -o $(NAME) $(OBJECTS)
 
 clean:
 	rm -f HTTP_parser/*.o

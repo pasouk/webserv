@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/02 13:11:27 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/02 14:09:59 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,6 +89,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	q->bodySize = 0;
 	q->byteSent = 0;
 	q->httpParser = NULL;
+	q->encoding = NULL;
 	q->cgi = NULL;
 	q->bodyChunks.clear();
 	return (ret);
@@ -113,11 +114,7 @@ std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&), bool& bDelete)
 {
-	std::map<std::string, std::string> headers;
-	std::stringstream ss;
 	ssize_t i;
-	std::string header;
-	std::pair<char*, ssize_t> chunk;
 
 	i = 0;
 	bDelete = true;
@@ -133,13 +130,19 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	{
 		q->httpRequest += buffer[i];
 		if (q->httpRequest.find("\r\n\r\n") != std::string::npos)
-		{			
-			q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
+		{
 			if (q->httpParser == NULL)
-				return (1);
-			q->encoding = bodyManagement(q->bodySize, q->httpParser->getHeaders());
+			{
+				q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
+				if (q->httpParser == NULL)
+					return (1);
+			}
 			if (q->encoding == NULL)
-				return (1);
+			{
+				q->encoding = bodyManagement(q->bodySize, q->httpParser->getHeaders());
+				if (q->encoding == NULL)
+					return (1);
+			}
 			if (q->encoding->loadBody2(buffer, n, q, i) == LOAD_CALL_HOOK)
 			{
 				if (responseHook(q, onResponse))
