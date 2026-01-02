@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:11:14 by fabrice           #+#    #+#             */
-/*   Updated: 2025/12/31 13:40:32 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/01 14:26:37 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,6 @@ public:
 
    	loadType loadBody1(char*, ssize_t&, s_query*&, ssize_t&, bool&);
 	loadType loadBody2(char*, ssize_t&, s_query*&, ssize_t&);
-
 };
 
 #endif

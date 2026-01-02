@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/12/31 14:00:28 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/02 13:11:27 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,6 @@ Accept-Encoding: gzip
 curl "http://localhost:8080/cgi-bin/python/add.py?a=5&b=3"
 
 //POST
-curl -X POST "http://localhost:8080/directory/youpi.bla/c++?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi_tester/c++?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi-bin/test.bla?zozo=2" -d "PATH_INFO is set to /cgi-bin/test.bla"
 curl -X POST "http://localhost:8080/cgi-bin/python/hello.py?zozo=2" -d "PATH_INFO is set to /cgi-bin/python/hello.py"
@@ -85,7 +84,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	}
 	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
 	m_queries.push_back(*q);
-	//printQuery(*q);
+	printQuery(*q);
 	q->httpRequest.clear();
 	q->bodySize = 0;
 	q->byteSent = 0;
@@ -116,10 +115,11 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 {
 	std::map<std::string, std::string> headers;
 	std::stringstream ss;
-	ssize_t i = 0;
+	ssize_t i;
 	std::string header;
 	std::pair<char*, ssize_t> chunk;
 
+	i = 0;
 	bDelete = true;
 	if (q->encoding)
 	{
@@ -133,24 +133,18 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	{
 		q->httpRequest += buffer[i];
 		if (q->httpRequest.find("\r\n\r\n") != std::string::npos)
-		{
-			if (i < n)
+		{			
+			q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
+			if (q->httpParser == NULL)
+				return (1);
+			q->encoding = bodyManagement(q->bodySize, q->httpParser->getHeaders());
+			if (q->encoding == NULL)
+				return (1);
+			if (q->encoding->loadBody2(buffer, n, q, i) == LOAD_CALL_HOOK)
 			{
-				q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
-				if (q->httpParser == NULL)
-					return (1);	
-				q->encoding = bodyManagement(q->bodySize, q->httpParser->getHeaders());
-				if (q->encoding == NULL)
-					return (1);
-				if (q->encoding->loadBody2(buffer, n, q, i) == LOAD_CALL_HOOK)
-				{
-					if (responseHook(q, onResponse))
-						return (1);
-				}
-			}
-			else
 				if (responseHook(q, onResponse))
 					return (1);
+			}
 		}
 		++i;
 	}			

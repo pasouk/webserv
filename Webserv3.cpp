@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2025/12/31 13:38:56 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/01 14:08:57 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -211,9 +211,10 @@ TransferEncoding* Webserv::bodyManagement(ssize_t& bodySize, const std::map<std:
     std::string header;
 
     te = NULL;
-    /*header = heds["Transfer-Encoding"];
+    bodySize = 0;
+    header = heds["Transfer-Encoding"];
     if (header.empty())
-    {*/
+    {
 		header = heds["Content-Length"];
         if (!header.empty())
         {
@@ -221,11 +222,10 @@ TransferEncoding* Webserv::bodyManagement(ssize_t& bodySize, const std::map<std:
             ss << header;
             ss >> bodySize;
         }
-        else
-            bodySize = 0;
         te = new (std::nothrow)ContentLength();
-    /*}
+    }
     else
-        te = new (std::nothrow)Chunked();*/
+        if (header == "chunked")
+            te = new (std::nothrow)Chunked();
     return (te);
 }
