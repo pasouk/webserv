@@ -52,9 +52,9 @@ class CGI
 public:
     ~CGI();
     CGI(std::string, std::string, std::map<std::string, std::string>&
-        , int, std::vector<pollfd>&, std::vector<fdType>&); //script without shebang
+        , int, std::vector<pollfd>&, std::vector<fdType>&, int bodyFileFd = -1); //script without shebang
     CGI(std::string, std::map<std::string, std::string>&
-        , int, std::vector<pollfd>&, std::vector<fdType>&); //binary/script (with shebang)
+        , int, std::vector<pollfd>&, std::vector<fdType>&, int bodyFileFd = -1); //binary/script (with shebang)
     int runCGI();
     int writeCGI(std::pair<char*, ssize_t>&);
     int readCGI();
@@ -88,5 +88,6 @@ private:
     std::string m_binary;
     std::string m_script;
     std::string m_response;
+    int     m_bodyFileFd;
 };
 #endif

@@ -32,14 +32,14 @@ CGI::~CGI()
 }
 
 CGI::CGI(std::string binary, std::string script, std::map<std::string, std::string>& env
-    , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
-    : m_executed(false), m_fd_client(fd), m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType)
-{  
+    , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType, int bodyFileFd)
+    : m_executed(false), m_fd_client(fd), m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType), m_bodyFileFd(bodyFileFd)
+{
     m_binary = binary;
     m_script = script;
     m_argv = new (std::nothrow) char*[3];
     if (m_argv == NULL)
-         throw std::runtime_error(std::strerror(errno));       
+         throw std::runtime_error(std::strerror(errno));
     m_argv[0] = const_cast<char*>(m_binary.c_str());
     m_argv[1] = const_cast<char*>(m_script.c_str());
     m_argv[2] = NULL;
@@ -53,13 +53,13 @@ CGI::CGI(std::string binary, std::string script, std::map<std::string, std::stri
 }
 
 CGI::CGI(std::string binary, std::map<std::string, std::string>& env
-    , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
-    : m_executed(false), m_fd_client(fd), m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType)
+    , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType, int bodyFileFd)
+    : m_executed(false), m_fd_client(fd), m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType), m_bodyFileFd(bodyFileFd)
 {
     m_binary = binary;
     m_argv = new (std::nothrow) char*[2];
     if (m_argv == NULL)
-         throw std::runtime_error(std::strerror(errno));       
+         throw std::runtime_error(std::strerror(errno));
     m_argv[0] = const_cast<char*>(m_binary.c_str());
     m_argv[1] = NULL;
     initFDS();
@@ -253,7 +253,11 @@ void CGI::cgi(char* argv[], char* envp[])
 //    int i;
 
     dup2(m_pipe_in[1], STDOUT_FILENO);
-    dup2(m_pipe_out[0], STDIN_FILENO);
+    // Use temp file for stdin if available, otherwise use pipe
+    if (m_bodyFileFd != -1)
+        dup2(m_bodyFileFd, STDIN_FILENO);
+    else
+        dup2(m_pipe_out[0], STDIN_FILENO);
     closeFDS();
     initFDS();
 /*    i = 1;

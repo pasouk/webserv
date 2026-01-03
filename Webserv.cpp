@@ -113,15 +113,38 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					if (q->cgi->readCGI() <= 0)
 					{
 						onResponse(q->formatedResponse, q->cgi, *q->httpParser, getRightServer(q));
+						std::cout << "[CGI PIPE] Response generated, size=" << q->formatedResponse.size() << std::endl;
+						// Must delete and NULL the CGI before pushing to m_queries
+						// Otherwise the copy will have a dangling pointer
 						delete (q->cgi);
 						q->cgi = NULL;
+						// Also NULL httpParser to avoid double delete
+						q->httpParser = NULL;
+						// Check if already in m_queries (shouldn't happen for CGI responses)
+						bool alreadyInQueue = false;
+						for (size_t qi = 0; qi < m_queries.size(); ++qi)
+						{
+							if (m_queries[qi].fd == q->fd)
+							{
+								std::cout << "[CGI PIPE WARNING] Query for fd=" << q->fd << " already in m_queries, updating it" << std::endl;
+								m_queries[qi].formatedResponse = q->formatedResponse;
+								m_queries[qi].byteSent = 0;
+								alreadyInQueue = true;
+								break;
+							}
+						}
+						if (!alreadyInQueue)
+						{
+							std::cout << "[CGI PIPE] Adding query to m_queries" << std::endl;
+							m_queries.push_back(*q);
+						}
 						break ;
 					}
 				}
 				else if (m_fds[i].revents & POLLOUT)
 				{
-					for (size_t i = 0; i < q->bodyChunks.size(); ++i)
-						if (q->cgi->writeCGI(q->bodyChunks[i]) < 0)
+					for (size_t j = 0; j < q->bodyChunks.size(); ++j)
+						if (q->cgi->writeCGI(q->bodyChunks[j]) < 0)
 						{
 							delete (q->cgi);
 							q->cgi = NULL;
@@ -145,7 +168,10 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					}
 				}
 				if (clientNeedsAnswer(fd))
+				{
 					m_fds[i].events |= POLLOUT;
+					// Skip keepalive check if there's a pending response to send
+				}
 				else if (m_fds[i].events & POLLOUT)
 				{
 					m_fds[i].events &= ~POLLOUT;
@@ -154,8 +180,9 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					destroyClient(fd);
 					break ;
 				}
-				if (!keepAlive(fd, m_keepalive_timeout))
+				else if (!keepAlive(fd, m_keepalive_timeout))
 				{
+					// Only check keepalive if not sending a response
 					oss << "Deconnected client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
 					destroyClient(fd);
@@ -201,9 +228,25 @@ void Webserv::addClient(int fd)
 			m_fds.push_back(pfd);
 			m_fdType.push_back(ACCEPT);
 			getsockname(fd, (struct sockaddr*)&serverAddress, &serverlen);
+
+			// Reset query object (since it's static and reused)
 			query.fd = pfd.fd;
+			query.cgi = NULL;
+			query.httpParser = NULL;
+			query.bodySize = 0;
 			query.lifeTime = std::time(NULL);
+			query.byteSent = 0;
 			query.port = ntohs(serverAddress.sin_port);
+			query.httpRequest.clear();
+			query.formatedResponse.clear();
+			query.bodyChunks.clear();
+			query.chunkedEncoding = false;
+			query.currentChunkSize = 0;
+			query.readingChunkSize = true;
+			query.chunkBuffer.clear();
+			query.bodyFileFd = -1;
+			query.totalBodyWritten = 0;
+
 			inet_ntop(AF_INET, &(serverAddress.sin_addr), ip, serverlen);
 			query.host = ip;
 			m_clients.push_back(query);
@@ -258,6 +301,12 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 					delete [](buffers);
 					buffers = NULL;
 				}
+				// If we have a response ready to send, break the read loop
+				if (!client->formatedResponse.empty())
+				{
+					std::cout << "[DEBUG] Breaking read loop - response ready to send" << std::endl;
+					break;
+				}
 			}
 		} while(n > 0);
 		if (n == -1)
@@ -275,12 +324,21 @@ int Webserv::sendQuery(int fd)
 	ssize_t n;
 	s_query *client;
 	std::ostringstream oss;
+	size_t matchCount = 0;
 
 	n = 0;
+	for (std::vector<s_query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
+		if ((*it).fd == fd)
+			matchCount++;
+	if (matchCount > 1)
+		std::cout << "[SEND WARNING] Found " << matchCount << " queries for fd=" << fd << " in m_queries!" << std::endl;
+
 	for (std::vector<s_query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
 		if ((*it).fd == fd)
 		{
+			std::cout << "[SEND] Attempting to send " << ((*it).formatedResponse.size() - (*it).byteSent)
+			          << " bytes (sent " << (*it).byteSent << "/" << (*it).formatedResponse.size() << ")" << std::endl;
 			do
 			{
 				if(getClient(fd, client))
@@ -298,6 +356,13 @@ int Webserv::sendQuery(int fd)
 				}
 				else if (n == -1)
 				{
+					// EAGAIN/EWOULDBLOCK is not an error for non-blocking sockets
+					// It just means the send buffer is full, try again later
+					if (errno == EAGAIN || errno == EWOULDBLOCK)
+					{
+						n = 0; // Signal to keep POLLOUT active
+						break; // Exit loop, will retry on next POLLOUT event
+					}
 					oss << "client fd:" << (*it).fd << ", " << std::strerror(errno);
 					logErrMessage(oss);
 				}
@@ -318,8 +383,12 @@ bool Webserv::clientNeedsAnswer(int fd) const
 	for (std::vector<s_query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
 		if ((*it).fd == fd && !(*it).formatedResponse.empty())
+		{
+			std::cout << "[clientNeedsAnswer] fd=" << fd << " needs answer, response size=" << (*it).formatedResponse.size() << std::endl;
 			return (true);
+		}
 	}
+	std::cout << "[clientNeedsAnswer] fd=" << fd << " does NOT need answer (m_queries.size=" << m_queries.size() << ")" << std::endl;
 	return (false);
 }
 
@@ -478,14 +547,27 @@ const std::vector<std::string> Webserv::getDiretiveValue(const Node* server, con
 
 void Webserv::cleanWebserv()
 {
+	std::cout << "[CLEANUP] Starting cleanWebserv" << std::endl;
 	stopListening();
+	std::cout << "[CLEANUP] Deleting " << m_listeners.size() << " listeners" << std::endl;
 	for (std::vector<const QueryListener*>::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+	{
+		std::cout << "[CLEANUP] Deleting listener" << std::endl;
 		delete (*it);
+		std::cout << "[CLEANUP] Listener deleted" << std::endl;
+	}
 	m_listeners.clear();
+	std::cout << "[CLEANUP] Destroying " << m_clients.size() << " clients" << std::endl;
 	for (size_t i = 0; i < m_clients.size(); ++i)
+	{
+		std::cout << "[CLEANUP] Destroying client fd=" << m_clients[i].fd << std::endl;
 		destroyClient(m_clients[i].fd);
+		std::cout << "[CLEANUP] Client destroyed" << std::endl;
+	}
+	std::cout << "[CLEANUP] Clearing fds and fdType" << std::endl;
 	m_fds.clear();
 	m_fdType.clear();
+	std::cout << "[CLEANUP] cleanWebserv completed" << std::endl;
 }
 
 void Webserv::stopListening()

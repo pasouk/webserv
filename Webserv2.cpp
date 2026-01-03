@@ -71,20 +71,71 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 
 
 		env["SCRIPT_FILENAME"] = httpPath.path_updated;//cgiPath;
-        env["PATH_INFO"] = httpPath.path_info;
-		if (env["PATH_INFO"].empty())
-			env["PATH_INFO"] = httpPath.path_updated;//cgiPath;
+        // PATH_INFO should be the original request path (before alias/root substitution)
+        env["PATH_INFO"] = q->httpParser->getPath();
 		env["QUERY_STRING"] = httpPath.query_string;
+		// REQUEST_URI is the original request path + query string
+		env["REQUEST_URI"] = q->httpParser->getPath();
+		if (!httpPath.query_string.empty())
+			env["REQUEST_URI"] += "?" + httpPath.query_string;
+
+		std::cout << "[CGI ENV] SCRIPT_FILENAME=" << env["SCRIPT_FILENAME"] << std::endl;
+		std::cout << "[CGI ENV] PATH_INFO=" << env["PATH_INFO"] << std::endl;
+		std::cout << "[CGI ENV] REQUEST_URI=" << env["REQUEST_URI"] << std::endl;
+		std::cout << "[CGI ENV] QUERY_STRING=" << env["QUERY_STRING"] << std::endl;
 		env["SERVER_PROTOCOL"] = q->httpParser->getVersion();
 		ss << q->port;
 		env["SERVER_PORT"] = ss.str();
 		env["REQUEST_METHOD"] = methods_map[q->httpParser->getMethod()].name;
 		env["SERVER_NAME"] = q->hostName;
-		env["CONTENT_LENGTH"] = "0";		
+		env["CONTENT_LENGTH"] = "0";
 		headers = q->httpParser->getHeaders();
-		header = headers["Content-Length"]; 
+		header = headers["Content-Length"];
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
+		// For chunked encoding, use totalBodyWritten instead of Content-Length header
+		else if (q->chunkedEncoding && q->totalBodyWritten > 0)
+		{
+			ss.str("");
+			ss.clear();
+			ss << q->totalBodyWritten;
+			env["CONTENT_LENGTH"] = ss.str();
+			std::cout << "[CGI ENV] Setting CONTENT_LENGTH=" << q->totalBodyWritten << " from chunked body" << std::endl;
+		}
+
+		// Pass all HTTP headers to CGI with HTTP_ prefix (RFC 3875)
+		for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
+		{
+			std::string headerName = it->first;
+			std::string headerValue = it->second;
+
+			// Skip Content-Length and Content-Type as they have special CGI variables
+			if (headerName == "Content-Length" || headerName == "Content-Type")
+				continue;
+
+			// Convert header name to CGI format: HTTP_ prefix + uppercase + replace - with _
+			std::string cgiVarName = "HTTP_";
+			for (size_t i = 0; i < headerName.length(); ++i)
+			{
+				char c = headerName[i];
+				if (c == '-')
+					cgiVarName += '_';
+				else if (c >= 'a' && c <= 'z')
+					cgiVarName += (c - 'a' + 'A');  // Convert to uppercase
+				else if (c >= 'A' && c <= 'Z')
+					cgiVarName += c;
+				else
+					cgiVarName += c;
+			}
+
+			env[cgiVarName] = headerValue;
+			std::cout << "[CGI ENV] " << cgiVarName << "=" << headerValue << std::endl;
+		}
+
+		// Handle Content-Type separately
+		header = headers["Content-Type"];
+		if (!header.empty())
+			env["CONTENT_TYPE"] = header;
 		if (createCGI(httpPath.path_updated/*cgiPath*/, env, q, /*binary*/httpPath.location->cgi_pass))
 		{
 			oss << "CGI can't be build.:";
@@ -93,7 +144,9 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 		}
 	}
 	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
+	std::cout << "[RESPONSE HOOK] Pushing query to m_queries, response size=" << q->formatedResponse.size() << std::endl;
 	m_queries.push_back(*q);
+	std::cout << "[RESPONSE HOOK] m_queries size now=" << m_queries.size() << std::endl;
 	//printQuery(*q);
 	q->httpRequest.clear();
 	q->bodySize = 0;
@@ -101,6 +154,18 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	q->httpParser = NULL;
 	q->cgi = NULL;
 	q->bodyChunks.clear();
+	q->chunkedEncoding = false;
+	q->currentChunkSize = 0;
+	q->readingChunkSize = true;
+	q->chunkBuffer.clear();
+	// DON'T close bodyFileFd here - CGI still needs it!
+	// It will be closed when the client disconnects
+	// if (q->bodyFileFd != -1)
+	// {
+	// 	close(q->bodyFileFd);
+	// 	q->bodyFileFd = -1;
+	// }
+	q->totalBodyWritten = 0;
 	return (ret);
 }
 
@@ -120,6 +185,135 @@ std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
 	return (chunk);
 }
 
+int Webserv::processChunkedData(char* buffer, ssize_t n, s_query*& q
+	, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&), ssize_t& i, bool&)
+{
+	// Create temp file on first call
+	if (q->bodyFileFd == -1)
+	{
+		// Use open() with O_TMPFILE or mkstemp() to create a real temporary file
+		// that won't be closed when FILE* goes out of scope
+		char tmpTemplate[] = "/tmp/webserv_body_XXXXXX";
+		q->bodyFileFd = mkstemp(tmpTemplate);
+		if (q->bodyFileFd == -1)
+		{
+			std::cerr << "[ERROR] Failed to create temp file for chunked body: " << strerror(errno) << std::endl;
+			return (1);
+		}
+		// Unlink immediately so file is deleted when fd is closed
+		unlink(tmpTemplate);
+		std::cout << "[CHUNKED] Created temp file fd=" << q->bodyFileFd << std::endl;
+	}
+
+	while (i < n)
+	{
+		if (q->readingChunkSize)
+		{
+			// Read chunk size line (hex number followed by \r\n)
+			while (i < n)
+			{
+				char c = buffer[i++];
+				if (c == '\r')
+					continue;
+				if (c == '\n')
+				{
+					// Ignore empty lines (trailing \r\n after chunk data)
+					if (q->chunkBuffer.empty())
+						continue;
+
+					// Parse chunk size from hex
+					std::stringstream ss;
+					ss << std::hex << q->chunkBuffer;
+					ss >> q->currentChunkSize;
+					std::cout << "[CHUNKED] Parsed chunk size: '" << q->chunkBuffer << "' = " << q->currentChunkSize << " bytes" << std::endl;
+					q->chunkBuffer.clear();
+					q->readingChunkSize = false;
+
+					// If chunk size is 0, we're done
+					if (q->currentChunkSize == 0)
+					{
+						std::cout << "[CHUNKED] Final chunk received, total=" << q->totalBodyWritten << " bytes, calling responseHook" << std::endl;
+						// Flush and rewind temp file to beginning for CGI to read
+						fsync(q->bodyFileFd);
+						lseek(q->bodyFileFd, 0, SEEK_SET);
+						// DEBUG: Check file size
+						off_t fileSize = lseek(q->bodyFileFd, 0, SEEK_END);
+						lseek(q->bodyFileFd, 0, SEEK_SET);
+						std::cout << "[CHUNKED] Temp file flushed and rewound, fd=" << q->bodyFileFd << ", file size=" << fileSize << " bytes" << std::endl;
+						if (responseHook(q, onResponse))
+							return (1);
+						return (0);
+					}
+					break;
+				}
+				q->chunkBuffer += c;
+			}
+		}
+		else
+		{
+			// Read chunk data and write directly to temp file
+			ssize_t remaining = q->currentChunkSize;
+			ssize_t available = n - i;
+			ssize_t toRead = (remaining < available) ? remaining : available;
+
+			if (toRead > 0)
+			{
+				// Check if writing this chunk would exceed the max body size
+				if (q->maxBodySize > 0 && q->totalBodyWritten + toRead > q->maxBodySize)
+				{
+					std::cout << "[CHUNKED] Body size limit exceeded: " << (q->totalBodyWritten + toRead)
+					          << " > " << q->maxBodySize << std::endl;
+
+					// Generate 413 error response (simple, no body)
+					q->formatedResponse = "HTTP/1.1 413 Request Entity Too Large\r\nConnection: close\r\nContent-Length: 0\r\n\r\n";
+					m_queries.push_back(*q);
+					std::cout << "[CHUNKED] Sent 413 Request Entity Too Large" << std::endl;
+
+					// Clean up temp file
+					if (q->bodyFileFd != -1)
+					{
+						close(q->bodyFileFd);
+						q->bodyFileFd = -1;
+					}
+
+					// Reset chunked state so we don't continue processing
+					q->chunkedEncoding = false;
+					q->readingChunkSize = true;
+					q->currentChunkSize = 0;
+					q->totalBodyWritten = 0;
+
+					return (0); // Return success so the error response is sent
+				}
+
+				ssize_t written = write(q->bodyFileFd, &buffer[i], toRead);
+				if (written < 0)
+				{
+					std::cerr << "[ERROR] Failed to write to temp file: " << strerror(errno) << std::endl;
+					return (1);
+				}
+				if (q->totalBodyWritten == 0)
+					std::cout << "[CHUNKED] First write: fd=" << q->bodyFileFd << ", written=" << written << " bytes" << std::endl;
+				q->totalBodyWritten += written;
+				i += toRead;
+				q->currentChunkSize -= toRead;
+			}
+
+			// If we finished reading this chunk, prepare for next chunk size
+			// (the trailing \r\n will be skipped as an empty line)
+			if (q->currentChunkSize == 0)
+			{
+				q->readingChunkSize = true;
+			}
+			else
+			{
+				// Need more data for this chunk
+				break;
+			}
+		}
+	}
+	return (0);
+}
+
 int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&), bool& bDelete)
 {
@@ -130,6 +324,20 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	std::pair<char*, ssize_t> chunk;
 
 	bDelete = true;
+
+	// If there's already a response ready (e.g., 413 error), ignore further input
+	if (!q->formatedResponse.empty())
+	{
+		std::cout << "[DEBUG] Ignoring input - response already queued" << std::endl;
+		return (0);
+	}
+
+	// Handle chunked encoding continuation
+	if (q->chunkedEncoding && q->httpParser != NULL)
+	{
+		return processChunkedData(buffer, n, q, onResponse, i, bDelete);
+	}
+
 	if (q->bodySize)
 	{
 		if (i + q->bodySize < n)
@@ -164,6 +372,18 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 				if (q->httpParser == NULL)
 					return (1);
 				headers = q->httpParser->getHeaders();
+
+				// Check for Transfer-Encoding: chunked
+				std::string transferEncoding = headers["Transfer-Encoding"];
+				std::cout << "[DEBUG] Transfer-Encoding: '" << transferEncoding << "'" << std::endl;
+				if (transferEncoding == "chunked")
+				{
+					q->chunkedEncoding = true;
+					q->readingChunkSize = true;
+					q->currentChunkSize = 0;
+					std::cout << "Transfer-Encoding: chunked detected" << std::endl;
+				}
+
 				header = headers["Content-Length"];
 				q->bodySize = 0;
 				if (!header.empty())
@@ -197,16 +417,71 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 						}
 					}
 				}
+				else if (q->chunkedEncoding)
+				{
+					// Start reading chunked body
+					std::cout << "[DEBUG] Starting chunked body read, chunkedEncoding=" << q->chunkedEncoding << std::endl;
+
+					// Find the max body size for this location
+					s_server s = getRightServer(q);
+					s_http_path httpPath = getLocationFromServer(s, *q->httpParser);
+
+					// Debug: show what we have
+					if (httpPath.location)
+					{
+						std::cout << "[DEBUG] Location max_body_size value: '" << httpPath.location->max_body_size << "'" << std::endl;
+						std::cout << "[DEBUG] Location is_cgi: " << httpPath.location->is_cgi << std::endl;
+					}
+					else
+					{
+						std::cout << "[DEBUG] No location matched" << std::endl;
+					}
+					std::cout << "[DEBUG] Server max_body_size value: '" << s.max_body_size << "'" << std::endl;
+
+					// For CGI requests, don't enforce client_max_body_size - let the CGI handle it
+					if (httpPath.location && httpPath.location->is_cgi)
+					{
+						q->maxBodySize = 0; // 0 means no limit
+						std::cout << "[DEBUG] CGI request - no body size limit" << std::endl;
+					}
+					// Get max_body_size from location or server for non-CGI requests
+					else if (httpPath.location && !httpPath.location->max_body_size.empty() && httpPath.location->max_body_size != "not define")
+					{
+						std::cout << "[DEBUG] Using location max_body_size: '" << httpPath.location->max_body_size << "'" << std::endl;
+						std::stringstream ss_size;
+						ss_size << httpPath.location->max_body_size;
+						ss_size >> q->maxBodySize;
+					}
+					else if (!s.max_body_size.empty() && s.max_body_size != "not define")
+					{
+						std::cout << "[DEBUG] Using server max_body_size: '" << s.max_body_size << "'" << std::endl;
+						std::stringstream ss_size;
+						ss_size << s.max_body_size;
+						ss_size >> q->maxBodySize;
+					}
+					else
+					{
+						std::cout << "[DEBUG] Using default max_body_size: 8192" << std::endl;
+						q->maxBodySize = 8192; // Default
+					}
+					std::cout << "[DEBUG] Max body size for chunked request: " << q->maxBodySize << std::endl;
+
+					++i;
+					return processChunkedData(buffer, n, q, onResponse, i, bDelete);
+				}
 				else
+				{
+					std::cout << "[DEBUG] No body, calling responseHook (bodySize=" << q->bodySize << ", chunkedEncoding=" << q->chunkedEncoding << ")" << std::endl;
 					if (responseHook(q, onResponse))
 						return (1);
+				}
 			}
 			else
 				if (responseHook(q, onResponse))
 					return (1);
 		}
 		++i;
-	}			
+	}
 	return (0);
 }
 

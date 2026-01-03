@@ -11,24 +11,29 @@
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
+#include <fnmatch.h>
 
 s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest& http)
 {
-    size_t len, k;
+    size_t len;
     s_location l, m;
     std::string fileName, filePath, fileLoc, path;
     std::ostringstream oss;
-    s_http_path httppath;
-    glob_t g; 
+    s_http_path httppath; 
     
     path = http.getPath();
     len = 0;
+    std::cout << "[DEBUG getLocationFromServer] Looking for path: '" << path << "'" << std::endl;
     for (size_t i = 0; i < s.locations.size(); ++i)
     {
         l = s.locations[i];
+        std::string originalConcat = l.concatOrReplace;
         fileName = getFilename(l.concatOrReplace.c_str());
-        if (!fileName.empty())
+        // Only remove filename if the location ends with '/' (it's a directory)
+        // Don't remove if it's an exact match like '/post_body'
+        if (!fileName.empty() && l.concatOrReplace[l.concatOrReplace.length() - 1] == '/')
             l.concatOrReplace = l.concatOrReplace.substr(0, l.concatOrReplace.length() - fileName.length());
+        std::cout << "[DEBUG] Location " << i << ": original='" << originalConcat << "', after='" << l.concatOrReplace << "', fileName='" << fileName << "'" << std::endl;
         if (path.find(l.concatOrReplace) != std::string::npos)
         {
             if (l.concatOrReplace.length() > len)
@@ -50,22 +55,27 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
         m = s.locations[j];
         fileName = getFilename(httppath.path_updated);
         fileLoc = getFilename(m.concatOrReplace.c_str());
-        filePath = httppath.path_updated.substr(0, httppath.path_updated.length() - fileName.length());                  
-        if (!fileName.empty())
+        filePath = httppath.path_updated.substr(0, httppath.path_updated.length() - fileName.length());
+        if (!fileName.empty() && !fileLoc.empty())
         {
             //std::cout << "CHECK: " << filePath << " --> " << fileName << std::endl;
             //std::cout << " WITH: " << filePath << " --> " << fileLoc << std::endl;
-            if (!glob((filePath + fileLoc).c_str(), 0, NULL, &g))
+
+            // Only use fnmatch if the location pattern contains wildcards
+            // This prevents matching non-wildcard paths like /post_body
+            if (fileLoc.find('*') != std::string::npos ||
+                fileLoc.find('?') != std::string::npos ||
+                fileLoc.find('[') != std::string::npos)
             {
-                for (k = 0; k < g.gl_pathc; ++k)
-                    if (g.gl_pathv[k] == filePath + fileName)
-                    {
-                        std::cout << "FOUND: " << g.gl_pathv[k] << std::endl;
-                        httppath.location = &s.locations[j];
-                        break ;
-                    }
+                // Use fnmatch to check if the filename matches the pattern
+                // This works even if the file doesn't exist yet (important for CGI)
+                if (fnmatch(fileLoc.c_str(), fileName.c_str(), 0) == 0)
+                {
+                    std::cout << "PATTERN MATCH: " << fileName << " matches pattern " << fileLoc << std::endl;
+                    httppath.location = &s.locations[j];
+                    break;
+                }
             }
-            globfree(&g);
         }
     }
     if (httppath.location)
@@ -129,17 +139,19 @@ int Webserv::createCGI(const std::string& file, std::map<std::string, std::strin
 {
 	std::ostringstream oss;
 
+	std::cout << "[CREATE CGI] bodyFileFd=" << q->bodyFileFd << std::endl;
+
     try
     {
         if (binary.empty())
         {
-            q->cgi = new CGI(file, env, q->fd, m_fds, m_fdType);
-			oss << "client fd:" << q->fd << ", " << file << " is build";
+            q->cgi = new CGI(file, env, q->fd, m_fds, m_fdType, q->bodyFileFd);
+			oss << "client fd:" << q->fd << ", " << file << " is build with bodyFileFd=" << q->bodyFileFd;
         }
         else
         {
-            q->cgi = new CGI(binary, file, env, q->fd, m_fds, m_fdType);
-			oss << "client fd:" << q->fd << ", " << binary << " use " << file << " as argument";
+            q->cgi = new CGI(binary, file, env, q->fd, m_fds, m_fdType, q->bodyFileFd);
+			oss << "client fd:" << q->fd << ", " << binary << " use " << file << " as argument with bodyFileFd=" << q->bodyFileFd;
         }
 		logOutMessage(oss);
     }

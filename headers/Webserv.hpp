@@ -47,7 +47,7 @@ struct s_location
 
 struct s_query
 {
-	s_query() : fd(-1), cgi(NULL), httpParser(NULL), bodySize(0), port(0) {}
+	s_query() : fd(-1), cgi(NULL), httpParser(NULL), bodySize(0), port(0), chunkedEncoding(false), currentChunkSize(0), readingChunkSize(true), bodyFileFd(-1), totalBodyWritten(0), maxBodySize(0) {}
 
 	int							fd;
 	CGI*						cgi;
@@ -61,6 +61,13 @@ struct s_query
 	std::string					httpRequest;
 	std::string 				formatedResponse;
 	std::deque<std::pair<char*, ssize_t> >	bodyChunks;
+	bool						chunkedEncoding;
+	ssize_t						currentChunkSize;
+	bool						readingChunkSize;
+	std::string					chunkBuffer;
+	int							bodyFileFd;
+	size_t						totalBodyWritten;
+	size_t						maxBodySize;
 };
 
 struct s_server
@@ -121,6 +128,8 @@ private:
 	int responseHook(s_query*&,  void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&));
 	int tcpStream(char* buffer, ssize_t, s_query*&
 		, void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&), bool&);
+	int processChunkedData(char* buffer, ssize_t, s_query*&
+		, void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&), ssize_t&, bool&);
 	bool clientNeedsAnswer(int) const;
 	bool keepAlive(int, double);
 	bool getClient(int, s_query*&);
