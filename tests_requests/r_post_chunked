@@ -4,9 +4,11 @@ User-Agent: nc-test
 Transfer-Encoding: chunked
 Content-Type: text/plain
 
+10
+0123456789ABCDEF
 5
 Hello
-6
- World
 0
+
+
 
