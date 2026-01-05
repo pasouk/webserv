@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/01 14:08:57 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/04 15:57:38 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -222,10 +222,14 @@ TransferEncoding* Webserv::bodyManagement(ssize_t& bodySize, const std::map<std:
             ss << header;
             ss >> bodySize;
         }
+        std::cout << "WE CREATE A CONTENT LENGTH\n";
         te = new (std::nothrow)ContentLength();
     }
     else
         if (header == "chunked")
+        {
+            std::cout << "WE CREATE A CHUNKED\n";
             te = new (std::nothrow)Chunked();
+        }
     return (te);
 }

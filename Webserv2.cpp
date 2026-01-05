@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/02 14:09:59 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/05 13:45:08 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ Accept-Encoding: gzip
 */
 
 
-
+//./tester http://localhost:8080
 //CGI TESTS
 /*
 //GET
@@ -84,7 +84,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	}
 	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
 	m_queries.push_back(*q);
-	printQuery(*q);
+	//printQuery(*q);
 	q->httpRequest.clear();
 	q->bodySize = 0;
 	q->byteSent = 0;

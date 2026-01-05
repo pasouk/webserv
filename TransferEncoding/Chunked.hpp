@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:31:16 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/03 14:39:56 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/05 11:38:20 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ public:
 private:
 	bool m_bItsHead;
 	std::string m_header;
-	//std::string	m_body;
+	std::string m_data;
 };
 
 #endif

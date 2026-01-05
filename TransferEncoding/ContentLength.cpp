@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:12:44 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/03 15:04:20 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/05 10:29:01 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,9 +23,9 @@ loadType ContentLength::loadBody1(char* buffer, ssize_t& n, s_query*& q, ssize_t
 
     if (q->bodySize)
     {
-        if (i + q->bodySize < n)
+        if (q->bodySize < n)
         {
-            chunk = removeChunk(&buffer[i], q->bodySize);
+            chunk = removeChunk(buffer, q->bodySize);
             q->bodyChunks.push_back(chunk);
             i += q->bodySize;
             lType = LOAD_CALL_HOOK;
