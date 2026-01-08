@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/05 13:45:08 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/08 14:51:02 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,6 +75,17 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 		header = headers["Content-Length"]; 
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
+		else
+			if (q->bodyChunks.size())
+			{
+				ssize_t body_size = 0;
+				for (size_t i = 0; i < q->bodyChunks.size(); ++i)
+					body_size += q->bodyChunks[i].second;
+				ss.clear();
+				ss.str("");
+				ss << body_size;
+				env["CONTENT_LENGTH"] = ss.str();
+			}
 		if (createCGI(httpPath.path_updated, env, q, httpPath.location->cgi_pass))
 		{
 			oss << "CGI can't be build.:";
@@ -129,7 +140,7 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	while (i < n)
 	{
 		q->httpRequest += buffer[i];
-		if (q->httpRequest.find("\r\n\r\n") != std::string::npos)
+		if (q->httpRequest.find("\r\n\r\n", 4) != std::string::npos)
 		{
 			if (q->httpParser == NULL)
 			{

@@ -4,7 +4,8 @@ import sys, os
 print("Content-Type: text/html")
 print()
 
-data = sys.stdin.read()  # récupère le body (pour POST)
+n = int(os.environ.get('CONTENT_LENGTH'))
+data = sys.stdin.read(n)  # récupère le body (pour POST)
 print("<html><body>")
 print("<h2>Données reçues :</h2>")
 print(f"<pre>{data}</pre>")

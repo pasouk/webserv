@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:31:14 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/05 13:51:47 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/08 13:17:43 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,25 +25,7 @@ loadType Chunked::loadBody1(char* buffer, ssize_t& n, s_query*& q, ssize_t& i, b
     (void)bDelete;
 
     loadType lType = LOAD_CONTINUE;
-    std::stringstream ss;
 
-    /*if (i < n)
-    {
-        if (!q->bodySize)
-        {
-            m_header += buffer[i];
-            if (m_header.find("\r\n") != std::string::npos && m_header.length() > 2)
-            {
-                ss << m_header;
-                ss >> std::hex >> q->bodySize;
-                std::cout << "HEADER 1: " << m_header << "size: " << q->bodySize << std::endl;
-                m_header = "";
-                exit (1);
-                if (q->bodySize == 0)
-                    lType = LOAD_CALL_HOOK;
-            }
-        }
-    }*/
     return (lType);
 }
 
@@ -52,7 +34,6 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
     (void)buffer;
     (void)n;
     (void)q;
-    //(void)i;
 
     static std::pair<char*, ssize_t> chunk;
     loadType lType = LOAD_CONTINUE;
@@ -65,21 +46,24 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
         {
             ss << m_header;
             ss >> std::hex >> chunk.second;
-            std::cout << "HEADER: " << m_header << "size: " << chunk.second << std::endl;
+            //std::cout << "HEADER: " << m_header << "size: " << chunk.second << std::endl;
             m_header = "";
             m_bItsHead = false;
-            if (chunk.second == 0)
-                lType = LOAD_CALL_HOOK;
         }
     }
     else
     {
+        if (chunk.second == 0)
+        {
+            lType = LOAD_CALL_HOOK;
+            std::cout << "CALL HOOK !!!\n";
+        }
         m_data += buffer[i];
         if (m_data.find("\r\n") != std::string::npos)
         {
             chunk = removeChunk(const_cast<char*>(m_data.c_str()), chunk.second);
             q->bodyChunks.push_back(chunk);
-            std::cout << "DATA: " << chunk.first << std::endl;
+            //std::cout << "DATA: " << chunk.first << std::endl;
             m_data = "";
             m_bItsHead = true;
         }        

@@ -1,6 +1,6 @@
-POST /test HTTP/1.1
+POST /cgi-bin/python/inout.py HTTP/1.1
 Host: localhost:8080
-User-Agent: nc-test
+Content-Type: text/plain
 Transfer-Encoding: chunked
 Content-Type: text/plain
 

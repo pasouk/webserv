@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/04 15:57:38 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/08 14:50:40 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,6 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
                 for (k = 0; k < g.gl_pathc; ++k)
                     if (g.gl_pathv[k] == filePath + fileName)
                     {
-                        std::cout << "FOUND: " << g.gl_pathv[k] << std::endl;
                         httppath.location = &s.locations[j];
                         break ;
                     }
@@ -222,14 +221,10 @@ TransferEncoding* Webserv::bodyManagement(ssize_t& bodySize, const std::map<std:
             ss << header;
             ss >> bodySize;
         }
-        std::cout << "WE CREATE A CONTENT LENGTH\n";
         te = new (std::nothrow)ContentLength();
     }
     else
         if (header == "chunked")
-        {
-            std::cout << "WE CREATE A CHUNKED\n";
             te = new (std::nothrow)Chunked();
-        }
     return (te);
 }

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2025/11/23 13:29:18 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/07 14:36:03 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -161,6 +161,7 @@ int CGI::writeCGI(std::pair<char*, ssize_t>& chunk)
 
     written = 0;
     total = chunk.second;
+    //std::cout << "writeCGi: " << chunk.first << ", size: " << chunk.second << std::endl;
     while (written < total)
     {
         n = write(m_pipe_out[1], chunk.first + written, total - written);

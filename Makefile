@@ -6,7 +6,7 @@
 #    By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2026/01/02 14:19:02 by fabrice          ###   ########.fr        #
+#    Updated: 2026/01/07 10:11:13 by fabrice          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -57,6 +57,7 @@ clean:
 	rm -f HTTP_parser/*.o
 	rm -f HTTP_response/*.o
 	rm -f CGI/*.o
+	rm -f ConfigParser/*.o
 	rm -f TransferEncoding/*.o
 	rm -f *.o
 

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/12/29 12:59:57 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/08 14:42:52 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,13 +126,14 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
 
 void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server& s)
 {	
+	(void)r;
+	(void)s;
 	std::ostringstream oss;
 	std::stringstream ss;
 	std::string path;
 	std::string root;
 	s_location foundLoc;
 
-	(void)cgi;
 	//MAXENCE:
 	//si cgi different de NULL:
 	//cela veux dire qu'un CGI a été crée mais PAS ENCORE EXCUTE.

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/05 13:19:42 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/08 12:54:31 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,12 +121,14 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 				else if (m_fds[i].revents & POLLOUT)
 				{
 					for (size_t i = 0; i < q->bodyChunks.size(); ++i)
+					{
 						if (q->cgi->writeCGI(q->bodyChunks[i]) < 0)
 						{
 							delete (q->cgi);
 							q->cgi = NULL;
 							break ;
 						}
+					}
 				}
 			}
 			else if (m_fdType[i] == ACCEPT)

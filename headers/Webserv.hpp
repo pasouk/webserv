@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/12/31 14:00:51 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/08 14:45:24 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,7 +59,7 @@ public:
 private:
 	size_t m_keepalive_timeout;
 	size_t m_client_buffers_size[2];	//0: header, 1: body
-	std::vector<s_server> m_servers;		//servers list
+	std::vector<s_server> m_servers;	//servers list
 	std::vector<s_query> m_clients;		//connected clients
 	std::vector<s_query> m_queries;
 	std::vector<pollfd> m_fds;
