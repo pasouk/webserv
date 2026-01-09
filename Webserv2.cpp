@@ -6,23 +6,12 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/08 14:51:02 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/09 14:43:11 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
-/*
-POST /directory/youpi.bla HTTP/1.1
-Host: localhost:8080
-User-Agent: Go-http-client/1.1
-Transfer-Encoding: chunked
-Content-Type: test/file
-Accept-Encoding: gzip
-*/
-
-
-//./tester http://localhost:8080
 //CGI TESTS
 /*
 //GET
@@ -140,7 +129,7 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	while (i < n)
 	{
 		q->httpRequest += buffer[i];
-		if (q->httpRequest.find("\r\n\r\n", 4) != std::string::npos)
+		if (q->httpRequest.find("\r\n\r\n") != std::string::npos)
 		{
 			if (q->httpParser == NULL)
 			{
