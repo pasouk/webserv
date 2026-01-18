@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2025/12/29 12:59:57 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/18 14:36:20 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@
 # include <vector>
 # include "utils.hpp"
 
-# define READBUFFERSIZE 3
+# define CGIBUFFERSIZE 8192
 
 enum locationType
 {
@@ -46,6 +46,12 @@ enum fdType
 	PIPE
 };
 
+struct s_cursor
+{
+    size_t index;
+    ssize_t offset;
+};
+
 class Webserv;
 class CGI
 {
@@ -56,13 +62,14 @@ public:
     CGI(std::string, std::map<std::string, std::string>&
         , int, std::vector<pollfd>&, std::vector<fdType>&); //binary/script (with shebang)
     int runCGI();
-    int writeCGI(std::pair<char*, ssize_t>&);
+    int writeCGI(std::deque<std::pair<char*, ssize_t> >&);
     int readCGI();
     const pollfd* getPollfd() const;
     const std::string& getResponse() const;
     int getFd() const;
     pid_t getPid() const;
     bool wasExecuted() const;
+    ssize_t getWrote() const;
 
 private:
     void cgi(char**, char**);
@@ -73,8 +80,13 @@ private:
     void setEnvp(std::map<std::string, std::string>);
 	void addPipeToPoll(std::vector<pollfd>& fds, std::vector<fdType>& fdtype);
 	void removePipesFromPoll(std::vector<pollfd>& fds, std::vector<fdType>& fdtype);
-
+    ssize_t getChunksSize(ssize_t, const std::deque<std::pair<char*, ssize_t> >&) const;
+    const s_cursor getCursor(ssize_t, const std::deque<std::pair<char*, ssize_t> >&) const;
+    char* createBuff(ssize_t, ssize_t, ssize_t&, const std::deque<std::pair<char*, ssize_t> >&) const;
+    
 private:
+    ssize_t m_wrote;
+    ssize_t m_total;
     bool    m_executed;
     int     m_fd_client;
     char**  m_envp;

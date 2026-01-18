@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/07 14:36:03 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/18 14:37:09 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,8 @@ CGI::~CGI()
 
 CGI::CGI(std::string binary, std::string script, std::map<std::string, std::string>& env
     , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
-    : m_executed(false), m_fd_client(fd), m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType)
+    : m_wrote(0), m_total(0), m_executed(false), m_fd_client(fd)
+        , m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType)
 {  
     m_binary = binary;
     m_script = script;
@@ -89,6 +90,11 @@ pid_t CGI::getPid() const
 bool CGI::wasExecuted() const
 {
     return (m_executed);
+}
+
+ssize_t CGI::getWrote() const
+{
+    return (m_wrote);
 }
 
 void CGI::setEnvp(std::map<std::string, std::string> env)
@@ -154,24 +160,99 @@ void CGI::closeFDS()
         close(m_pipe_out[0]);        
 }
 
-int CGI::writeCGI(std::pair<char*, ssize_t>& chunk)
+ssize_t CGI::getChunksSize(ssize_t pos, const std::deque<std::pair<char*, ssize_t> >& chunks) const
+{
+    ssize_t size; 
+    s_cursor cur;
+
+    cur = getCursor(pos, chunks);
+    size = chunks[cur.index].second - cur.offset;
+    for (size_t i = cur.index + 1; i < chunks.size(); ++i)
+        size += chunks[i].second;
+    return (size);
+}
+
+const s_cursor CGI::getCursor(ssize_t pos, const std::deque<std::pair<char*, ssize_t> >& chunks) const
+{
+    s_cursor cur;
+    ssize_t cpt;
+
+    cur.index = 0;
+    cur.offset = 0;
+    cpt = 0;
+    for (size_t i = 0; i < chunks.size(); ++i)
+    {
+        if (cpt + chunks[i].second <= pos)
+            cpt += chunks[i].second;
+        else
+        {
+            cur.index = i;
+            cur.offset = cpt + chunks[i].second - pos;
+            cur.offset = chunks[i].second - cur.offset;
+            break;
+        }
+    }
+    return (cur);
+}
+
+char* CGI::createBuff(ssize_t wrote, ssize_t total, ssize_t &maxSize, const std::deque<std::pair<char*, ssize_t> >& chunks) const
+{
+    char* buff;
+    ssize_t size;
+    s_cursor cur;
+
+    size = total - wrote;
+    if (size > maxSize)
+        size = maxSize;
+    else
+        maxSize = size;
+    buff = new (std::nothrow)char[size];
+    if (buff == NULL)
+        return (NULL);
+    for (ssize_t i = 0; i < size; ++i)
+    {
+        cur = getCursor(wrote + i, chunks);
+        buff[i] = chunks[cur.index].first[cur.offset];
+    }
+    return (buff);
+}
+
+int CGI::writeCGI(std::deque<std::pair<char*, ssize_t> >& chunks)
 {
     std::ostringstream oss;
-    ssize_t written, total, n;
+    ssize_t n, maxSize; 
+    char* buff;
 
-    written = 0;
-    total = chunk.second;
-    //std::cout << "writeCGi: " << chunk.first << ", size: " << chunk.second << std::endl;
-    while (written < total)
+    m_total = getChunksSize(m_wrote, chunks);
+    std::cout << "M_TOTAL: " << m_total << std::endl;
+    while (m_wrote < m_total)
     {
-        n = write(m_pipe_out[1], chunk.first + written, total - written);
+        maxSize = CGIBUFFERSIZE;
+        buff = createBuff(m_wrote, m_total, maxSize, chunks);
+
+        std::cout << "BUFF: ";
+        for (ssize_t j = 0; j < maxSize; ++j)
+            std::cout << buff[j];
+        std::cout << " , SIZE: " << maxSize << std::endl;
+
+
+        n = write(m_pipe_out[1], buff, maxSize);
+        delete [](buff);
         if (n == -1)
         {
             oss << "[cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
             logErrMessage(oss);
             break;
         }
-        written += n;
+        m_wrote += n;
+        std::cout << "M_WROTE: " << m_wrote << std::endl;       
+        if (m_wrote == m_total)
+        {
+            std::cout << "EVERYTHING IS WRITTEN DOWN\n";
+            close (m_pipe_out[1]);
+            m_wrote = 0;
+            return (-2);
+        }
     }
     return (n);
 }
@@ -179,10 +260,10 @@ int CGI::writeCGI(std::pair<char*, ssize_t>& chunk)
 int CGI::readCGI()
 {
     std::ostringstream oss;
-    static char buff[READBUFFERSIZE];
+    static char buff[CGIBUFFERSIZE];
     int n;
     
-    while ((n = read(m_pipe_in[0], buff, READBUFFERSIZE)) > 0)
+    while ((n = read(m_pipe_in[0], buff, CGIBUFFERSIZE)) > 0)
     {
         buff[n] = '\0';
         m_response += buff;

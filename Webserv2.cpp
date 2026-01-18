@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/09 14:43:11 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/12 13:42:01 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	q->httpParser->setBodyLine(q->bodyChunks);
 	s = getRightServer(q);
 	httpPath = getLocationFromServer(s, *q->httpParser);
+
 	if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))
 	{
 		env["SCRIPT_FILENAME"] = httpPath.path_updated;
@@ -82,9 +83,10 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 			ret = 1;
 		}
 	}
+	q->formatedResponse = "";
 	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
 	m_queries.push_back(*q);
-	//printQuery(*q);
+	printQuery(*q);
 	q->httpRequest.clear();
 	q->bodySize = 0;
 	q->byteSent = 0;

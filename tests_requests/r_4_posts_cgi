@@ -7,8 +7,8 @@ Content-Length: 25
 Content-Type: application/json
 Content-Length: 33
 
-{"name":"Jean-Francois","age":00}POST /api HTTP/1.1
-Host: quiqui.com
+{"name":"Jean-Francois","age":00}POST /cgi-bin/python/inout.py HTTP/1.1
+Host:  localhost:8080
 Content-Type: application/json
 Content-Length: 23
 

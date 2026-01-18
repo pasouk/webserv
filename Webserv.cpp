@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/09 11:29:16 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/18 15:40:39 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,11 +23,9 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 
 	char cwd[1024];
 	getcwd(cwd, sizeof(cwd));      // lire le CWD
-	chdir("/chemin/vers/binaire"); // changer le CWD
-	
+	chdir("/chemin/vers/binaire"); // changer le CWD	
 	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
 	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
-
 	if (parser != NULL)
 	{
 		//define global variables server
@@ -72,7 +70,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 	pollfd pfd;
 	rlimit limit;
 	s_query* q;
-	int fd;
+	int fd, n;
 	std::ostringstream oss;
 
 	//check system queue size
@@ -93,7 +91,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 	logOutMessage(oss);
 	while (g_listening)
 	{
-		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 500) < 0)
+		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 0) < 0)
 		{
 			g_listening = false;
 			break ;
@@ -120,14 +118,14 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 				}
 				else if (m_fds[i].revents & POLLOUT)
 				{
-					for (size_t i = 0; i < q->bodyChunks.size(); ++i)
+					n = q->cgi->writeCGI(q->bodyChunks);
+					if (n == -2)
+						m_fds[i].events &= ~POLLOUT;							
+					else if (n == -1)
 					{
-						if (q->cgi->writeCGI(q->bodyChunks[i]) < 0)
-						{
-							delete (q->cgi);
-							q->cgi = NULL;
-							break ;
-						}
+						delete (q->cgi);
+						q->cgi = NULL;
+						break ;
 					}
 				}
 			}
@@ -155,9 +153,9 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 				else if (m_fds[i].events & POLLOUT)
 				{
 					m_fds[i].events &= ~POLLOUT;
-					oss << "Deconnected client fd:" << m_fds[i].fd;
+					/*oss << "Deconnected client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
-					destroyClient(fd);
+					destroyClient(fd);*/
 					break ;
 				}
 				if (!keepAlive(fd, m_keepalive_timeout))
@@ -287,6 +285,7 @@ int Webserv::sendQuery(int fd)
 	{
 		if ((*it).fd == fd)
 		{
+			(*it).byteSent = 0;
 			do
 			{
 				if(getClient(fd, client))
@@ -298,7 +297,7 @@ int Webserv::sendQuery(int fd)
 					(*it).byteSent += n;
 					if ((*it).byteSent == (*it).formatedResponse.size())
 					{
-						(*it).formatedResponse.clear();
+						(*it).formatedResponse = "";
 						break ;
 					}
 				}
@@ -323,8 +322,14 @@ bool Webserv::clientNeedsAnswer(int fd) const
 {
 	for (std::vector<s_query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
-		if ((*it).fd == fd && !(*it).formatedResponse.empty())
+		if (((*it).fd == fd && !(*it).formatedResponse.empty()))
 			return (true);
+		if ((*it).cgi && ((*it).fd == fd && (*it).formatedResponse.empty()))
+		{
+			std::cout << "OUT\n";
+			return (true);
+			//exit(0);
+		}
 	}
 	return (false);
 }

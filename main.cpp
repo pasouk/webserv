@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/09 12:26:58 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/17 13:11:08 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,30 +134,18 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	std::string root;
 	s_location foundLoc;
 
-	//MAXENCE:
-	//si cgi different de NULL:
-	//cela veux dire qu'un CGI a été crée mais PAS ENCORE EXCUTE.
-	//il a été crée parceque la requete A MATCH UNE LOCATION CONTENANT UNE DIRECTIVE "cgi_pass"
 	if (cgi)
 	{
 		if (cgi->wasExecuted() == false)
 		{
-			//TODO
-			//ici tu peux faire ce que tu veux avant l'execution du CGI
 			if (cgi->runCGI())
 			{
 				oss << "client fd:" << cgi->getFd() << ", cgi failed to run";
 				logErrMessage(oss);
-
-				//TODO:
-				//il y a eu une erreur, CGI détruit.
 			}
 		}
 		else
 		{
-			//TODO
-			//ici l'execution c'est bien déroulée et tu as la reponse du CGI avec cgi->getResponse()
-			//je renvoi ca pour mes tests, libre a toi de modifier.
 			ss << cgi->getResponse().length();
 			std::string responseBuild =
 				"HTTP/1.1 200 OK\r\n"
@@ -166,6 +154,8 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 				"Connection: close\r\n"
 				"\r\n"
 				+ cgi->getResponse();
+
+			//std::cout << "CGI RESPONSE: " << responseBuild << std::endl;
 			response = responseBuild;
 		}
 	}
@@ -243,7 +233,6 @@ int main(int argc, char *argv[])
 	try
 	{
 		Webserv	webserv(cp);
-		//webserv.printServers();
 		delete (cp);
 		webserv.startListening(onResponse);
 	}
@@ -252,6 +241,5 @@ int main(int argc, char *argv[])
 		std::cerr << e.what() << std::endl;
 		return (1);
 	}
-	//delete (cp);
 	return (0);
 }

@@ -5,11 +5,12 @@ Transfer-Encoding: chunked
 Content-Type: test/file
 Accept-Encoding: gzip
 
+4
+tata
 10
 0123456789ABCDEF
 5
 Hello
 0
-
 
 

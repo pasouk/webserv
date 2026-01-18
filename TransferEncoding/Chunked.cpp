@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:31:14 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/09 14:43:58 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/17 13:52:33 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
     (void)buffer;
     (void)n;
     (void)q;
+    static int cpt;
 
     static std::pair<char*, ssize_t> chunk;
     loadType lType = LOAD_CONTINUE;
@@ -45,7 +46,7 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
         {
             ss << m_header;
             ss >> std::hex >> chunk.second;
-            //std::cout << "HEADER: " << m_header << "size: " << chunk.second << std::endl;
+            std::cerr << "CHUNKED N°:" << ++cpt << std::endl;
             m_header = "";
             m_bItsHead = false;
         }
@@ -57,16 +58,16 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
         {
             if (chunk.second == 0)
             {
-                if (m_data.find("\r\n\r\n") != std::string::npos)
-                    lType = LOAD_CALL_HOOK;
+                m_data = "";
+                m_bItsHead = true;
+                lType = LOAD_CALL_HOOK;
             }
             else
             {
                 chunk = removeChunk(const_cast<char*>(m_data.c_str()), chunk.second);
                 q->bodyChunks.push_back(chunk);
-                m_bItsHead = true;
-                //std::cout << "DATA: " << chunk.first << std::endl;
                 m_data = "";
+                m_bItsHead = true;
             }
         }        
     }
