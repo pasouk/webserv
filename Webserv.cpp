@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/18 15:40:39 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/19 12:05:17 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -308,6 +308,7 @@ int Webserv::sendQuery(int fd)
 				}
 				else if (n == 0)
 				{
+					std::cout << "FORMAT RESPONSE: " << (*it).formatedResponse.size() << std::endl;
 					oss << "client fd:" << (*it).fd << ", send 0 byte";
 					logOutMessage(oss);
 				}

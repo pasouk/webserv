@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
+/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/18 14:37:09 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/19 11:44:18 by fbuyl            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -250,10 +250,12 @@ int CGI::writeCGI(std::deque<std::pair<char*, ssize_t> >& chunks)
         {
             std::cout << "EVERYTHING IS WRITTEN DOWN\n";
             close (m_pipe_out[1]);
+            m_pipe_out[1] = -1;
             m_wrote = 0;
             return (-2);
         }
     }
+    std::cout << "OUT WRITECGI: " << m_wrote << "/" << m_total << std::endl;
     return (n);
 }
 
