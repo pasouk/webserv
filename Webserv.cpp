@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/19 12:05:17 by fbuyl            ###   ########.fr       */
+/*   Updated: 2026/02/05 10:58:01 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,11 +21,9 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 	QueryListener* ql;
 	s_server server;
 
-	char cwd[1024];
-	getcwd(cwd, sizeof(cwd));      // lire le CWD
-	chdir("/chemin/vers/binaire"); // changer le CWD	
 	m_client_buffers_size[0] = HEADER_BUFFER_SIZE;
 	m_client_buffers_size[1] = BODY_BUFFER_SIZE;
+	m_client_body_temp_path = "./";
 	if (parser != NULL)
 	{
 		//define global variables server
@@ -35,6 +33,10 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 		clientBufferSize = parser->getDirectives("client_header_buffer_size");
 		for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
 			static_cast<const NodeDirective*>(*it)->getClientSize(m_client_buffers_size[0]);
+		clientBufferSize = parser->getDirectives("client_body_temp_path");
+		for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
+			if ((*it)->getArgs().size())
+				m_client_body_temp_path = (*it)->getArgs()[0];
 		KeepaliveTimeout = parser->getDirectives("keepalive_timeout");
 		for (std::vector<const Node*>::const_iterator it = KeepaliveTimeout.begin(); it != KeepaliveTimeout.end(); ++it)
 			static_cast<const NodeDirective*>(*it)->getClientsTimeout(m_keepalive_timeout);
@@ -57,6 +59,8 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 	oss << "buffer Body_size: " << m_client_buffers_size[1];
 	logOutMessage(oss);
 	oss << "Keepalive timeout: " << m_keepalive_timeout;
+	logOutMessage(oss);
+	oss << "Tempory directory: " << m_client_body_temp_path;
 	logOutMessage(oss);
 }
 
@@ -91,7 +95,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 	logOutMessage(oss);
 	while (g_listening)
 	{
-		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 0) < 0)
+		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 200) < 0)
 		{
 			g_listening = false;
 			break ;
@@ -108,9 +112,11 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 			{
 				if (m_fds[i].revents & POLLIN)
 				{
-					if (q->cgi->readCGI() <= 0)
+					n = q->cgi->readCGI();
+					if (n == -2)
 					{
 						onResponse(q->formatedResponse, q->cgi, *q->httpParser, getRightServer(q));
+						//releaseQueries(q->fd);
 						delete (q->cgi);
 						q->cgi = NULL;
 						break ;
@@ -118,28 +124,43 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 				}
 				else if (m_fds[i].revents & POLLOUT)
 				{
-					n = q->cgi->writeCGI(q->bodyChunks);
+					if (q->bodyFile.empty())
+						n = q->cgi->writeCGI(q->bodyChunks);
+					else
+						n = q->cgi->writeCGI(q->bodyFile);
 					if (n == -2)
-						m_fds[i].events &= ~POLLOUT;							
-					else if (n == -1)
 					{
+						m_fds[i].events &= ~POLLOUT;
+						/*delete (q->cgi);
+						q->cgi = NULL;*/
+						break;			
+					}
+					/*else if (n == -1)
+					{
+						m_fds[i].events &= ~POLLOUT;							
 						delete (q->cgi);
 						q->cgi = NULL;
 						break ;
-					}
+					}*/
 				}
 			}
 			else if (m_fdType[i] == ACCEPT)
 			{
 				if (m_fds[i].revents & POLLOUT)
-					if (sendQuery(fd) == -1)
+				{
+					n = sendQuery(fd);
+					if (n == -1)
 					{
 						m_fds[i].events &= ~POLLOUT;
-						oss << "Deconnected client fd:" << m_fds[i].fd;
+						/*oss << "Deconnected client fd:" << m_fds[i].fd;
 						logOutMessage(oss);
-						destroyClient(fd);
+						destroyClient(fd);*/
 						break ;
 					}
+					else if (n == 0)
+						m_fds[i].events &= ~POLLOUT;
+
+				}
 				if (m_fds[i].revents & POLLIN)
 				{
 					if (readQuery(fd, onResponse) == -2)
@@ -285,7 +306,6 @@ int Webserv::sendQuery(int fd)
 	{
 		if ((*it).fd == fd)
 		{
-			(*it).byteSent = 0;
 			do
 			{
 				if(getClient(fd, client))
@@ -298,6 +318,7 @@ int Webserv::sendQuery(int fd)
 					if ((*it).byteSent == (*it).formatedResponse.size())
 					{
 						(*it).formatedResponse = "";
+						(*it).byteSent = 0;
 						break ;
 					}
 				}
@@ -308,7 +329,6 @@ int Webserv::sendQuery(int fd)
 				}
 				else if (n == 0)
 				{
-					std::cout << "FORMAT RESPONSE: " << (*it).formatedResponse.size() << std::endl;
 					oss << "client fd:" << (*it).fd << ", send 0 byte";
 					logOutMessage(oss);
 				}
@@ -322,16 +342,10 @@ int Webserv::sendQuery(int fd)
 bool Webserv::clientNeedsAnswer(int fd) const
 {
 	for (std::vector<s_query>::const_iterator it = m_queries.begin(); it != m_queries.end(); ++it)
-	{
 		if (((*it).fd == fd && !(*it).formatedResponse.empty()))
-			return (true);
-		if ((*it).cgi && ((*it).fd == fd && (*it).formatedResponse.empty()))
 		{
-			std::cout << "OUT\n";
 			return (true);
-			//exit(0);
 		}
-	}
 	return (false);
 }
 

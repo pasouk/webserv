@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/18 14:36:20 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/04 10:45:35 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,16 +28,9 @@
 # include <poll.h>
 # include <vector>
 # include "utils.hpp"
+# include "headers.hpp"
 
 # define CGIBUFFERSIZE 8192
-
-enum locationType
-{
-    LOCATION_ROOT,
-    LOCATION_ALIAS,
-	LOCATION_PROXY_PASS,
-	LOCATION_NONE
-};
 
 enum fdType
 {
@@ -48,6 +41,7 @@ enum fdType
 
 struct s_cursor
 {
+    s_cursor() : index(0), offset(0) {}
     size_t index;
     ssize_t offset;
 };
@@ -58,11 +52,12 @@ class CGI
 public:
     ~CGI();
     CGI(std::string, std::string, std::map<std::string, std::string>&
-        , int, std::vector<pollfd>&, std::vector<fdType>&); //script without shebang
+        , s_query*&, std::vector<pollfd>&, std::vector<fdType>&); //script without shebang
     CGI(std::string, std::map<std::string, std::string>&
-        , int, std::vector<pollfd>&, std::vector<fdType>&); //binary/script (with shebang)
+        , s_query*&, std::vector<pollfd>&, std::vector<fdType>&); //binary/script (with shebang)
     int runCGI();
-    int writeCGI(std::deque<std::pair<char*, ssize_t> >&);
+    int writeCGI(const std::deque<std::pair<char*, ssize_t> >&);
+    int writeCGI(const std::string&);
     int readCGI();
     const pollfd* getPollfd() const;
     const std::string& getResponse() const;
@@ -70,6 +65,7 @@ public:
     pid_t getPid() const;
     bool wasExecuted() const;
     ssize_t getWrote() const;
+    ssize_t getTotal() const;
 
 private:
     void cgi(char**, char**);
@@ -93,6 +89,7 @@ private:
     pid_t   m_id_cgi;
     std::vector<pollfd>& m_fds;
     std::vector<fdType>& m_fdtype;
+    s_query* m_client;
     int     m_pipe_in[2];
     int     m_pipe_out[2];
     pollfd  m_poll[2];

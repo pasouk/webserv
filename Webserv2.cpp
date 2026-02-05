@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/12 13:42:01 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/05 09:54:54 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 curl "http://localhost:8080/cgi-bin/python/add.py?a=5&b=3"
 
 //POST
+curl -X POST "http://localhost:8080/directory/youpla.bla" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi_tester/c++?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi-bin/test.bla?zozo=2" -d "PATH_INFO is set to /cgi-bin/test.bla"
 curl -X POST "http://localhost:8080/cgi-bin/python/hello.py?zozo=2" -d "PATH_INFO is set to /cgi-bin/python/hello.py"
@@ -47,7 +48,6 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	q->httpParser->setBodyLine(q->bodyChunks);
 	s = getRightServer(q);
 	httpPath = getLocationFromServer(s, *q->httpParser);
-
 	if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))
 	{
 		env["SCRIPT_FILENAME"] = httpPath.path_updated;
@@ -66,16 +66,12 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 		if (!header.empty())
 			env["CONTENT_LENGTH"] = header;
 		else
-			if (q->bodyChunks.size())
-			{
-				ssize_t body_size = 0;
-				for (size_t i = 0; i < q->bodyChunks.size(); ++i)
-					body_size += q->bodyChunks[i].second;
-				ss.clear();
-				ss.str("");
-				ss << body_size;
-				env["CONTENT_LENGTH"] = ss.str();
-			}
+		{
+			ss.clear();
+			ss.str("");
+			ss << q->encoding->getBodySize();
+			env["CONTENT_LENGTH"] = ss.str();
+		}
 		if (createCGI(httpPath.path_updated, env, q, httpPath.location->cgi_pass))
 		{
 			oss << "CGI can't be build.:";
@@ -86,7 +82,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	q->formatedResponse = "";
 	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
 	m_queries.push_back(*q);
-	printQuery(*q);
+	//printQuery(*q);
 	q->httpRequest.clear();
 	q->bodySize = 0;
 	q->byteSent = 0;
@@ -95,22 +91,6 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	q->cgi = NULL;
 	q->bodyChunks.clear();
 	return (ret);
-}
-
-std::pair<char*, ssize_t> Webserv::removeChunk(char* stream, ssize_t size)
-{
-	std::pair<char*, ssize_t> chunk;
-
-	chunk.first = new (std::nothrow) char[size + 1];
-	if (chunk.first == NULL)
-	{
-		cleanWebserv();
-		throw std::bad_alloc();
-	}
-	memcpy(chunk.first, stream, size);
-	chunk.first[size] = '\0';
-	chunk.second = size;
-	return (chunk);
 }
 
 int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
@@ -165,6 +145,8 @@ void Webserv::releaseQueries(int fd)
 			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
 				delete [](m_queries[j].bodyChunks[k].first);
 			m_queries[j].bodyChunks.clear();
+			if (!m_queries[j].bodyFile.empty())
+				remove(m_queries[j].bodyFile.c_str());
 			if (m_queries[j].httpParser)
 			{
 				delete (m_queries[j].httpParser);
@@ -194,6 +176,8 @@ void Webserv::destroyClient(int fd)
 	for (size_t j = 0; j < m_clients.size(); ++j)
 		if (fd == m_clients[j].fd)
 		{
+			if (!m_clients[j].bodyFile.empty())
+				remove(m_clients[j].bodyFile.c_str());
 			m_clients.erase(m_clients.begin() + j);
 			break ;
 		}

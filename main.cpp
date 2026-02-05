@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/17 13:11:08 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/05 11:19:32 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,6 +132,7 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	std::stringstream ss;
 	std::string path;
 	std::string root;
+	std::string body;
 	s_location foundLoc;
 
 	if (cgi)
@@ -147,6 +148,7 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		else
 		{
 			ss << cgi->getResponse().length();
+			body = cgi->getResponse().substr(cgi->getResponse().length() - cgi->getTotal(), cgi->getTotal());
 			std::string responseBuild =
 				"HTTP/1.1 200 OK\r\n"
 				"Content-Type: text/plain\r\n"
@@ -154,8 +156,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 				"Connection: close\r\n"
 				"\r\n"
 				+ cgi->getResponse();
-
-			//std::cout << "CGI RESPONSE: " << responseBuild << std::endl;
 			response = responseBuild;
 		}
 	}

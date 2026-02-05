@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/19 11:44:18 by fbuyl            ###   ########.fr       */
+/*   Updated: 2026/02/04 12:39:16 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,9 +32,9 @@ CGI::~CGI()
 }
 
 CGI::CGI(std::string binary, std::string script, std::map<std::string, std::string>& env
-    , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
-    : m_wrote(0), m_total(0), m_executed(false), m_fd_client(fd)
-        , m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType)
+    , s_query*& client, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
+    : m_wrote(0), m_total(0), m_executed(false), m_fd_client(client->fd)
+        , m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType), m_client(client)
 {  
     m_binary = binary;
     m_script = script;
@@ -54,8 +54,9 @@ CGI::CGI(std::string binary, std::string script, std::map<std::string, std::stri
 }
 
 CGI::CGI(std::string binary, std::map<std::string, std::string>& env
-    , int fd, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
-    : m_executed(false), m_fd_client(fd), m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType)
+    , s_query*& client, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
+    : m_wrote(0), m_total(0), m_executed(false), m_fd_client(client->fd)
+        , m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType), m_client(client)
 {
     m_binary = binary;
     m_argv = new (std::nothrow) char*[2];
@@ -65,7 +66,7 @@ CGI::CGI(std::string binary, std::map<std::string, std::string>& env
     m_argv[1] = NULL;
     initFDS();
     setEnvp(env);
-    if (buildCGI(/*pollfd, pipeType)*/))
+    if (buildCGI())
     {
         delete [](m_argv);
         throw std::runtime_error(std::strerror(errno));
@@ -95,6 +96,11 @@ bool CGI::wasExecuted() const
 ssize_t CGI::getWrote() const
 {
     return (m_wrote);
+}
+
+ssize_t CGI::getTotal() const
+{
+    return (m_total);
 }
 
 void CGI::setEnvp(std::map<std::string, std::string> env)
@@ -165,6 +171,8 @@ ssize_t CGI::getChunksSize(ssize_t pos, const std::deque<std::pair<char*, ssize_
     ssize_t size; 
     s_cursor cur;
 
+    if (chunks.size() == 0)
+        return (0);
     cur = getCursor(pos, chunks);
     size = chunks[cur.index].second - cur.offset;
     for (size_t i = cur.index + 1; i < chunks.size(); ++i)
@@ -177,8 +185,6 @@ const s_cursor CGI::getCursor(ssize_t pos, const std::deque<std::pair<char*, ssi
     s_cursor cur;
     ssize_t cpt;
 
-    cur.index = 0;
-    cur.offset = 0;
     cpt = 0;
     for (size_t i = 0; i < chunks.size(); ++i)
     {
@@ -217,43 +223,135 @@ char* CGI::createBuff(ssize_t wrote, ssize_t total, ssize_t &maxSize, const std:
     return (buff);
 }
 
-int CGI::writeCGI(std::deque<std::pair<char*, ssize_t> >& chunks)
+int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
 {
     std::ostringstream oss;
-    ssize_t n, maxSize; 
-    char* buff;
+    ssize_t n;
+    static ssize_t maxSize;
+    static int i;
+    static char* buff;
 
-    m_total = getChunksSize(m_wrote, chunks);
-    std::cout << "M_TOTAL: " << m_total << std::endl;
-    while (m_wrote < m_total)
+    if (!m_total)
+        m_total = getChunksSize(0, chunks);
+    if (!m_total)
+        return (close (m_pipe_out[1]), m_pipe_out[1] = -1, -2);
+    if (buff == NULL)
     {
         maxSize = CGIBUFFERSIZE;
         buff = createBuff(m_wrote, m_total, maxSize, chunks);
-
-        std::cout << "BUFF: ";
-        for (ssize_t j = 0; j < maxSize; ++j)
-            std::cout << buff[j];
-        std::cout << " , SIZE: " << maxSize << std::endl;
-
-
-        n = write(m_pipe_out[1], buff, maxSize);
-        delete [](buff);
+        if (buff == NULL)
+            return (close (m_pipe_out[1]), -1);
+    }
+    n = 0;
+    while (m_wrote < m_total)
+    {
+        m_client->lifeTime = std::time(NULL);
+        n = write(m_pipe_out[1], &buff[i], maxSize - i);
         if (n == -1)
         {
-            oss << "[cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+            oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
             logErrMessage(oss);
             break;
         }
         m_wrote += n;
-        std::cout << "M_WROTE: " << m_wrote << std::endl;       
         if (m_wrote == m_total)
         {
-            std::cout << "EVERYTHING IS WRITTEN DOWN\n";
+            i = 0;
+            delete [](buff);
+            buff = NULL;
             close (m_pipe_out[1]);
             m_pipe_out[1] = -1;
-            m_wrote = 0;
-            return (-2);
+            n = -2;
+            break;
         }
+        i += n;
+        if (i == maxSize)
+        {
+            i = 0;
+            delete [](buff);
+            maxSize = CGIBUFFERSIZE;
+            buff = createBuff(m_wrote, m_total, maxSize, chunks);
+            if (buff == NULL)
+                return (close (m_pipe_out[1]), m_pipe_out[1] = -1, -1);
+        }
+    }
+    return (n);
+}
+
+int CGI::writeCGI(const std::string& body_file)
+{
+    static std::ifstream ifs;
+    static int i;
+    static ssize_t maxSize;
+    static char* buff;
+    ssize_t n;
+    std::streampos size;
+    std::ostringstream oss;
+
+    if (!ifs.is_open())
+    {
+        ifs.open(body_file.c_str(), std::ios::binary);
+        if (!ifs.is_open())
+        {
+            oss << "fail to open: " << body_file << " tempory file" << std::endl;;
+            logErrMessage(oss);  
+        }
+        else
+        {
+            ifs.seekg (0, ifs.end);
+            m_total = static_cast<ssize_t>(ifs.tellg());
+            ifs.seekg (0, ifs.beg);
+            if (!m_total)
+                return (close (m_pipe_out[1]), m_pipe_out[1] = -1, ifs.close(), -2);
+        }
+    }
+    if (buff == NULL)
+    {
+        buff = new (std::nothrow)char[CGIBUFFERSIZE];
+        if (buff == NULL)
+            return (close (m_pipe_out[1]), -1);
+        ifs.read(buff, CGIBUFFERSIZE);
+        maxSize = static_cast<ssize_t>(ifs.gcount());
+    }
+    n = 0;
+    while (m_wrote < m_total)
+    {
+        m_client->lifeTime = std::time(NULL);
+        n = write(m_pipe_out[1], &buff[i], maxSize - i);
+        if (n == -1)
+        {
+            oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+            logErrMessage(oss);
+            break;
+        }
+        m_wrote += n;
+        if (m_wrote >= m_total)
+        {
+            i = 0;
+            delete [](buff);
+            buff = NULL;
+            close (m_pipe_out[1]);
+            m_pipe_out[1] = -1;
+            n = -2;
+            ifs.close();
+            if (remove(body_file.c_str()) != 0)
+                oss << "fail to delete: " << body_file << " tempory file" << std::endl;
+            else
+                oss << "tempory file " << body_file << " deleted";
+            logErrMessage(oss);                 
+            break;
+        }       
+        i += n;
+        if (i == maxSize)
+        {
+            i = 0;
+            delete [](buff);
+            buff = new (std::nothrow)char[CGIBUFFERSIZE];
+            if (buff == NULL)
+                return (close (m_pipe_out[1]), m_pipe_out[1] = -1, -1);
+            ifs.read(buff, CGIBUFFERSIZE);
+            maxSize = static_cast<ssize_t>(ifs.gcount());
+       }
     }
     std::cout << "OUT WRITECGI: " << m_wrote << "/" << m_total << std::endl;
     return (n);
@@ -261,21 +359,31 @@ int CGI::writeCGI(std::deque<std::pair<char*, ssize_t> >& chunks)
 
 int CGI::readCGI()
 {
-    std::ostringstream oss;
     static char buff[CGIBUFFERSIZE];
+    std::ostringstream oss;
     int n;
     
     while ((n = read(m_pipe_in[0], buff, CGIBUFFERSIZE)) > 0)
     {
-        buff[n] = '\0';
-        m_response += buff;
+        m_client->lifeTime = std::time(NULL);
+        m_response.append(buff, n);
         m_executed = true;
     }
-    if (n == - 1)
+    if (n == -1)
     {
-        oss << "[cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        oss << "READ CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
         logErrMessage(oss);
     }
+    if (m_response.length() >= static_cast<size_t>(m_total) || !m_total)
+    {
+        n = -2;
+        m_wrote = 0;
+        if (m_total)
+            m_response = m_response.substr(m_response.length() - getTotal(), getTotal());
+    }
+
+    std::cout << "SIZE: " << m_response.length() << std::endl;   
+    
     return (n);
 }
 

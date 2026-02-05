@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/08 14:45:24 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/04 10:26:03 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@
 # include <glob.h>
 # include "ContentLength.hpp"
 # include "Chunked.hpp"
+# include "CGI.hpp"
 
 # define HEADER_BUFFER_SIZE 1024
 # define BODY_BUFFER_SIZE 8192
@@ -59,6 +60,7 @@ public:
 private:
 	size_t m_keepalive_timeout;
 	size_t m_client_buffers_size[2];	//0: header, 1: body
+	std::string m_client_body_temp_path;
 	std::vector<s_server> m_servers;	//servers list
 	std::vector<s_query> m_clients;		//connected clients
 	std::vector<s_query> m_queries;
@@ -82,7 +84,6 @@ private:
 	bool clientNeedsAnswer(int) const;
 	bool keepAlive(int, double);
 	bool getClient(int, s_query*&);
-	std::pair<char*, ssize_t> removeChunk(char*, ssize_t);
 	const std::vector<std::string> getDiretiveValue(const Node*, const std::vector<const Node*>) const;
 	s_server& getRightServer(s_query*&);
 	bool matchServerName(const std::string&, const std::string&) const;

@@ -6,11 +6,12 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/10 12:24:12 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/05 11:32:10 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
+#include "CGI.hpp"
 
 s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest& http)
 {
@@ -19,6 +20,7 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
     std::string fileName, filePath, fileLoc, path;
     std::ostringstream oss;
     s_http_path httppath;
+    bool bFileFound;
     glob_t g; 
     
     path = http.getPath();
@@ -45,6 +47,7 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
     //std::cout << "PATH INFO: " << httppath.path_info << std::endl;
     //std::cout << "PATH UPDA: " << httppath.path_updated << std::endl;
     //std::cout << "QUERY STR: " << httppath.query_string << std::endl;
+    bFileFound = false;
     for (size_t j = 0; j < s.locations.size(); ++j)
     {
         m = s.locations[j];
@@ -61,13 +64,17 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
                     if (g.gl_pathv[k] == filePath + fileName)
                     {
                         httppath.location = &s.locations[j];
+                        bFileFound = true;
+                        //std::cout << "GOT IT\n";
                         break ;
                     }
             }
             globfree(&g);
         }
+        else
+            bFileFound = true;
     }
-    if (httppath.location)
+    if (httppath.location && bFileFound)
     {
         for (size_t i = 0; i < httppath.location->httpMethodsAllowed.size(); ++i)
         {
@@ -81,7 +88,14 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
 		    logOutMessage(oss);
             httppath.location = NULL;
         }
-    }  
+    }
+    else
+        if (!bFileFound)
+        {
+			oss << fileName << " not found";
+		    logOutMessage(oss);
+            httppath.location = NULL;
+        }
     return (httppath);
 }
 
@@ -132,12 +146,12 @@ int Webserv::createCGI(const std::string& file, std::map<std::string, std::strin
     {
         if (binary.empty())
         {
-            q->cgi = new CGI(file, env, q->fd, m_fds, m_fdType);
+            q->cgi = new CGI(file, env, q, m_fds, m_fdType);
 			oss << "client fd:" << q->fd << ", " << file << " is build";
         }
         else
         {
-            q->cgi = new CGI(binary, file, env, q->fd, m_fds, m_fdType);
+            q->cgi = new CGI(binary, file, env, q, m_fds, m_fdType);
 			oss << "client fd:" << q->fd << ", " << binary << " use " << file << " as argument";
         }
 		logOutMessage(oss);
@@ -221,10 +235,10 @@ TransferEncoding* Webserv::bodyManagement(ssize_t& bodySize, const std::map<std:
             ss << header;
             ss >> bodySize;
         }
-        te = new (std::nothrow)ContentLength();
+        te = new (std::nothrow)ContentLength(m_client_buffers_size[1], m_client_body_temp_path);
     }
     else
         if (header == "chunked")
-            te = new (std::nothrow)Chunked();
+            te = new (std::nothrow)Chunked(m_client_buffers_size[1], m_client_body_temp_path);
     return (te);
 }

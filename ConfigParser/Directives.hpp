@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/13 09:48:27 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/24 12:11:45 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,6 +85,12 @@ public:
 	ClientHeaderBufferSize();
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
+class ClientBodyTempPath : public Directives
+{
+public:
+	ClientBodyTempPath();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
 class KeepaliveTimeout : public Directives
 {
 public:
@@ -111,5 +117,4 @@ public:
 	CgiPass();
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
-
 #endif

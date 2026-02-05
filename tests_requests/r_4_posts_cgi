@@ -10,9 +10,9 @@ Content-Length: 33
 {"name":"Jean-Francois","age":00}POST /cgi-bin/python/inout.py HTTP/1.1
 Host:  localhost:8080
 Content-Type: application/json
-Content-Length: 23
+Content-Length: 24
 
-{"name":"Zac","age":99}POST /api HTTP/1.1
+{"name":"Zacs","age":99}POST /api HTTP/1.1
 Host: GoldorakGO.com
 Content-Type: application/json
 Content-Length: 24

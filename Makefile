@@ -6,7 +6,7 @@
 #    By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/09 13:44:18 by fabricebuyl       #+#    #+#              #
-#    Updated: 2026/01/07 10:11:13 by fabrice          ###   ########.fr        #
+#    Updated: 2026/01/24 12:22:58 by fabrice          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,7 +15,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 NAME = webserv
 
 SOURCES = QueryListener.cpp \
-	ConfigParser.cpp \
+	ConfigParser/ConfigParser.cpp \
 	ConfigParser/Node.cpp \
 	ConfigParser/NodeDirective.cpp \
 	ConfigParser/NodeBlock.cpp \

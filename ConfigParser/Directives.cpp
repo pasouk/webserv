@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/23 13:38:04 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/24 12:19:41 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -185,6 +185,25 @@ bool ClientHeaderBufferSize::areArgsValid(const std::vector<std::string>& args, 
 {
 	regex_t regex;
 	std::string pattern("^[0-9]{1,10}$");
+	
+	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
+	{
+		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)
+			if(regexec(&regex, (*it).c_str(), 0, NULL, 0) == REG_NOMATCH)
+				return (err = (*it), regfree(&regex), false);
+	}
+	return (regfree(&regex), true);
+}
+
+ClientBodyTempPath::ClientBodyTempPath() : Directives(false, 1, 1, "client_body_temp_path")
+{
+	m_memberships.push_back("http");
+}
+
+bool ClientBodyTempPath::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t regex;
+	std::string pattern("^(?:/|\\.\\/|\\.\\./)?(?:[A-Za-z0-9._*?-]+/)*$");
 	
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{

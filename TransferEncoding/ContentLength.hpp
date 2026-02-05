@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:11:14 by fabrice           #+#    #+#             */
-/*   Updated: 2026/01/05 10:24:44 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/01/26 10:32:24 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 class ContentLength : public TransferEncoding
 {
 public:
-	ContentLength();
+	ContentLength(ssize_t, const std::string&);
 	ContentLength(const ContentLength&);
 	~ContentLength();
 
