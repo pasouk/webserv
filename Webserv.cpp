@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/05 10:58:01 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/06 10:41:00 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,7 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 			static_cast<const NodeDirective*>(*it)->getClientSize(m_client_buffers_size[0]);
 		clientBufferSize = parser->getDirectives("client_body_temp_path");
 		for (std::vector<const Node*>::const_iterator it = clientBufferSize.begin(); it != clientBufferSize.end(); ++it)
-			if ((*it)->getArgs().size())
-				m_client_body_temp_path = (*it)->getArgs()[0];
+			static_cast<const NodeDirective*>(*it)->getGetBodyTempFile(m_client_body_temp_path);
 		KeepaliveTimeout = parser->getDirectives("keepalive_timeout");
 		for (std::vector<const Node*>::const_iterator it = KeepaliveTimeout.begin(); it != KeepaliveTimeout.end(); ++it)
 			static_cast<const NodeDirective*>(*it)->getClientsTimeout(m_keepalive_timeout);

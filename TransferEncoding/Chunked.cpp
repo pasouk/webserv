@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:31:14 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/04 13:52:11 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/06 10:09:17 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,7 +56,7 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
                     ofs.open(q->bodyFile.c_str(), std::ios::binary);
                     if (!ofs.is_open())
                     {
-                        oss << "fail to create: " << q->bodyFile << " tempory file" << std::endl;;
+                        oss << " fail to create: " << q->bodyFile << " tempory file" << std::endl;;
                         logErrMessage(oss);  
                     }
                     else

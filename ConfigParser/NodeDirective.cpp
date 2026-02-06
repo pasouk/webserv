@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   NodeDirective.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbuyl <fbuyl@student.42.fr>                +#+  +:+       +#+        */
+/*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 11:46:14 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2025/11/03 10:51:51 by fbuyl            ###   ########.fr       */
+/*   Updated: 2026/02/06 10:38:08 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,10 +95,19 @@ int NodeDirective::getHttpMethod(size_t i, HttpMethod& m) const
 
 	if (m_name != "limit_except" || i >= getArgs().size())
 		return (1);
-
 	for (int method = GET; method != UNKNOWN; ++method)
 		met[methods_map[method].name] = methods_map[method].value;
 	m = met[getArgs()[i]];
 	return (0);	
+}
+
+int NodeDirective::getGetBodyTempFile(std::string& file) const
+{
+	if (m_name != "client_body_temp_path" || !getArgs().size())
+		return (1);
+	file = getArgs()[0];
+	if (mkdir(file.c_str(), 0755))
+		return (-1);
+	return (0);
 }
 
