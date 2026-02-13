@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/06 10:44:07 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/11 10:31:59 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,11 @@
 /*
 //GET
 curl "http://localhost:8080/cgi-bin/python/add.py?a=5&b=3"
+curl "http://localhost:8080/cgi-bin/sub.py?a=5&b=3"
 
 //POST
+curl -X POST "http://localhost:8080/directory/youpi.bla?zozo=2" -d "yoyo"
+curl -X POST "http://localhost:8080/directory/youpi.bla/dir1/dir2?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/directory/youpla.bla" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi_tester/c++?zozo=2" -d "yoyo"
 curl -X POST "http://localhost:8080/cgi-bin/test.bla?zozo=2" -d "PATH_INFO is set to /cgi-bin/test.bla"
@@ -72,6 +75,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 			ss << q->encoding->getBodySize();
 			env["CONTENT_LENGTH"] = ss.str();
 		}
+			std::cout << "BINARY: " <<  httpPath.location->cgi_pass << std::endl;
 		if (createCGI(httpPath.path_updated, env, q, httpPath.location->cgi_pass))
 		{
 			oss << "CGI can't be build.:";

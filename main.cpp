@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/05 13:57:09 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/07 16:53:36 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,7 +153,7 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 				"HTTP/1.1 200 OK\r\n"
 				"Content-Type: text/plain\r\n"
 				"Content-Length: " + ss.str() + "\r\n"
-				"Connection: close\r\n"
+				//"Connection: close\r\n"
 				"\r\n"
 				+ cgi->getResponse();
 			response = responseBuild;
@@ -182,10 +182,30 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 					return;
 				}
 			}
-		}
-
+		} 
 		resolvePath(r, s, root, path, foundLoc);
+		
 
+
+
+		
+		/*if (path == "./YoupiBanane/youpla.bla")
+		{
+			std::cout << "SIZE RESPONSE: " << response.length() << std::endl;
+			std::string responseBuild =
+				"HTTP/1.1 200 OK\r\n"
+				"Content-Type: text/plain\r\n"
+				"Content-Length: 100000000\r\n"
+				//"Connection: close\r\n"
+				"\r\n";
+			response = responseBuild;
+			return ;	
+		}*/
+
+
+
+
+		
 		//ICI CE N'EST PAS UN CGI
 		//response
 		std::cout << "[DEBUG onResponse] After resolvePath - root='" << root << "' path='" << path << "'" << std::endl;

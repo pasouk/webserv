@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/06 10:41:00 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/10 10:31:27 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -115,6 +115,13 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					if (n == -2)
 					{
 						onResponse(q->formatedResponse, q->cgi, *q->httpParser, getRightServer(q));
+						/*oss << "Deconnected client fd:" << m_fds[i].fd;
+						logOutMessage(oss);
+						destroyClient(fd);*/
+
+
+
+
 						//releaseQueries(q->fd);
 						delete (q->cgi);
 						q->cgi = NULL;
@@ -172,6 +179,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					m_fds[i].events |= POLLOUT;
 				else if (m_fds[i].events & POLLOUT)
 				{
+					//std::cout << "NUM QUERIES: " << m_queries.size() << std::endl;
 					m_fds[i].events &= ~POLLOUT;
 					/*oss << "Deconnected client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
@@ -316,6 +324,8 @@ int Webserv::sendQuery(int fd)
 					(*it).byteSent += n;
 					if ((*it).byteSent == (*it).formatedResponse.size())
 					{
+						//std::cout << "TO CLIENT: " << (*it).formatedResponse << std::endl;
+						//sleep(5);
 						(*it).formatedResponse = "";
 						(*it).byteSent = 0;
 						break ;

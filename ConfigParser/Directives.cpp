@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/24 12:19:41 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/12 11:16:58 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,8 +136,8 @@ Location::Location() : Directives(true, 1, 1, "location")
 bool Location::areArgsValid(const std::vector<std::string>& args, std::string& err) const
 {
 	regex_t regex;
-	std::string pattern("^/([A-Za-z0-9._*?-]+/)*([A-Za-z0-9._*?-]+)?$");
-	
+	std::string pattern("^(/([A-Za-z0-9._*?-]+/)*([A-Za-z0-9._*?-]+)?|[A-Za-z0-9._*?-]+)$");
+
 	if(regcomp(&regex, pattern.c_str(), REG_EXTENDED) == 0)
 	{
 		for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/04 10:26:03 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/12 10:52:06 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 # include <deque>
 # include <map>
 # include <ctime>
-# include <glob.h>
+# include <fnmatch.h>
 # include "ContentLength.hpp"
 # include "Chunked.hpp"
 # include "CGI.hpp"
@@ -90,7 +90,6 @@ private:
 	int createCGI(const std::string&, std::map<std::string, std::string>&, s_query*&, std::string&);
 	bool getCgiQuery(int, s_query*&);
 	void updatePathAndLocation(s_location&, std::string&, const s_server&) const;
-	const s_http_path& parseHttpPath(s_http_path&, s_server, std::string&);
 	s_http_path getLocationFromServer(s_server&, const ParserHttpRequest&);
 	TransferEncoding* bodyManagement(ssize_t&, const std::map<std::string, std::string>&);
 };
