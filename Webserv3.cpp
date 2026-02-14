@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/13 10:32:33 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/14 14:06:25 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -232,4 +232,24 @@ TransferEncoding* Webserv::bodyManagement(ssize_t& bodySize, const std::map<std:
         if (header == "chunked")
             te = new (std::nothrow)Chunked(m_client_buffers_size[1], m_client_body_temp_path);
     return (te);
+}
+
+void Webserv::addEnvMetaVariables(const std::map<std::string, std::string>& http, std::map<std::string, std::string>& env)
+{
+    (void)env;
+    std::string meta;
+    std::map<std::string, std::string> _http = http;
+
+    for (std::map<std::string, std::string>::const_iterator it = http.begin(); it != http.end(); ++it)
+        if ((*it).first.find("X-") != std::string::npos)
+        {
+            meta = (*it).first;
+            meta = meta.insert(0, "HTTP_");
+            for (size_t i = 0; i < meta.size(); ++i)
+                if (meta[i] == '-')
+                    meta[i] = '_';
+                else
+                    meta[i] = std::toupper(static_cast<unsigned char>(meta[i]));
+            env[meta] = (*it).second;
+        } 
 }

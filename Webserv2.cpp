@@ -6,14 +6,17 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/11 10:31:59 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/14 14:06:55 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
 //CGI TESTS
+
 /*
+./tester http://localhost:8080
+
 //GET
 curl "http://localhost:8080/cgi-bin/python/add.py?a=5&b=3"
 curl "http://localhost:8080/cgi-bin/sub.py?a=5&b=3"
@@ -28,7 +31,6 @@ curl -X POST "http://localhost:8080/cgi-bin/python/hello.py?zozo=2" -d "PATH_INF
 curl -X POST "http://localhost:8080/cgi-bin/python/hello.py/c++?zozo=2" -d "PATH_INFO is set to /c++"
 curl -X POST "http://localhost:8080/cgi-bin/test.bla" -d "message=Hello+World"
 curl -X POST "http://localhost:8080/cgi-bin/cgi_tester" -d "message=Hello+World"
-./tester http://localhost:8080
 curl "http://localhost:4098/cgi-bin/python/cgi1.py/foo/youpla/houp?name=toto&age=12"
 curl "http://localhost:4098/cgi-bin/python/hello.py/foo/youpla/houp?name=toto&age=12"
 curl "http://localhost:4098/cgi-bin/python/cgi1.py?name=toto&age=12"
@@ -53,6 +55,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	httpPath = getLocationFromServer(s, *q->httpParser);
 	if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))
 	{
+		addEnvMetaVariables(q->httpParser->getHeaders(), env);
 		env["SCRIPT_FILENAME"] = httpPath.path_updated;
         env["PATH_INFO"] = httpPath.path_info;
 		if (env["PATH_INFO"].empty())
@@ -75,7 +78,6 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 			ss << q->encoding->getBodySize();
 			env["CONTENT_LENGTH"] = ss.str();
 		}
-			std::cout << "BINARY: " <<  httpPath.location->cgi_pass << std::endl;
 		if (createCGI(httpPath.path_updated, env, q, httpPath.location->cgi_pass))
 		{
 			oss << "CGI can't be build.:";

@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/10 10:31:27 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/13 12:08:58 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,11 +118,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 						/*oss << "Deconnected client fd:" << m_fds[i].fd;
 						logOutMessage(oss);
 						destroyClient(fd);*/
-
-
-
-
 						//releaseQueries(q->fd);
+						
 						delete (q->cgi);
 						q->cgi = NULL;
 						break ;

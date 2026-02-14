@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/06 14:48:23 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/13 12:11:26 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -337,7 +337,10 @@ int CGI::writeCGI(const std::string& body_file)
             if (remove(body_file.c_str()) != 0)
                 oss << "fail to delete: " << body_file << " tempory file" << std::endl;
             else
+            {
                 oss << "tempory file " << body_file << " deleted";
+                m_client->bodyFile = "";
+            }
             logErrMessage(oss);                 
             break;
         }       

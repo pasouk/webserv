@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/12 10:52:06 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/14 12:14:46 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,6 +92,7 @@ private:
 	void updatePathAndLocation(s_location&, std::string&, const s_server&) const;
 	s_http_path getLocationFromServer(s_server&, const ParserHttpRequest&);
 	TransferEncoding* bodyManagement(ssize_t&, const std::map<std::string, std::string>&);
+    void addEnvMetaVariables(const std::map<std::string, std::string>&, std::map<std::string, std::string>&);
 };
 
 #endif
