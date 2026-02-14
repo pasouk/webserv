@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:31:14 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/06 10:09:17 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/14 14:25:33 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ loadType Chunked::loadBody1(char* buffer, ssize_t& n, s_query*& q, ssize_t& i, b
 loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
 {
     (void)n;
-    static int cpt, l;
+    static int cpt, numChunk;
     static std::ofstream ofs;   
     std::ostringstream oss;
     static std::pair<char*, ssize_t> chunk;
@@ -56,7 +56,7 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
                     ofs.open(q->bodyFile.c_str(), std::ios::binary);
                     if (!ofs.is_open())
                     {
-                        oss << " fail to create: " << q->bodyFile << " tempory file" << std::endl;;
+                        oss << " fail to create: " << q->bodyFile << " tempory file" << std::endl;
                         logErrMessage(oss);  
                     }
                     else
@@ -68,7 +68,10 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
                         }
                 }
             }
-            std::cerr << "CHUNKED N°:" << ++l << std::endl;
+            oss << "client fd:" << q->fd << ", chunk n°:" << ++numChunk << " added";
+            if (!q->bodyFile.empty())
+                oss << " to " << q->bodyFile;
+            logErrMessage(oss);  
             m_header = "";
             m_bItsHead = false;
         }
@@ -80,7 +83,7 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
         {
             if (chunk.second == 0)
             {
-                l = 0;
+                numChunk = 0;
                 m_data = "";
                 m_bItsHead = true;
                 ofs.close();

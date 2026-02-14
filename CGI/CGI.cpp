@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/13 12:11:26 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/14 14:35:32 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -356,7 +356,6 @@ int CGI::writeCGI(const std::string& body_file)
             maxSize = static_cast<ssize_t>(ifs.gcount());
        }
     }
-    std::cout << "OUT WRITECGI: " << m_wrote << "/" << m_total << std::endl;
     return (n);
 }
 
@@ -383,10 +382,7 @@ int CGI::readCGI()
         m_wrote = 0;
         if (m_total)
             m_response = m_response.substr(m_response.length() - getTotal(), getTotal());
-    }
-
-    std::cout << "SIZE: " << m_response.length() << std::endl;   
-    
+    }    
     return (n);
 }
 
