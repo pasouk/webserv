@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/13 12:08:58 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/16 12:28:56 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,7 @@ Webserv::Webserv(ConfigParser* parser) : m_keepalive_timeout(KEEPALIVE_TIMEOUT)
 
 Webserv::~Webserv()
 {
-	cleanWebserv();
+	//cleanWebserv();
 }
 
 void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&))
@@ -176,9 +176,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					m_fds[i].events |= POLLOUT;
 				else if (m_fds[i].events & POLLOUT)
 				{
-					//std::cout << "NUM QUERIES: " << m_queries.size() << std::endl;
 					m_fds[i].events &= ~POLLOUT;
-					/*oss << "Deconnected client fd:" << m_fds[i].fd;
+					/*oss << "Deconnected TATA client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
 					destroyClient(fd);*/
 					break ;
@@ -272,7 +271,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 			{
 				buffers[n] = '\0';
 				ret = tcpStream(buffers, n, client, onResponse, bDelete);
-				if(ret < 0)
+				if(ret < 0 || !g_listening)
 				{
 					if (bDelete)
 					{
@@ -314,15 +313,26 @@ int Webserv::sendQuery(int fd)
 			{
 				if(getClient(fd, client))
 					client->lifeTime = std::time(NULL);
+
+
+				if (g_next)
+					std::cout << "GNEXT: n:" << n << " , RESPONSE: " << (*it).formatedResponse << std::endl;
+
+
+
 				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
 					, (*it).formatedResponse.size() - (*it).byteSent, 0);
 				if (n > 0)
 				{
+
+
+					if (g_next)
+						 std::cout << "GNEXT: WE HAVE SENT: " << n << " BYTES\n"; 
+
+
 					(*it).byteSent += n;
 					if ((*it).byteSent == (*it).formatedResponse.size())
 					{
-						//std::cout << "TO CLIENT: " << (*it).formatedResponse << std::endl;
-						//sleep(5);
 						(*it).formatedResponse = "";
 						(*it).byteSent = 0;
 						break ;
@@ -339,7 +349,7 @@ int Webserv::sendQuery(int fd)
 					logOutMessage(oss);
 				}
 			}
-			while (n > 0);
+			while (n > 0 && g_listening);
 		}
 	}
 	return (n);
@@ -511,6 +521,22 @@ const std::vector<std::string> Webserv::getDiretiveValue(const Node* server, con
 void Webserv::cleanWebserv()
 {
 	stopListening();
+	for (size_t g = 0; g < m_clients.size(); ++g)
+	{
+		delete(m_clients[g].httpParser);
+		m_clients[g].httpParser= NULL;
+
+		delete(m_clients[g].encoding);
+		m_clients[g].encoding = NULL;
+	}
+	for (size_t g = 0; g < m_queries.size(); ++g)
+	{
+		delete(m_queries[g].httpParser);
+		m_queries[g].httpParser = NULL;
+
+		delete(m_queries[g].encoding);
+		m_queries[g].encoding = NULL;
+	}
 	for (std::vector<const QueryListener*>::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
 		delete (*it);
 	m_listeners.clear();

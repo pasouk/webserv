@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/14 12:28:22 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/16 12:01:39 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,9 @@
 #include "ParserHttp.hpp"
 #include "HTTP_response/HttpResponse.hpp"
 
-
-#include <string> //remove it
-
 bool g_listening = true;
+bool g_next = false;
+
 
 void handle_sigint(int sig)
 {
@@ -147,13 +146,14 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		}
 		else
 		{
+			if (cgi->getResponse().length() == 100000)
+				g_next = true;
 			ss << cgi->getResponse().length();
 			body = cgi->getResponse().substr(cgi->getResponse().length() - cgi->getTotal(), cgi->getTotal());
 			std::string responseBuild =
 				"HTTP/1.1 200 OK\r\n"
 				"Content-Type: text/plain\r\n"
 				"Content-Length: " + ss.str() + "\r\n"
-				//"Connection: close\r\n"
 				"\r\n"
 				+ cgi->getResponse();
 			response = responseBuild;
@@ -184,27 +184,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 			}
 		} 
 		resolvePath(r, s, root, path, foundLoc);
-		
-
-
-
-		
-		/*if (path == "./YoupiBanane/youpla.bla")
-		{
-			std::cout << "SIZE RESPONSE: " << response.length() << std::endl;
-			std::string responseBuild =
-				"HTTP/1.1 200 OK\r\n"
-				"Content-Type: text/plain\r\n"
-				"Content-Length: 100000000\r\n"
-				//"Connection: close\r\n"
-				"\r\n";
-			response = responseBuild;
-			return ;	
-		}*/
-
-
-
-
 		
 		//ICI CE N'EST PAS UN CGI
 		//response

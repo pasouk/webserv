@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/14 14:06:55 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/16 11:14:40 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -177,23 +177,28 @@ void Webserv::releaseQueries(int fd)
 
 void Webserv::destroyClient(int fd)
 {
-	close(fd);
 	releaseQueries(fd);
 	for (size_t j = 0; j < m_clients.size(); ++j)
+	{
 		if (fd == m_clients[j].fd)
 		{
+			close(m_fds[j].fd);
 			if (!m_clients[j].bodyFile.empty())
 				remove(m_clients[j].bodyFile.c_str());
 			m_clients.erase(m_clients.begin() + j);
 			break ;
 		}
+	}
 	for (size_t i = 0; i < m_fds.size(); ++i)
+	{
 		if (fd == m_fds[i].fd)
 		{
+			close(m_fds[i].fd);
 			m_fds.erase(m_fds.begin() + i);
 			m_fdType.erase(m_fdType.begin() + i);
 			break ;
 		}
+	}
 }
 
 bool Webserv::keepAlive(int fd, double sec)
