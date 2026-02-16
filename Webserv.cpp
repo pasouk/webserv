@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/16 12:28:56 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/16 14:28:15 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -176,7 +176,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					m_fds[i].events |= POLLOUT;
 				else if (m_fds[i].events & POLLOUT)
 				{
-					m_fds[i].events &= ~POLLOUT;
+					//m_fds[i].events &= ~POLLOUT;
 					/*oss << "Deconnected TATA client fd:" << m_fds[i].fd;
 					logOutMessage(oss);
 					destroyClient(fd);*/
@@ -313,23 +313,10 @@ int Webserv::sendQuery(int fd)
 			{
 				if(getClient(fd, client))
 					client->lifeTime = std::time(NULL);
-
-
-				if (g_next)
-					std::cout << "GNEXT: n:" << n << " , RESPONSE: " << (*it).formatedResponse << std::endl;
-
-
-
 				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
 					, (*it).formatedResponse.size() - (*it).byteSent, 0);
 				if (n > 0)
 				{
-
-
-					if (g_next)
-						 std::cout << "GNEXT: WE HAVE SENT: " << n << " BYTES\n"; 
-
-
 					(*it).byteSent += n;
 					if ((*it).byteSent == (*it).formatedResponse.size())
 					{

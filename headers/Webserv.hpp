@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/16 12:00:31 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/16 14:26:56 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,6 @@
 # define MAX_BODY_SIZE 8192
 
 extern bool g_listening;
-extern bool g_next;
 
 struct s_http_path
 {

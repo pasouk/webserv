@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/16 12:01:39 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/16 14:27:22 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,6 @@
 #include "HTTP_response/HttpResponse.hpp"
 
 bool g_listening = true;
-bool g_next = false;
-
 
 void handle_sigint(int sig)
 {
@@ -146,8 +144,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		}
 		else
 		{
-			if (cgi->getResponse().length() == 100000)
-				g_next = true;
 			ss << cgi->getResponse().length();
 			body = cgi->getResponse().substr(cgi->getResponse().length() - cgi->getTotal(), cgi->getTotal());
 			std::string responseBuild =
@@ -184,7 +180,7 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 			}
 		} 
 		resolvePath(r, s, root, path, foundLoc);
-		
+
 		//ICI CE N'EST PAS UN CGI
 		//response
 		std::cout << "[DEBUG onResponse] After resolvePath - root='" << root << "' path='" << path << "'" << std::endl;
