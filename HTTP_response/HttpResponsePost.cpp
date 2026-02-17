@@ -214,19 +214,32 @@ void HttpResponse::buildPost()
 
     //pour l'instant, a changer pllus tard
     setUploadDir("uploads/");
-    if (contentLen.empty())
+
+    size_t declaredLen = 0;
+    if (!contentLen.empty())
     {
-        HttpResponseError(400, "Bad Request");
-        return;
+        std::stringstream ssLen(contentLen);
+        ssLen >> declaredLen;
+    }
+    else
+    {
+        declaredLen = _ParsedRequest.getBodyLine().size();
     }
 
-    // Enforce client/body size limit (location or server default)
-    size_t declaredLen = 0;
-    std::stringstream ssLen(contentLen);
-    ssLen >> declaredLen;
     if (declaredLen > _LocationMaxBodySize)
     {
         HttpResponseError(413, "Request Entity Too Large");
+        return;
+    }
+
+    if (declaredLen == 0)
+    {
+        _status_code = 200;
+        _reason_phrase = "OK";
+        _body = "File uploaded successfully";
+        _headers["Content-Length"] = toString(_body.size());
+        _headers["Content-Type"] = "text/plain";
+        serialize();
         return;
     }
 

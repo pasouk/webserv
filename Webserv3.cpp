@@ -130,11 +130,12 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
     size_t pos;
     std::string by;
     std::string fileName, pathLocation;
+    std::string prefix = loc.concatOrReplace;
 
-    fileName = getFilename(loc.concatOrReplace.c_str());
+    fileName = getFilename(prefix.c_str());
     if (!fileName.empty())
-        loc.concatOrReplace = loc.concatOrReplace.substr(0, loc.concatOrReplace.length() - fileName.length());
-    pos = path.find(loc.concatOrReplace);
+        prefix = prefix.substr(0, prefix.length() - fileName.length());
+    pos = path.find(prefix);
     if (pos != std::string::npos)
     {
         if (loc.type == LOCATION_ROOT)
@@ -142,17 +143,17 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
             by = loc.by;
             if (loc.by[loc.by.length() - 1] == '/')
                 by = loc.by.substr(0, loc.by.length() - 1);
-            pathLocation = by + loc.concatOrReplace;
-            path.replace(pos, loc.concatOrReplace.size(), pathLocation);
+            pathLocation = by + prefix;
+            path.replace(pos, prefix.size(), pathLocation);
 
         }
         else if (loc.type == LOCATION_ALIAS)
-        {            
+        {
             by = loc.by;
             if (loc.by[loc.by.length() - 1] != '/')
                 by = loc.by + "/";
             pathLocation = by;
-            path.replace(pos, loc.concatOrReplace.size(), pathLocation);
+            path.replace(pos, prefix.size(), pathLocation);
         }
         else
         {
