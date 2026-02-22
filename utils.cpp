@@ -54,14 +54,14 @@ std::string currentDateTime()
 
 void logOutMessage(std::ostringstream& oss)
 {
-    std::cout << currentDateTime() << " " << getpid() << " " << getppid() << " " << oss.str() << std::endl;
+    std::cout << currentDateTime() << " " << oss.str() << std::endl;
     oss.str("");
     oss.clear();
 }
 
 void logErrMessage(std::ostringstream& oss)
 {
-    std::cerr << currentDateTime() << " " << getpid() << " " << getppid() << " " << oss.str() << std::endl;
+    std::cerr << currentDateTime() << " " << oss.str() << std::endl;
     oss.str("");
     oss.clear();
 }

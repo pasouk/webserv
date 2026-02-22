@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/16 11:14:40 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/22 14:54:36 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,6 +89,7 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
 	m_queries.push_back(*q);
 	//printQuery(*q);
+	q->bodyFile = "";
 	q->httpRequest.clear();
 	q->bodySize = 0;
 	q->byteSent = 0;
@@ -124,6 +125,7 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 				q->httpParser = new (std::nothrow)ParserHttpRequest(q->httpRequest);
 				if (q->httpParser == NULL)
 					return (1);
+				q->closeconnection = closeConnection(q->httpParser);
 			}
 			if (q->encoding == NULL)
 			{
@@ -142,47 +144,59 @@ int Webserv::tcpStream(char* buffer, ssize_t n, s_query*& q
 	return (0);
 }
 
-void Webserv::releaseQueries(int fd)
+bool Webserv::releaseQueries(int fd)
 {
 	for (size_t j = 0; j < m_queries.size();)
 	{
 		if (m_queries[j].fd == fd)
 		{
-			for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
-				delete [](m_queries[j].bodyChunks[k].first);
-			m_queries[j].bodyChunks.clear();
-			if (!m_queries[j].bodyFile.empty())
-				remove(m_queries[j].bodyFile.c_str());
-			if (m_queries[j].httpParser)
-			{
-				delete (m_queries[j].httpParser);
-				m_queries[j].httpParser = NULL;
-			}
-			if (m_queries[j].encoding)
-			{
-				delete (m_queries[j].encoding);
-				m_queries[j].encoding = NULL;
-			}
-			if (m_queries[j].cgi)
-			{
-				delete (m_queries[j].cgi);
-				m_queries[j].cgi = NULL;
-			}
-			m_queries.erase(m_queries.begin() + j);
+			if (!releaseQuery(j))
+				return (false);
+			std::cout << "DELETE QUERY: " << fd << std::endl;
 		}
 		else
 			j++;
 	}
+	return (true);
 }
 
-void Webserv::destroyClient(int fd)
+bool Webserv::releaseQuery(size_t j)
 {
-	releaseQueries(fd);
+	if (m_queries[j].cgi)
+		return (false);
+	for (size_t k = 0; k < m_queries[j].bodyChunks.size(); ++k)
+		delete [](m_queries[j].bodyChunks[k].first);
+	m_queries[j].bodyChunks.clear();
+	if (!m_queries[j].bodyFile.empty())
+		remove(m_queries[j].bodyFile.c_str());
+	if (m_queries[j].httpParser)
+	{
+		delete (m_queries[j].httpParser);
+		m_queries[j].httpParser = NULL;
+	}
+	if (m_queries[j].encoding)
+	{
+		delete (m_queries[j].encoding);
+		m_queries[j].encoding = NULL;
+	}
+	if (m_queries[j].cgi)
+	{
+		delete (m_queries[j].cgi);
+		m_queries[j].cgi = NULL;
+	}
+	m_queries.erase(m_queries.begin() + j);
+	return (true);
+}
+
+bool Webserv::destroyClient(int fd)
+{
+	close(fd);
+	if (!releaseQueries(fd))
+		return (false);
 	for (size_t j = 0; j < m_clients.size(); ++j)
 	{
 		if (fd == m_clients[j].fd)
 		{
-			close(m_fds[j].fd);
 			if (!m_clients[j].bodyFile.empty())
 				remove(m_clients[j].bodyFile.c_str());
 			m_clients.erase(m_clients.begin() + j);
@@ -199,9 +213,10 @@ void Webserv::destroyClient(int fd)
 			break ;
 		}
 	}
+	return (true);
 }
 
-bool Webserv::keepAlive(int fd, double sec)
+bool Webserv::timeOut(int fd, double sec)
 {
 	std::ostringstream oss;
 	double delay;

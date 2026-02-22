@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/26 09:57:41 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/04 10:47:49 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/22 14:05:34 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ enum locationType
 struct s_query
 {
 	s_query() : fd(-1), cgi(NULL), httpParser(NULL), bodySize(0), port(0)
-		,encoding(NULL)  {}
+		,encoding(NULL), closeconnection(false)  {}
 
 	int							fd;
 	CGI*						cgi;
@@ -37,6 +37,7 @@ struct s_query
 	ssize_t						bodySize;
 	uint16_t 					port;
 	TransferEncoding*			encoding;
+	bool						closeconnection;
 	time_t						lifeTime;
 	size_t						byteSent;
 	std::string					host;

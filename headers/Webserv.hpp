@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/16 14:26:56 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/21 13:49:02 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,13 +76,14 @@ private:
 	int readQuery(int, void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&));
 	int sendQuery(int);
 	void stopListening();
-	void destroyClient(int);
-	void releaseQueries(int);
+	bool destroyClient(int);
+	bool releaseQueries(int);
+	bool releaseQuery(size_t);
 	int responseHook(s_query*&,  void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&));
 	int tcpStream(char* buffer, ssize_t, s_query*&
 		, void (*)(std::string&, CGI*, ParserHttpRequest&, s_server&), bool&);
-	bool clientNeedsAnswer(int) const;
-	bool keepAlive(int, double);
+	bool keepAlive(int);
+	bool timeOut(int, double);
 	bool getClient(int, s_query*&);
 	const std::vector<std::string> getDiretiveValue(const Node*, const std::vector<const Node*>) const;
 	s_server& getRightServer(s_query*&);
@@ -93,6 +94,7 @@ private:
 	s_http_path getLocationFromServer(s_server&, const ParserHttpRequest&);
 	TransferEncoding* bodyManagement(ssize_t&, const std::map<std::string, std::string>&);
     void addEnvMetaVariables(const std::map<std::string, std::string>&, std::map<std::string, std::string>&);
+	bool closeConnection(ParserHttpRequest*) const;
 };
 
 #endif

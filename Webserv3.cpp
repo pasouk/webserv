@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/16 10:00:43 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/18 15:21:31 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -253,4 +253,22 @@ void Webserv::addEnvMetaVariables(const std::map<std::string, std::string>& http
                     meta[i] = std::toupper(static_cast<unsigned char>(meta[i]));
             env[meta] = (*it).second;
         } 
+}
+
+bool Webserv::closeConnection(ParserHttpRequest* http) const
+{
+    std::map<std::string, std::string> headers;
+    std::string header;
+
+    headers = http->getHeaders();
+    header = headers["Connection"];
+    if (!header.empty())
+    {
+        if (header == "close")
+        {
+            std::cout << "CLOSE CONNECTION\n";
+            return (true);
+        }
+    }
+    return (false);
 }

@@ -78,7 +78,7 @@ void HttpResponse::buildFullPathGet()
     std::cout << "[DEBUG buildFullPathGet] Final fullPath='" << _fullPath << "'" << std::endl;
     {
         std::ostringstream oss;
-        oss << "buildFullPathGet -> root:'" << _root << "' path:'" << _ParsedRequest.getPath() << "' full:'" << _fullPath << "'";
+        oss << " -> root:'" << _root << "' path:'" << _ParsedRequest.getPath() << "' full:'" << _fullPath << "'";
         logOutMessage(oss);
     }
 }

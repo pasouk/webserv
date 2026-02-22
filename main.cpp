@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/16 14:27:22 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/21 17:47:47 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,11 +26,11 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
 {
     mappedPath = r.getPath();
     root = s.root;
-    std::cout << "[DEBUG resolvePath] Initial - path='" << mappedPath << "' root='" << root << "'" << std::endl;
+    //std::cout << "[DEBUG resolvePath] Initial - path='" << mappedPath << "' root='" << root << "'" << std::endl;
 
     if (s.locations.empty())
     {
-        std::cout << "[DEBUG resolvePath] No locations, returning with root='" << root << "'" << std::endl;
+        //std::cout << "[DEBUG resolvePath] No locations, returning with root='" << root << "'" << std::endl;
         return;
     }
 
@@ -56,14 +56,14 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
 
     if (bestIndex == -1)
     {
-        std::cout << "[DEBUG resolvePath] No matching location, using default root='" << root << "'" << std::endl;
+        //std::cout << "[DEBUG resolvePath] No matching location, using default root='" << root << "'" << std::endl;
         foundLocation = s_location();  // Initialize with empty location
         return;
     }
 
     const s_location &loc = s.locations[bestIndex];
     foundLocation = loc;  // Store the found location
-    std::cout << "[DEBUG resolvePath] Matched location " << bestIndex << " with prefix='" << loc.concatOrReplace << "'" << std::endl;
+    //std::cout << "[DEBUG resolvePath] Matched location " << bestIndex << " with prefix='" << loc.concatOrReplace << "'" << std::endl;
 
     // Remainder after removing prefix
     size_t prefix_len = loc.concatOrReplace.size();
@@ -78,7 +78,7 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
     if (loc.type == LOCATION_ROOT)
     {
         root = loc.by;
-        std::cout << "[DEBUG resolvePath] ROOT location - new root='" << root << "'" << std::endl;
+        //std::cout << "[DEBUG resolvePath] ROOT location - new root='" << root << "'" << std::endl;
 
         std::string newReqPath = remainder;
 
@@ -87,7 +87,7 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
         else if (newReqPath[0] != '/')
             newReqPath = "/" + newReqPath;
 
-        std::cout << "[DEBUG resolvePath] ROOT location - new path='" << newReqPath << "'" << std::endl;
+        //std::cout << "[DEBUG resolvePath] ROOT location - new path='" << newReqPath << "'" << std::endl;
         r.setPath(newReqPath);
         mappedPath = newReqPath;
     }
@@ -113,12 +113,12 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
         // With alias, the path IS the complete path (no root concatenation)
         root = "";
         
-        std::cout << "[DEBUG resolvePath] ALIAS location - new path='" << newReqPath << "' root='" << root << "'" << std::endl;
+        //std::cout << "[DEBUG resolvePath] ALIAS location - new path='" << newReqPath << "' root='" << root << "'" << std::endl;
 
         r.setPath(newReqPath);
         mappedPath = newReqPath;
     }
-    std::cout << "[DEBUG resolvePath] Final - path='" << mappedPath << "' root='" << root << "'" << std::endl;
+    //std::cout << "[DEBUG resolvePath] Final - path='" << mappedPath << "' root='" << root << "'" << std::endl;
 }
 
 void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server& s)
@@ -167,7 +167,7 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 			{
 				if (s.locations[i].concatOrReplace == pathWithSlash)
 				{
-					std::cout << "[DEBUG onResponse] Redirecting '" << requestedPath << "' to '" << pathWithSlash << "' with 301" << std::endl;
+					//std::cout << "[DEBUG onResponse] Redirecting '" << requestedPath << "' to '" << pathWithSlash << "' with 301" << std::endl;
 					std::ostringstream redirectResponse;
 					redirectResponse << "HTTP/1.1 301 Moved Permanently\r\n"
 						<< "Location: " << pathWithSlash << "\r\n"
@@ -183,7 +183,7 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 
 		//ICI CE N'EST PAS UN CGI
 		//response
-		std::cout << "[DEBUG onResponse] After resolvePath - root='" << root << "' path='" << path << "'" << std::endl;
+		//std::cout << "[DEBUG onResponse] After resolvePath - root='" << root << "' path='" << path << "'" << std::endl;
 		HttpResponse response1(r, r.getError());
 		response1.setRoot(root);
 		response1.setMatchedLocation(foundLoc);
@@ -191,7 +191,7 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		//response1.setServerMethods(s.httpMethodsAllowed);
 		response1.HttpResponseManager();
 		response = response1.getFormatedResponse();
-		std::cout << Colors::CYAN << response << Colors::RESET << std::endl;
+		//std::cout << Colors::CYAN << response << Colors::RESET << std::endl;
 	}
 }
 

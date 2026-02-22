@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/14 14:35:32 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/19 14:57:03 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -390,8 +390,8 @@ int CGI::buildCGI()
 {
     std::ostringstream oss;
     
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGTERM, SIG_IGN);
+    //signal(SIGPIPE, SIG_IGN);
+    //signal(SIGTERM, SIG_IGN);
     if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
     if (fcntl(m_pipe_in[0], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[1], F_SETFL, O_NONBLOCK) == -1)
