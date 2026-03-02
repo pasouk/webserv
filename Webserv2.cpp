@@ -87,6 +87,19 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	}
 	q->formatedResponse = "";
 	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
+	// Access log: one line per request, nginx-style  "METHOD /path HTTP/x.x" → STATUS
+	{
+		std::string status = "-";
+		if (q->formatedResponse.size() >= 12)
+			status = q->formatedResponse.substr(9, 3);
+		oss << "\033[34m" << q->host << " fd:" << q->fd << " \""
+			<< methods_map[q->httpParser->getMethod()].name << " "
+			<< q->httpParser->getPath() << " "
+			<< q->httpParser->getVersion() << "\" -> " << status << "\033[0m";
+		logOutMessage(oss);
+	}
+	// [CHANGED] Clear parsed body after response is built — frees memory, prevents reuse on next keep-alive request
+	q->httpParser->clearBody();
 	m_queries.push_back(*q);
 	//printQuery(*q);
 	q->bodyFile = "";
@@ -152,7 +165,7 @@ bool Webserv::releaseQueries(int fd)
 		{
 			if (!releaseQuery(j))
 				return (false);
-			std::cout << "DELETE QUERY: " << fd << std::endl;
+			//std::cout << "DELETE QUERY: " << fd << std::endl;
 		}
 		else
 			j++;
@@ -207,7 +220,8 @@ bool Webserv::destroyClient(int fd)
 	{
 		if (fd == m_fds[i].fd)
 		{
-			close(m_fds[i].fd);
+			// [CHANGED] Removed second close(fd) — fd already closed at the top of destroyClient(), double-close is UB
+		//close(m_fds[i].fd); // already closed above
 			m_fds.erase(m_fds.begin() + i);
 			m_fdType.erase(m_fdType.begin() + i);
 			break ;
@@ -222,6 +236,10 @@ bool Webserv::timeOut(int fd, double sec)
 	double delay;
 	s_query *client;
 
+	// [CHANGED] Don't timeout a client that has an active CGI or pending response — it's still busy
+	for (size_t i = 0; i < m_queries.size(); ++i)
+		if (m_queries[i].fd == fd && (m_queries[i].cgi || !m_queries[i].formatedResponse.empty()))
+			return (true);
 	if (getClient(fd, client))
 	{
 		delay = (std::time(NULL) - client->lifeTime);

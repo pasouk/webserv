@@ -38,6 +38,10 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 	m_directives.push_back(new ClientMaxBodySize());
 	m_directives.push_back(new Deny());
 	m_directives.push_back(new CgiPass());
+	// [CHANGED] Registered 3 new directives: error_page, autoindex, return
+	m_directives.push_back(new ErrorPage());
+	m_directives.push_back(new Autoindex());
+	m_directives.push_back(new ReturnDirective());
 	
 	getFormat(m_ast);
 }

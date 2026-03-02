@@ -1,0 +1,491 @@
+================================================================================
+                         WEBSERV - RECAP ÉVALUATION
+================================================================================
+
+avant eval : 
+- verifier que siege est installe
+
+THEORIE  Bases d'un serveur HTTP
+────────────────────────────────────────────────────────────────────────────────
+  EXPLICATION :
+  Un serveur HTTP est un programme qui écoute sur un socket TCP. Il accepte des connexions, lit la
+  requête (méthode, chemin, headers, body), construit une réponse (status line,
+  headers, body) et la renvoie. Notre serveur supporte HTTP/1.1 avec keep-alive en non bloquanr.
+
+  Cycle complet :
+    1. socket() → crée un socket TCP
+    2. bind()   → attache au port (ex: 8080)
+    3. listen() → met en écoute (backlog = 128)
+    4. poll()   → attend une activité sur les fd
+    5. accept() → accepte une connexion → nouveau fd client
+    6. read()   → lit la requête HTTP
+    7. parse    → analyse méthode, chemin, headers, body
+    8. build    → construit la réponse
+    9. write()  → envoie la réponse
+   10. retour à poll()
+
+
+THEORIE Quelle fonction pour I/O Multiplexing ?
+────────────────────────────────────────────────────────────────────────────────
+  RÉPONSE : poll()
+  Fichier : Webserv.cpp, fonction startListening()
+
+  EXPLICATION : poll() surveille simultanément plusieurs file descriptors (fd).
+  On lui passe un tableau de pollfd avec les fd à surveiller et les événements
+  attendus (POLLIN = données à lire, POLLOUT = prêt à écrire). Il bloque jusqu'à
+  ce qu'un fd soit prêt, ou jusqu'au timeout.
+
+
+THEORIE : Comment fonctionne poll() (ou select()) ?
+────────────────────────────────────────────────────────────────────────────────
+  EXPLICATION :
+  poll() prend un tableau de struct pollfd { int fd; short events; short revents; }
+  et un timeout en ms. Il retourne le nombre de fd prêts.
+
+  struct pollfd fds[N];
+  fds[0].fd = listen_fd;  fds[0].events = POLLIN;
+  fds[1].fd = client_fd;  fds[1].events = POLLIN | POLLOUT;
+
+  int n = poll(fds, N, timeout_ms);
+  // Après poll(), on vérifie fds[i].revents pour savoir qui est prêt.
+
+  Différence avec select() : poll() n'a pas de limite FD_SETSIZE (1024), et
+  l'interface est plus claire (pas de fd_set à reconstruire à chaque appel).
+
+
+THEORIE : Un seul poll() pour accept ET read/write ?
+────────────────────────────────────────────────────────────────────────────────
+ Oui, un seul poll() dans la boucle principale (Webserv.cpp,
+  startListening()). Le même appel surveille :
+    - Les fd d'écoute (SOCKET) → POLLIN → accept() → nouveau client
+    - Les fd clients (ACCEPT)  → POLLIN (lire requête) | POLLOUT (envoyer réponse)
+    - Les fd CGI (PIPE)        → POLLIN/POLLHUP (lire résultat CGI) | POLLOUT (écrire body)
+
+  La boucle principale :
+    while (g_listening) {
+        poll(m_fds.data(), m_fds.size(), 200);
+        for (chaque fd) {
+            if SOCKET  → addClient()     // accept
+            if ACCEPT  → readQuery()     // read requête
+                       → sendQuery()     // write réponse
+            if PIPE    → readCGI()       // read sortie CGI
+                       → writeCGI()      // write body vers CGI
+        }
+    }
+
+
+TEST : poll() vérifie READ et WRITE en même temps ?
+────────────────────────────────────────────────────────────────────────────────
+
+  Un seul poll() dans la boucle principale, avec des fds qui ont POLLIN ET
+  POLLOUT en même temps — pas deux boucles séparées.
+
+  FLUX :
+  1. Nouveau client → pfd.events = POLLIN seulement  (addClient, Webserv.cpp:237)
+  2. Réponse prête → m_fds[i].events |= POLLOUT      (startListening, Webserv.cpp:181)
+     → le fd a maintenant POLLIN | POLLOUT simultanément
+  3. Un seul poll() surveille TOUT :                  (Webserv.cpp:97)
+       poll(m_fds.data(), m_fds.size(), 200)
+  4. Après poll(), même iteration, même fd :          (Webserv.cpp:144-172)
+       if (revents & POLLOUT) → sendQuery(fd)      // envoyer réponse
+       if (revents & POLLIN)  → readQuery(fd, ...) // lire requête
+     POLLOUT retiré quand tout est envoyé :
+       m_fds[i].events &= ~POLLOUT;               (Webserv.cpp:149)
+
+  CE QUI SERAIT GRADE 0 :
+    poll(read_fds,  n, t);   // pour les reads
+    poll(write_fds, n, t);   // pour les writes (deux appels séparés)
+
+  CE QU'ON FAIT (correct) :
+    un seul poll() → revents & POLLIN  ? → read
+                   → revents & POLLOUT ? → write
+
+
+TEST : Un seul read OU write par client par poll() ?
+────────────────────────────────────────────────────────────────────────────────
+  RÉPONSE : Oui. Dans readQuery() (Webserv.cpp), on fait UN SEUL read() par
+  appel. Pas de boucle do/while sur le read. On retourne après la lecture et
+  on laisse poll() décider quand relire.
+
+  Code à montrer : Webserv.cpp, readQuery() :
+    n = read(client->fd, buffers, buffer_size);
+    // traitement, puis return — pas de boucle
+
+
+TEST : Vérification des erreurs sur read/recv/write/send
+────────────────────────────────────────────────────────────────────────────────
+  RÉPONSE : Toutes les valeurs de retour sont vérifiées :
+    - n > 0  : données valides, traitement normal
+    - n == 0 : connexion fermée par le client → destroyClient()
+    - n == -1 avec EAGAIN/EWOULDBLOCK : pas de données dispo (non-blocking) → ok, on continue
+    - n == -1 autre erreur → log + destroyClient()
+
+  Code : Webserv.cpp readQuery() lignes ~295-302 et sendQuery() lignes ~337-340
+
+
+TEST : errno après read/recv/write/send → grade 0
+────────────────────────────────────────────────────────────────────────────────
+  RÉPONSE : On ne vérifie PAS errno pour décider du comportement du serveur.
+  On vérifie la valeur de retour (n). errno est seulement utilisé pour les
+  messages de log (strerror(errno)), jamais pour la logique de contrôle.
+
+
+TEST : Aucun read/write sans passer par poll()
+────────────────────────────────────────────────────────────────────────────────
+  RÉPONSE : Tous les read() et write() sont dans des branches conditionnelles
+  déclenchées par poll(). Il n'y a aucun read/write sur socket en dehors de
+  la boucle poll(). Les accès fichiers (ifstream pour lire du HTML) sont hors
+  socket → autorisés.
+
+
+────────────────────────────────────────────────────────────────────────────────
+ CONFIGURATION
+────────────────────────────────────────────────────────────────────────────────
+
+TEST : Status codes HTTP corrects
+────────────────────────────────────────────────────────────────────────────────
+  curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/
+  # → 200
+
+  curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/inexistant
+  # → 404
+
+  curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8080/
+  # → 405 (POST interdit sur /)
+
+  curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8080/
+  # → 405
+
+
+TEST : Plusieurs serveurs, ports différents
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf : server alpha sur 8080, server gamma sur 9090.
+
+  curl http://localhost:8080/
+  # → site principal (html/, titre "webserv")
+
+  curl http://localhost:9090/
+  # → site gamma (html3/, titre "Affichage d'une image: chemin relatif")
+
+
+TEST : Plusieurs serveurs, hostnames différents (virtual hosting)
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf : alpha (server_name: alpha.local) et beta (server_name: beta.local)
+  tous les deux sur le port 8080.
+
+  curl -H "Host: alpha.local" http://localhost:8080/
+  # → site alpha (html/)
+
+  curl -H "Host: beta.local" http://localhost:8080/
+  # → site beta (html2/, titre "Affichage d'une image")
+
+  Ou avec --resolve 
+  curl --resolve alpha.local:8080:127.0.0.1 http://alpha.local:8080/
+  curl --resolve beta.local:8080:127.0.0.1 http://beta.local:8080/
+
+
+TEST : Page d'erreur par défaut personnalisée (404)
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf : error_page 404 ./html/custom_404.html
+
+  curl http://localhost:8080/pagequinexistepas
+  # → body = contenu de html/custom_404.html avec status 404
+
+
+TEST : Limite de taille du body client
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf : location /post_small → client_max_body_size 12
+
+  curl -X POST -H "Content-Type: plain/text" --data "BODY IS HERE" http://localhost:8080/post_small
+  # → 200 (12 bytes, dans la limite)
+
+  curl -X POST -H "Content-Type: plain/text" --data "BODY IS HERE toolong" http://localhost:8080/post_small
+  # → 413 (body trop grand)
+
+
+TEST : Routes vers des répertoires différents
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf :
+    location /        → root ./html
+    location /uploads/ → alias ./uploads
+    location /media/  → alias ./html2
+
+  curl http://localhost:8080/
+  # → ./html/index.html
+
+  curl http://localhost:8080/uploads/
+  # → autoindex de ./uploads/
+
+  curl http://localhost:8080/media/
+  # → ./html2/index.html
+
+
+TEST : Fichier par défaut pour un répertoire (index)
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf : location / → index index.html
+
+  curl http://localhost:8080/
+  # → sert ./html/index.html automatiquement (pas besoin de le mettre dans l'URL)
+
+
+TEST : Méthodes acceptées par route (limit_except)
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf : location / → limit_except GET { deny all; }
+
+  curl http://localhost:8080/
+  # → 200 (GET autorisé)
+
+  curl -X DELETE http://localhost:8080/
+  # → 405 (DELETE interdit sur /)
+
+  curl -X DELETE http://localhost:8080/uploads/upload_1772127413.txt
+  # → 204 ou 200 (DELETE autorisé sur /uploads/)
+
+
+────────────────────────────────────────────────────────────────────────────────
+ BASIC CHECKS
+────────────────────────────────────────────────────────────────────────────────
+
+TEST : Requêtes GET, POST, DELETE
+────────────────────────────────────────────────────────────────────────────────
+  GET :
+    curl http://localhost:8080/
+    # → 200 + body HTML
+
+  POST (upload) :
+    curl -X POST -F "file=@html/index.html" http://localhost:8080/upload
+    # → 201
+
+  DELETE :
+    curl -X DELETE http://localhost:8080/uploads/NOM_FICHIER
+    # → 204 (fichier supprimé)
+
+
+TEST : Requête inconnue → pas de crash
+────────────────────────────────────────────────────────────────────────────────
+  nc localhost 8080
+  BLABLA / HTTP/1.1
+  Host: localhost
+  [entrée x2]
+  # → le serveur répond avec une erreur (400 ou 405) et ne crash pas
+
+
+TEST : Status codes appropriés
+────────────────────────────────────────────────────────────────────────────────
+  curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/
+  # → 200
+
+  curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/inexistant
+  # → 404
+
+  curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8080/
+  # → 405
+
+  curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: plain/text" --data "toolooooooooooong" http://localhost:8080/post_small
+  # → 413
+
+
+TEST : Upload d'un fichier et récupération
+────────────────────────────────────────────────────────────────────────────────
+  # Upload
+  curl -X POST -F "file=@html/index.html" http://localhost:8080/upload
+  # → 201, le fichier est dans ./uploads/
+
+  ls uploads/
+  # → voir le fichier uploadé
+
+  # Récupération
+  curl http://localhost:8080/uploads/NOM_DU_FICHIER
+  # → 200 + contenu du fichier
+
+
+────────────────────────────────────────────────────────────────────────────────
+ CGI
+────────────────────────────────────────────────────────────────────────────────
+  Config pour les tests CGI : utiliser tests_confs/default_tester.conf
+  (ou other.conf qui a location *.py avec cgi_pass /usr/bin/python3)
+
+  Démarrer : ./webserv other.conf
+
+TEST : CGI avec GET
+────────────────────────────────────────────────────────────────────────────────
+  curl http://localhost:8080/cgi/test.py
+  # → 200, sortie du script Python
+
+  EXPLICATION : Le serveur détecte l'extension .py, fork() + execve() python3
+  avec le fichier comme argument. Le script écrit sur stdout, le serveur lit
+  le pipe et renvoie la réponse au client.
+
+
+TEST : CGI avec POST
+────────────────────────────────────────────────────────────────────────────────
+  curl -X POST -d "message=hello" http://localhost:8080/cgi/test.py
+  # → 200, le script reçoit "message=hello" sur stdin
+
+  EXPLICATION : Le body de la requête POST est écrit sur stdin du processus CGI
+  via un pipe. La variable CONTENT_LENGTH est passée en variable d'environnement.
+
+
+TEST : CGI dans le bon répertoire (chemins relatifs)
+────────────────────────────────────────────────────────────────────────────────
+  EXPLICATION : Avant execve(), le serveur fait chdir() vers le répertoire
+  contenant le script (CGI.cpp). Ainsi les imports Python relatifs et les accès
+  fichiers fonctionnent correctement.
+
+  curl http://localhost:8080/cgi/test.py
+  # → doit fonctionner sans erreur de chemin
+
+
+TEST : Script avec erreur (gestion d'erreur CGI)
+────────────────────────────────────────────────────────────────────────────────
+  curl http://localhost:8080/cgi/error.py
+  # → 500 Internal Server Error (ZeroDivisionError dans le script)
+  # → le serveur NE CRASH PAS, il renvoie une erreur propre
+
+  EXPLICATION : Si le processus CGI se termine avec un code non-nul ou produit
+  une sortie invalide, le serveur renvoie 500 et continue de fonctionner.
+
+
+TEST : Script en boucle infinie (timeout CGI)
+────────────────────────────────────────────────────────────────────────────────
+  curl http://localhost:8080/cgi/loop.py &
+  # → la requête reste pendante (normal)
+
+  # Pendant ce temps, le serveur doit rester réactif :
+  curl http://localhost:8080/
+  # → 200 immédiat — le serveur continue de répondre aux autres clients
+
+
+────────────────────────────────────────────────────────────────────────────────
+ BROWSER CHECKS
+────────────────────────────────────────────────────────────────────────────────
+
+TEST : Headers request/response
+────────────────────────────────────────────────────────────────────────────────
+  curl -v http://localhost:8080/ 2>&1
+  # Vérifier dans la réponse :
+  #   Date: Mon, 02 Mar 2026 10:00:00 GMT
+  #   Server: webserv/1.0
+  #   Content-Type: text/html
+  #   Content-Length: XXXX
+
+
+TEST : Site statique complet
+────────────────────────────────────────────────────────────────────────────────
+  Dans le navigateur : http://localhost:8080/
+  # → page HTML avec CSS chargé, images si présentes
+
+
+TEST : URL inexistante → 404
+────────────────────────────────────────────────────────────────────────────────
+  Dans le navigateur : http://localhost:8080/cette-page-nexiste-pas
+  # → page d'erreur 404 personnalisée (html/custom_404.html)
+
+  curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/inexistant
+  # → 404
+
+
+TEST : Listing de répertoire (autoindex)
+────────────────────────────────────────────────────────────────────────────────
+  Dans le navigateur : http://localhost:8080/uploads/
+  # → liste des fichiers dans ./uploads/ avec liens cliquables
+
+  curl http://localhost:8080/uploads/
+  # → HTML généré automatiquement avec <a href="/uploads/fichier">
+
+
+TEST : Redirection
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf : location /old/ { return 301 /; }
+
+  curl -v http://localhost:8080/old/ 2>&1
+  # → HTTP/1.1 301 Moved Permanently
+  # → Location: /
+
+  # Redirect automatique slash :
+  curl -v http://localhost:8080/uploads 2>&1
+  # → HTTP/1.1 301 Moved Permanently
+  # → Location: /uploads/
+
+
+────────────────────────────────────────────────────────────────────────────────
+ PORT ISSUES
+────────────────────────────────────────────────────────────────────────────────
+
+TEST : Ports multiples, sites différents
+────────────────────────────────────────────────────────────────────────────────
+  Config other.conf : port 8080 (html/) et port 9090 (html3/)
+
+  curl http://localhost:8080/    # → "webserv" (html/)
+  curl http://localhost:9090/    # → "Affichage d'une image" (html3/)
+
+
+TEST : Même port plusieurs fois dans la config
+────────────────────────────────────────────────────────────────────────────────
+  Dans other.conf, alpha ET beta déclarent listen 127.0.0.1:8080.
+  Le deuxième bind() échoue (EADDRINUSE), createListener() retourne NULL
+  silencieusement, le serveur continue avec un seul socket sur 8080.
+  Le virtual hosting fonctionne quand même via le header Host.
+
+  EXPLICATION : Notre serveur n'arrête pas le démarrage si un port est
+  déjà utilisé — il continue avec les ports qu'il a pu binder.
+
+
+TEST : Deux instances avec ports en commun
+────────────────────────────────────────────────────────────────────────────────
+  # Terminal 1
+  ./webserv other.conf              # port 8080 + 9090
+
+  # Terminal 2
+  ./webserv /tmp/conf_second.conf   # tente 8080 (échoue) + 9999 (succès)
+
+  curl http://localhost:8080/   # → répond le processus 1
+  curl http://localhost:9999/   # → répond le processus 2
+
+  EXPLICATION : Le processus 2 démarre car createListener() catch l'exception
+  du bind raté sur 8080 et retourne NULL. Il écoute uniquement sur 9999.
+  C'est une dégradation gracieuse — mais aucune erreur n'est visible dans les
+  logs, ce qui est un point faible à assumer.
+
+
+────────────────────────────────────────────────────────────────────────────────
+ SIEGE & STRESS TEST
+────────────────────────────────────────────────────────────────────────────────
+  Démarrer le serveur : ./webserv other.conf
+  Page vide : html/empty.html (0 bytes, status 200)
+
+TEST : Disponibilité > 99.5% avec siege -b
+────────────────────────────────────────────────────────────────────────────────
+  siege -b -c 25 -t 30S http://localhost:8080/empty.html
+  # Résultat obtenu : availability 100.00%, 0 failed transactions, ~3700 req/s
+
+
+TEST : Pas de fuite mémoire
+────────────────────────────────────────────────────────────────────────────────
+  # Avant siege :
+  ps -p $(pgrep webserv) -o pid,rss --no-headers
+
+  # Lancer siege en parallèle puis remesurer :
+  siege -b -c 50 -t 60S http://localhost:8080/empty.html
+
+  # Après siege :
+  ps -p $(pgrep webserv) -o pid,rss --no-headers
+
+  # Résultat obtenu : RSS stable à 4620 kB avant, pendant et après (aucune fuite)
+
+
+TEST : Pas de connexions pendantes
+────────────────────────────────────────────────────────────────────────────────
+  # Après siege :
+  ss -tn | grep :8080
+  # → aucune connexion (0 lignes)
+
+
+TEST : Utilisation indéfinie sans redémarrage
+────────────────────────────────────────────────────────────────────────────────
+  siege -b -c 30 -t 15S http://localhost:8080/empty.html
+  siege -b -c 30 -t 15S http://localhost:8080/empty.html
+  siege -b -c 30 -t 15S http://localhost:8080/empty.html
+  # → 100% availability à chaque run, serveur stable, mémoire stable
+
+================================================================================

@@ -109,7 +109,8 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 			}
 			else if (m_fdType[i] == PIPE && getCgiQuery(fd, q))
 			{
-				if (m_fds[i].revents & POLLIN)
+				// [CHANGED] Added POLLHUP: detects CGI process exit (pipe closed) even with no remaining data
+			if (m_fds[i].revents & (POLLIN | POLLHUP))
 				{
 					n = q->cgi->readCGI();
 					if (n == -2)
@@ -126,10 +127,15 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 						n = q->cgi->writeCGI(q->bodyChunks);
 					else
 						n = q->cgi->writeCGI(q->bodyFile);
-					if (n == -2)
+					// [CHANGED] Free bodyChunks immediately after write — avoids holding 100MB×20 clients in RAM simultaneously
+				if (n == -2)
 					{
-						m_fds[i].events &= ~POLLOUT;
-						break;			
+						for (size_t k = 0; k < q->bodyChunks.size(); ++k)
+							delete[](q->bodyChunks[k].first);
+						q->bodyChunks.clear();
+						m_fds.erase(m_fds.begin() + i);
+						m_fdType.erase(m_fdType.begin() + i);
+						break;
 					}
 				}
 			}
@@ -141,34 +147,47 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					if (n <= 0)
 					{
 						m_fds[i].events &= ~POLLOUT;
-						/*if (n == -1)
-						{
-							if (destroyClient(fd))
-							{
-								oss << "Deconnected client fd:" << m_fds[i].fd;
-								logOutMessage(oss);
-							}
-						}*/
-						break ;
+						if (n == -1)
+							break ;
 					}
 				}
 				if (m_fds[i].revents & POLLIN)
 				{
-					if (readQuery(fd, onResponse) == -2)
+					int rq = readQuery(fd, onResponse);
+					if (rq == -2)
 					{
 						g_listening = false;
 						break ;
 					}
+					// [CHANGED] rq==0 = EOF: client closed connection — destroy it cleanly
+					if (rq == 0)
+					{
+						if (destroyClient(fd))
+						{
+							oss << "Deconnected client fd:" << fd;
+							logOutMessage(oss);
+						}
+						break ;
+					}
 				}
+				// [CHANGED] Only set POLLOUT if a response is actually ready — avoids spurious wakeups
 				if (keepAlive(fd))
-					m_fds[i].events |= POLLOUT;
+				{
+					bool bPending = false;
+					for (size_t j = 0; j < m_queries.size(); ++j)
+						if (m_queries[j].fd == fd && !m_queries[j].formatedResponse.empty())
+						{ bPending = true; break; }
+					if (bPending)
+						m_fds[i].events |= POLLOUT;
+				}
 				else
 				{
-					std::cout << "CLOSE CLIENT\n";
-					if (destroyClient(fd))
+					//std::cout << "CLOSE CLIENT\n";
+					// [CHANGED] Use saved fd (not m_fds[i].fd) — m_fds[i] is invalid after destroyClient() erases it
+				if (destroyClient(fd))
 					{
-						m_fds[i].events &= ~POLLOUT;
-						oss << "Deconnected client fd:" << m_fds[i].fd;
+						// m_fds[i] is invalid after destroyClient erased it -- use saved fd
+						oss << "Deconnected client fd:" << fd;
 						logOutMessage(oss);
 					}
 					break ;
@@ -177,10 +196,11 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 				{
 					if (destroyClient(fd))
 					{
-						oss << "Deconnected client fd:" << m_fds[i].fd;
+						// m_fds[i] is invalid after destroyClient erased it -- use saved fd
+						oss << "Deconnected client fd:" << fd;
 						logOutMessage(oss);
 
-						std::cout << "NUM CLIENT: " << m_clients.size() << ", NUM QUERIES: " << m_queries.size() << std::endl;
+						//std::cout << "NUM CLIENT: " << m_clients.size() << ", NUM QUERIES: " << m_queries.size() << std::endl;
 					}
 					break ;
 				}
@@ -253,47 +273,41 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 	
 	n = 0;
 	bDelete = true;
-	bBody = false;
 	buffers = NULL;
 	if (getClient(fd, client))
 	{
-		do
+		// [CHANGED] Removed do/while greedy read loop — one read() per poll() wakeup gives fair scheduling to all clients
+		// [CHANGED] bBody init here (not after tcpStream) so chunked bodies use the larger 8192-byte buffer from the start
+		bBody = (client->bodySize > 0 || client->encoding != NULL);
+		buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
+		if (buffers == NULL)
 		{
-			if (n)
-				client->lifeTime = std::time(NULL);
-			buffers = new (std::nothrow) char[m_client_buffers_size[bBody]];
-			if (buffers == NULL)
+			cleanWebserv();
+			throw std::bad_alloc();
+		}
+		if ((n = read(client->fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
+		{
+			buffers[n] = '\0';
+			client->lifeTime = std::time(NULL);
+			ret = tcpStream(buffers, n, client, onResponse, bDelete);
+			if (ret < 0 || !g_listening)
 			{
-				cleanWebserv();
-				throw std::bad_alloc();
-			}
-			if ((n = read(client->fd, buffers, m_client_buffers_size[bBody] - 1)) > 0)
-			{
-				buffers[n] = '\0';
-				ret = tcpStream(buffers, n, client, onResponse, bDelete);
-				if(ret < 0 || !g_listening)
-				{
-					if (bDelete)
-					{
-						delete [](buffers);
-						buffers = NULL;
-					}
-					return (-2);
-				}
-				client->bodySize ? bBody = true : bBody = false;
 				if (bDelete)
 				{
 					delete [](buffers);
 					buffers = NULL;
 				}
+				return (-2);
 			}
-		} while(n > 0);
-		if (n == -1)
+		}
+		// [CHANGED] Ignore EAGAIN/EWOULDBLOCK (non-blocking normal case) — only log real errors
+		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
 		{
 			oss << "client fd:" << client->fd << ", " << std::strerror(errno);
 			logErrMessage(oss);
 		}
-		delete [](buffers);
+		if (bDelete)
+			delete [](buffers);
 	}
 	return (n);
 }
@@ -322,10 +336,13 @@ int Webserv::sendQuery(int fd)
 					{
 						(*it).formatedResponse = "";
 						(*it).byteSent = 0;
+						// Reset keepalive timer: give client 10s to send next request
+						if (getClient(fd, client))
+							client->lifeTime = std::time(NULL);
 						break ;
 					}
 				}
-				else if (n == -1)
+				else if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
 				{
 					oss << "client fd:" << (*it).fd << ", " << std::strerror(errno);
 					logErrMessage(oss);
@@ -353,7 +370,7 @@ bool Webserv::keepAlive(int fd)
 			}
 			if ((*it).formatedResponse.empty() && (*it).cgi == NULL && !(*it).closeconnection)
 			{
-				std::cout << "RELEASE QUERY\n";
+				//std::cout << "RELEASE QUERY\n";
 				releaseQuery(static_cast<ssize_t>((it - m_queries.begin())));
 			}
 			else
@@ -389,6 +406,7 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 	std::vector<const Node*> _max_body_size;
 	std::vector<const Node*> _cgi_pass;
 	std::vector<const Node*> _index;
+	std::vector<const Node*> _error_page;
 	std::vector<s_server> servers;
 	std::vector<std::string> args;
 	std::ostringstream oss;
@@ -405,6 +423,8 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 	}
 	_roots = parser->getDirectives("root");
 	_max_body_size = parser->getDirectives("client_max_body_size");
+	// [CHANGED] Parse all error_page directives globally so they can be distributed to each server/location
+	_error_page = parser->getDirectives("error_page");
 	_servers = parser->getDirectives("server");
 	for (std::vector<const Node*>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
@@ -412,8 +432,35 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 		_server.hosts.clear();
 		_server.server_names.clear();
 		_server.locations.clear();
+		_server.error_pages.clear();
 		_port = 80;
 		_host = "0.0.0.0";
+
+		for (std::vector<const Node*>::const_iterator ep = _error_page.begin(); ep != _error_page.end(); ++ep)
+		{
+			const Node* parent = (*ep)->getParent();
+			bool applies = false;
+			for (const Node* cursor = *it; cursor != NULL; cursor = cursor->getParent())
+				if (cursor == parent)
+				{
+					applies = true;
+					break;
+				}
+			if (!applies)
+				continue;
+			const std::vector<std::string>& epArgs = (*ep)->getArgs();
+			if (epArgs.size() < 2)
+				continue;
+			std::string path = epArgs[epArgs.size() - 1];
+			for (size_t codeIdx = 0; codeIdx + 1 < epArgs.size(); ++codeIdx)
+			{
+				std::stringstream ss(epArgs[codeIdx]);
+				int code = 0;
+				ss >> code;
+				if (!ss.fail())
+					_server.error_pages[code] = path;
+			}
+		}
 
 		args = getDiretiveValue(*it, _roots);
 		if (args.empty())
@@ -462,7 +509,37 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 			loc.by = "none";
 			loc.max_body_size = "not define";
 			loc.cgi_pass = "none";
+			// [CHANGED] Init new fields; error_pages inherited from server, overridden by location-specific ones below
+			loc.autoindex = false;
+			loc.redirect_code = 0;
+			loc.redirect_url = "";
+			loc.error_pages = _server.error_pages;
 			loc.httpMethodsAllowed.clear();
+			for (std::vector<const Node*>::const_iterator ep = _error_page.begin(); ep != _error_page.end(); ++ep)
+			{
+				const Node* parent = (*ep)->getParent();
+				bool applies = false;
+				for (const Node* cursor = *it1; cursor != NULL; cursor = cursor->getParent())
+					if (cursor == parent)
+					{
+						applies = true;
+						break;
+					}
+				if (!applies)
+					continue;
+				const std::vector<std::string>& epArgs = (*ep)->getArgs();
+				if (epArgs.size() < 2)
+					continue;
+				std::string path = epArgs[epArgs.size() - 1];
+				for (size_t codeIdx = 0; codeIdx + 1 < epArgs.size(); ++codeIdx)
+				{
+					std::stringstream ss(epArgs[codeIdx]);
+					int code = 0;
+					ss >> code;
+					if (!ss.fail())
+						loc.error_pages[code] = path;
+				}
+			}
 			for (std::vector<const Node*>::const_iterator it2 = _roots.begin(); it2 != _roots.end(); ++it2)
 				if ((*it2)->getParent() == *it1)
 				{
@@ -501,6 +578,23 @@ std::vector<s_server> Webserv::createServers(const ConfigParser* parser)
 					HttpMethod method;
 					if (static_cast<const NodeDirective*>(_limit_except[0])->getHttpMethod(i, method) == 0)
 						loc.httpMethodsAllowed.push_back(method);
+				}
+			}
+			// [CHANGED] Parse autoindex directive for this location
+			{
+				std::vector<const Node*> _autoindex = parser->getDirectives("autoindex", static_cast<const NodeBlock*>(*it1));
+				if (_autoindex.size() && _autoindex[0]->getArgs().size())
+					loc.autoindex = (_autoindex[0]->getArgs()[0] == "on");
+			}
+			// [CHANGED] Parse return directive (e.g. return 301 /new-url) for config-based redirects
+			{
+				std::vector<const Node*> _ret = parser->getDirectives("return", static_cast<const NodeBlock*>(*it1));
+				if (_ret.size() && _ret[0]->getArgs().size() >= 1)
+				{
+					std::stringstream ssRet(_ret[0]->getArgs()[0]);
+					ssRet >> loc.redirect_code;
+					if (_ret[0]->getArgs().size() >= 2)
+						loc.redirect_url = _ret[0]->getArgs()[1];
 				}
 			}
 			_server.locations.push_back(loc);

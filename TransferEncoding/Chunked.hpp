@@ -36,6 +36,9 @@ private:
 	bool m_bItsHead;
 	std::string m_header;
 	std::string m_data;
+	// [CHANGED] Per-instance ofstream pointer + chunk (were static in loadBody2, caused cross-client data corruption)
+	std::ofstream* m_ofs;
+	std::pair<char*, ssize_t> m_chunk;
 };
 
 #endif

@@ -13,6 +13,7 @@
 #include "Webserv.hpp"
 #include "ParserHttp.hpp"
 #include "HTTP_response/HttpResponse.hpp"
+#include <sstream>
 
 bool g_listening = true;
 
@@ -129,7 +130,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	std::stringstream ss;
 	std::string path;
 	std::string root;
-	std::string body;
 	s_location foundLoc;
 
 	if (cgi)
@@ -144,15 +144,42 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		}
 		else
 		{
-			ss << cgi->getResponse().length();
-			body = cgi->getResponse().substr(cgi->getResponse().length() - cgi->getTotal(), cgi->getTotal());
-			std::string responseBuild =
-				"HTTP/1.1 200 OK\r\n"
-				"Content-Type: text/plain\r\n"
-				"Content-Length: " + ss.str() + "\r\n"
-				"\r\n"
-				+ cgi->getResponse();
-			response = responseBuild;
+				// [CHANGED] Properly parse CGI output: split headers/body, support Status header, handle \r\n and \n separators
+			const std::string& cgiOut = cgi->getResponse();
+			size_t sep = cgiOut.find("\r\n\r\n");
+			if (sep == std::string::npos)
+				sep = cgiOut.find("\n\n");
+			std::string statusLine = "200 OK";
+			std::string cgiHeadersStr;
+			size_t bodyStart = 0;
+			if (sep != std::string::npos)
+			{
+				cgiHeadersStr = cgiOut.substr(0, sep);
+				bodyStart = sep + (cgiOut[sep + 2] == '\n' ? 2 : 4);
+			}
+			std::istringstream iss(cgiHeadersStr);
+			std::string line;
+			std::map<std::string, std::string> cgiHeaders;
+			while (std::getline(iss, line))
+			{
+				if (!line.empty() && line[line.size() - 1] == '\r')
+					line = line.substr(0, line.size() - 1);
+				size_t colon = line.find(':');
+				if (colon == std::string::npos) continue;
+				std::string key = line.substr(0, colon);
+				std::string val = line.substr(colon + 1);
+				while (!val.empty() && val[0] == ' ') val.erase(0, 1);
+				if (key == "Status")
+					statusLine = val;
+				else
+					cgiHeaders[key] = val;
+			}
+			ss << (cgiOut.size() - bodyStart);
+			response = "HTTP/1.1 " + statusLine + "\r\n";
+			for (std::map<std::string, std::string>::iterator it = cgiHeaders.begin(); it != cgiHeaders.end(); ++it)
+				response += it->first + ": " + it->second + "\r\n";
+			response += "Content-Length: " + ss.str() + "\r\n\r\n";
+			response.append(cgiOut, bodyStart, cgiOut.size() - bodyStart);
 		}
 	}
 	else
@@ -181,6 +208,22 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		} 
 		resolvePath(r, s, root, path, foundLoc);
 
+		// [CHANGED] Handle return directive: emit redirect response before building HttpResponse
+		if (foundLoc.redirect_code != 0)
+		{
+			std::string reason = "Redirect";
+			if (foundLoc.redirect_code == 301) reason = "Moved Permanently";
+			else if (foundLoc.redirect_code == 302) reason = "Found";
+			std::ostringstream redir;
+			redir << "HTTP/1.1 " << foundLoc.redirect_code << " " << reason << "\r\n"
+				  << "Location: " << foundLoc.redirect_url << "\r\n"
+				  << "Content-Length: 0\r\n"
+				  << "Connection: close\r\n"
+				  << "\r\n";
+			response = redir.str();
+			return;
+		}
+
 		//ICI CE N'EST PAS UN CGI
 		//response
 		//std::cout << "[DEBUG onResponse] After resolvePath - root='" << root << "' path='" << path << "'" << std::endl;
@@ -188,6 +231,8 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		response1.setRoot(root);
 		response1.setMatchedLocation(foundLoc);
 		response1.setLocations(s.locations);
+		// [CHANGED] Pass server error_pages map so HttpResponseError() can serve custom pages (e.g. custom_404.html)
+		response1.setServerErrorPages(s.error_pages);
 		//response1.setServerMethods(s.httpMethodsAllowed);
 		response1.HttpResponseManager();
 		response = response1.getFormatedResponse();

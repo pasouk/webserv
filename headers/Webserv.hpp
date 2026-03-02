@@ -26,7 +26,7 @@
 # include "CGI.hpp"
 
 # define HEADER_BUFFER_SIZE 1024
-# define BODY_BUFFER_SIZE 8192
+# define BODY_BUFFER_SIZE 65536  // [CHANGED] Raised from 8192 → 65536 to match CGIBUFFERSIZE and reduce read() syscalls on large bodies
 # define KEEPALIVE_TIMEOUT 65
 # define MAX_BODY_SIZE 8192
 

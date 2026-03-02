@@ -131,12 +131,13 @@ int    SubPartRequest::basicChecks()
 
 void SubPartRequest::printParsedData()
 {
+    // [CHANGED] Commented out debug prints — were triggered on every multipart upload, polluting logs
     std::cout << Colors::GREEN<< "Headers : " << Colors::RESET  ;
-    for (std::map<std::string, std::string>::const_iterator it = getHeaders().begin();
-        it != getHeaders().end(); ++it)
-    {
-        std::cout << it->first << " : " << it->second << std::endl;
-    }
-    std::cout << Colors::GREEN << "Body : " << _bodyLine << std::endl << Colors::RESET  ;
-    std::cout << "-------------------------------------------------\n";
+    //for (std::map<std::string, std::string>::const_iterator it = getHeaders().begin();
+    //    it != getHeaders().end(); ++it)
+    //{
+    //    std::cout << it->first << " : " << it->second << std::endl;
+    //}
+    //std::cout << Colors::GREEN << "Body : " << _bodyLine << std::endl << Colors::RESET  ;
+    //std::cout << "-------------------------------------------------\n";
 }

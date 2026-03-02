@@ -15,6 +15,8 @@
 //# include "CGI.hpp"
 # include "ParserHttp.hpp"
 # include <stdint.h>
+// [CHANGED] Needed by s_location::error_pages and s_server::error_pages
+# include <map>
 
 class TransferEncoding;
 class CGI;
@@ -50,15 +52,21 @@ struct s_query
 
 struct s_location
 {
-	s_location() : is_cgi(NULL), type(LOCATION_NONE) {}
+	// [CHANGED] autoindex/redirect_code/redirect_url: support for autoindex + return directives in config
+	// [CHANGED] error_pages: per-location custom error pages (inherited from server block)
+	s_location() : is_cgi(NULL), type(LOCATION_NONE), autoindex(false), redirect_code(0) {}
 
 	bool					is_cgi;
 	locationType			type;
+	bool					autoindex;
+	int						redirect_code;
+	std::string				redirect_url;
 	std::string				concatOrReplace;
 	std::string				by;
 	std::string				max_body_size;
 	std::string				cgi_pass;
 	std::string				index;
+	std::map<int, std::string>	error_pages;
 	std::vector<HttpMethod>	httpMethodsAllowed;
 };
 
@@ -70,5 +78,7 @@ struct s_server
 	std::vector<std::string>		hosts;
 	std::string						root;
 	std::string						max_body_size;
+	// [CHANGED] Server-level custom error pages, parsed from error_page directives in server block
+	std::map<int, std::string>	error_pages;
 };
 #endif

@@ -21,8 +21,17 @@ void HttpResponse::printElements()
 void HttpResponse::serialize()
 {
     std::ostringstream oss;
+
+    // [CHANGED] Added Date (RFC 7231) + Server headers — required by browser evaluation
+    time_t _now = time(0);
+    char _dateBuf[80];
+    struct tm *_tm = gmtime(&_now);
+    strftime(_dateBuf, sizeof(_dateBuf), "%a, %d %b %Y %H:%M:%S GMT", _tm);
+    _headers["Date"] = _dateBuf;
+    _headers["Server"] = "webserv/1.0";
+
     oss <<  _ParsedRequest.getVersion() << " "
-        << _status_code << " " 
+        << _status_code << " "
         << _reason_phrase << "\r\n";
 
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin();
@@ -50,37 +59,37 @@ bool HttpResponse::checkServerMethods(HttpMethod method)
     return false;
 }
 
-void HttpResponse::buildFullPathGet() 
+void HttpResponse::buildFullPathGet()
 {
-    std::cout << "[DEBUG buildFullPathGet] START - root='" << _root << "' path='" << _ParsedRequest.getPath() << "'" << std::endl;
-    
-    if (_root.empty()) 
+    //std::cout << "[DEBUG buildFullPathGet] START - root='" << _root << "' path='" << _ParsedRequest.getPath() << "'" << std::endl;
+
+    if (_root.empty())
     {
         _fullPath = _ParsedRequest.getPath();
-        std::cout << "[DEBUG buildFullPathGet] Empty root, using path directly: '" << _fullPath << "'" << std::endl;
+        //std::cout << "[DEBUG buildFullPathGet] Empty root, using path directly: '" << _fullPath << "'" << std::endl;
         return;
     }
 
     std::string fullPath = _root;
 
-    if (!fullPath.empty() && !(_ParsedRequest.getPath().empty())) 
+    if (!fullPath.empty() && !(_ParsedRequest.getPath().empty()))
     {
         if (!fullPath.empty() && fullPath[fullPath.size() - 1] == '/' &&
             !_ParsedRequest.getPath().empty() && _ParsedRequest.getPath()[0] == '/')
         {
-            std::cout << "[DEBUG buildFullPathGet] Removing duplicate '/' from root" << std::endl;
+            //std::cout << "[DEBUG buildFullPathGet] Removing duplicate '/' from root" << std::endl;
             fullPath.erase(fullPath.size() - 1);
         }
     }
 
     fullPath += _ParsedRequest.getPath();
     _fullPath = fullPath;
-    std::cout << "[DEBUG buildFullPathGet] Final fullPath='" << _fullPath << "'" << std::endl;
-    {
-        std::ostringstream oss;
-        oss << " -> root:'" << _root << "' path:'" << _ParsedRequest.getPath() << "' full:'" << _fullPath << "'";
-        logOutMessage(oss);
-    }
+    //std::cout << "[DEBUG buildFullPathGet] Final fullPath='" << _fullPath << "'" << std::endl;
+    //{
+    //    std::ostringstream oss;
+    //    oss << " -> root:'" << _root << "' path:'" << _ParsedRequest.getPath() << "' full:'" << _fullPath << "'";
+    //    logOutMessage(oss);
+    //}
 }
 
 void HttpResponse::HttpResponseError(int code, const std::string& reason)
@@ -88,7 +97,42 @@ void HttpResponse::HttpResponseError(int code, const std::string& reason)
     _status_code = code;
     _reason_phrase = reason;
 
-    // Si aucun body n'a été défini, construire un body d'erreur simple
+    // [CHANGED] Look up custom error page: first in location, then in server — replaces hardcoded fallback HTML
+    std::string errorPagePath;
+    std::map<int, std::string>::const_iterator locErr = _matchedLocation.error_pages.find(code);
+    if (locErr != _matchedLocation.error_pages.end())
+        errorPagePath = locErr->second;
+    else
+    {
+        std::map<int, std::string>::const_iterator servErr = _serverErrorPages.find(code);
+        if (servErr != _serverErrorPages.end())
+            errorPagePath = servErr->second;
+    }
+
+    if (!errorPagePath.empty())
+    {
+        std::string finalPath = errorPagePath;
+        if (!resourceExists(finalPath) && !finalPath.empty() && finalPath[0] == '/' && !_root.empty())
+        {
+            std::string joined = _root;
+            if (!joined.empty() && joined[joined.size() - 1] == '/' && finalPath[0] == '/')
+                joined.erase(joined.size() - 1);
+            joined += finalPath;
+            if (resourceExists(joined))
+                finalPath = joined;
+        }
+        if (resourceExists(finalPath))
+        {
+            std::ifstream file(finalPath.c_str());
+            if (file.is_open())
+            {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                _body = buffer.str();
+            }
+        }
+    }
+
     if (_body.empty())
     {
         std::ostringstream oss;
@@ -99,17 +143,13 @@ void HttpResponse::HttpResponseError(int code, const std::string& reason)
         _body = oss.str();
     }
 
-    // Headers minimaux nécessaires
     _headers["Content-Type"] = "text/html";
     _headers["Content-Length"] = toString(_body.size());
 
-    // Par défaut fermer la connexion après l'erreur (sécurise le client)
     _headers["Connection"] = "close";
 
-    // Si c'est un 405, indiquer les méthodes autorisées
     if (_status_code == 405)
     {
-        // adapte selon ta config réelle
         _headers["Allow"] = "GET, POST, DELETE";
     }
 
@@ -120,8 +160,6 @@ void HttpResponse::HttpResponseError(int code, const std::string& reason)
         logOutMessage(oss);
     }
 
-    // Construire la réponse formatée maintenant (optionnel)
-    // serialize() doit assembler la première ligne + headers + \r\n + body
     serialize();
 }
 
@@ -158,11 +196,11 @@ s_location HttpResponse::matchLocation()
     {
         const s_location& loc = _locations[i];
 
-        std::cout << Colors::GREEN
-                  << "rawPath: " << rawPath
-                  << "\nconcatOrReplace: " << loc.concatOrReplace
-                  << "\nby: " << loc.by
-                  << Colors::RESET << std::endl << std::endl;
+        //std::cout << Colors::GREEN
+        //          << "rawPath: " << rawPath
+        //          << "\nconcatOrReplace: " << loc.concatOrReplace
+        //          << "\nby: " << loc.by
+        //          << Colors::RESET << std::endl << std::endl;
 
         if (rawPath.compare(0, loc.concatOrReplace.size(), loc.concatOrReplace) == 0)
         {

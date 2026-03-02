@@ -91,6 +91,7 @@ class ParserHttpRequest
         void    sanitize();
         void    printParsedData();
         void    setBodyLine(const std::deque<std::pair<char*, ssize_t> > &bodyChunks);
+        void    clearBody();    // [CHANGED] New: frees _bodyLine + _bodyBuffer after response is built
 };
 
 

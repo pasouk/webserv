@@ -47,7 +47,9 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
                 //std::cout << "PART: " << part << std::endl;
                 if (fileName.empty())
                 {
-                    if (part == path && l.concatOrReplace.length() > len)
+                    // [CHANGED] Added prefix check: prevents matching a location whose prefix doesn't match the path
+                    if (part == path && l.concatOrReplace.length() > len
+                        && path.substr(0, l.concatOrReplace.length()) == l.concatOrReplace)
                     {
                         //std::cout <<httppath.path_updated << std::endl;
                         path_updated = httppath.path_updated;
@@ -266,7 +268,7 @@ bool Webserv::closeConnection(ParserHttpRequest* http) const
     {
         if (header == "close")
         {
-            std::cout << "CLOSE CONNECTION\n";
+            //std::cout << "CLOSE CONNECTION\n";
             return (true);
         }
     }

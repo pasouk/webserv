@@ -117,4 +117,28 @@ public:
 	CgiPass();
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
+
+// [CHANGED] Parses error_page directives (e.g. error_page 404 ./html/custom_404.html)
+class ErrorPage : public Directives
+{
+public:
+	ErrorPage();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
+
+// [CHANGED] Parses autoindex on/off directive for directory listing support
+class Autoindex : public Directives
+{
+public:
+	Autoindex();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
+
+// [CHANGED] Parses return <code> [url] directive for config-based HTTP redirects
+class ReturnDirective : public Directives
+{
+public:
+	ReturnDirective();
+	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
+};
 #endif

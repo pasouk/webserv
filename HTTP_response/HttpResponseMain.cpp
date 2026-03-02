@@ -42,6 +42,12 @@ void HttpResponse::setMatchedLocation(const s_location& loc)
     _matchedLocation = loc;
 }
 
+// [CHANGED] New setter: forwards server-level error_page map so HttpResponseError() can serve custom pages
+void HttpResponse::setServerErrorPages(const std::map<int, std::string>& errorPages)
+{
+    _serverErrorPages = errorPages;
+}
+
 std::string HttpResponse::getFormatedResponse()
 {
     return _formated_response;
@@ -79,7 +85,7 @@ void HttpResponse::HttpResponseManager()
     // ========== APPLY MATCHED LOCATION CONFIG ==========
     applyLocationConfig(_matchedLocation);
     
-    std::cout << "[DEBUG HttpResponseManager] Using matched location with " << _matchedLocation.httpMethodsAllowed.size() << " allowed methods" << std::endl;
+    //std::cout << "[DEBUG HttpResponseManager] Using matched location with " << _matchedLocation.httpMethodsAllowed.size() << " allowed methods" << std::endl;
     
     // Check location methods if location has specific methods defined
     if (!_matchedLocation.httpMethodsAllowed.empty())
@@ -96,8 +102,8 @@ void HttpResponse::HttpResponseManager()
         
         if (!methodAllowed)
         {
-            std::cout << "[DEBUG HttpResponseManager] Method " << _ParsedRequest.getMethod() 
-                      << " NOT allowed for location '" << _matchedLocation.concatOrReplace << "'" << std::endl;
+            //std::cout << "[DEBUG HttpResponseManager] Method " << _ParsedRequest.getMethod()
+            //          << " NOT allowed for location '" << _matchedLocation.concatOrReplace << "'" << std::endl;
             this->HttpResponseError(405, "Method Not Allowed");
             _headers["Allow"] = "GET, POST, DELETE";
             _headers["Content-Length"] = "0";
@@ -108,8 +114,8 @@ void HttpResponse::HttpResponseManager()
     // Otherwise check server methods
     else if(!checkServerMethods(_ParsedRequest.getMethod()))
     {
-        std::cout << "[DEBUG HttpResponseManager] Method " << _ParsedRequest.getMethod() 
-                  << " NOT allowed by server configuration" << std::endl;
+        //std::cout << "[DEBUG HttpResponseManager] Method " << _ParsedRequest.getMethod()
+        //          << " NOT allowed by server configuration" << std::endl;
         this->HttpResponseError(405, "Method Not Allowed by server configuration");
         _headers["Allow"] = "GET, POST, DELETE";
         _headers["Content-Length"] = "0";
@@ -117,7 +123,7 @@ void HttpResponse::HttpResponseManager()
         return;
     }
     
-    std::cout << "[DEBUG HttpResponseManager] Method " << _ParsedRequest.getMethod() << " ALLOWED" << std::endl;
+    //std::cout << "[DEBUG HttpResponseManager] Method " << _ParsedRequest.getMethod() << " ALLOWED" << std::endl;
     
     switch (_ParsedRequest.getMethod()) 
     {

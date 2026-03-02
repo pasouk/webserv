@@ -231,10 +231,18 @@ void ParserHttpRequest::setBodyLine(const std::deque<std::pair<char*, ssize_t> >
     }
 }
 
+// [CHANGED] New function: releases body memory after response is built — prevents accumulation across keep-alive requests
+void ParserHttpRequest::clearBody()
+{
+    std::string().swap(_bodyLine);
+    std::vector<char>().swap(_bodyBuffer);
+}
+
 int ParserHttpRequest::parseRequest()
 {
-    std::cout << Colors::GREEN << "raw request initaly:  " << _rawRequest << Colors::RESET ;
-    std::cout << Colors::GREEN << "\nbodyLine intialy:  " << _bodyLine << Colors::RESET ;
+    // [CHANGED] Commented out debug logs — were printing full raw request on every parse, causing massive slowdown
+    //std::cout << Colors::GREEN << "raw request initaly:  " << _rawRequest << Colors::RESET ;
+    //std::cout << Colors::GREEN << "\nbodyLine intialy:  " << _bodyLine << Colors::RESET ;
 
     int ret;
     ret = basicChecks();

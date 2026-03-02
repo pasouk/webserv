@@ -294,3 +294,66 @@ bool CgiPass::areArgsValid(const std::vector<std::string>& args, std::string& er
 	}
 	return (regfree(&regex), true);
 }
+
+// [CHANGED] New directive: autoindex on/off — enables directory listing when no index file is found
+Autoindex::Autoindex() : Directives(false, 1, 1, "autoindex")
+{
+	m_memberships.push_back("location");
+}
+
+bool Autoindex::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	if (args[0] == "on" || args[0] == "off")
+		return (true);
+	return (err = "autoindex: invalid argument '" + args[0] + "' (must be on or off)", false);
+}
+
+// [CHANGED] New directive: return <code> [url] — emits a redirect response from the config
+ReturnDirective::ReturnDirective() : Directives(false, 1, 2, "return")
+{
+	m_memberships.push_back("location");
+}
+
+bool ReturnDirective::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	for (size_t i = 0; i < args[0].size(); ++i)
+		if (!std::isdigit(static_cast<unsigned char>(args[0][i])))
+			return (err = "return: first argument must be a status code", false);
+	return (true);
+}
+
+// [CHANGED] New directive: error_page <code>... <path> — maps HTTP error codes to custom HTML pages
+ErrorPage::ErrorPage() : Directives(false, 2, MAX_ARGS, "error_page")
+{
+	m_memberships.push_back("http");
+	m_memberships.push_back("server");
+	m_memberships.push_back("location");
+}
+
+bool ErrorPage::areArgsValid(const std::vector<std::string>& args, std::string& err) const
+{
+	regex_t pathRegex;
+	bool regexCompiled;
+	std::string pathPattern("^(?:/|\\./|\\../)?(?:[A-Za-z0-9._*?-]+/)*[A-Za-z0-9._*?-]*$");
+
+	regexCompiled = false;
+
+	for (size_t i = 0; i + 1 < args.size(); ++i)
+	{
+		if (args[i].size() != 3)
+			return (err = args[i], false);
+		for (size_t j = 0; j < args[i].size(); ++j)
+			if (!std::isdigit(static_cast<unsigned char>(args[i][j])))
+				return (err = args[i], false);
+	}
+
+	if(regcomp(&pathRegex, pathPattern.c_str(), REG_EXTENDED) == 0)
+	{
+		regexCompiled = true;
+		if (regexec(&pathRegex, args[args.size() - 1].c_str(), 0, NULL, 0) == REG_NOMATCH)
+			return (err = args[args.size() - 1], regfree(&pathRegex), false);
+	}
+	if (regexCompiled)
+		regfree(&pathRegex);
+	return (true);
+}

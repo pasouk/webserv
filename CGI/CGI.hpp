@@ -23,14 +23,16 @@
 # include <sys/wait.h>
 # include <cerrno>
 # include <stdlib.h>
+# include <limits.h>    // [CHANGED] PATH_MAX for realpath() in cgi() child process
 # include <map>
 # include <fcntl.h>
 # include <poll.h>
 # include <vector>
+# include <fstream>     // [CHANGED] std::ifstream for per-instance file-write state (m_write_ifs)
 # include "utils.hpp"
 # include "headers.hpp"
 
-# define CGIBUFFERSIZE 8192
+# define CGIBUFFERSIZE 65536  // [CHANGED] Raised from 8192 → 65536 for better write throughput on large POST bodies
 
 enum fdType
 {
@@ -97,5 +99,12 @@ private:
     std::string m_binary;
     std::string m_script;
     std::string m_response;
+    // [CHANGED] Per-instance write state (replaces static locals in writeCGI — static was shared across all CGI instances, causing corruption)
+    char*           m_write_buff;
+    int             m_write_i;
+    ssize_t         m_write_maxSize;
+    std::ifstream   m_write_ifs;
+    size_t          m_write_chunk_idx;
+    ssize_t         m_write_chunk_off;
 };
 #endif

@@ -76,7 +76,8 @@ void QueryListener::initListener(uint16_t port, const std::string& host)
 	}
 
     //5. socket accepts incoming connections
-    if (listen(m_listenFD, 5) < 0)
+    // [CHANGED] Backlog raised from 5 to 128 to handle bursts of concurrent connections (siege/tester)
+    if (listen(m_listenFD, 128) < 0)
 	{
 		close(m_listenFD);
  		throw std::runtime_error(std::strerror(errno));	
