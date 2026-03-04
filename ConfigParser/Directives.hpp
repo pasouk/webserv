@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:35 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/24 12:11:45 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:32:49 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,7 +118,6 @@ public:
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 
-// [CHANGED] Parses error_page directives (e.g. error_page 404 ./html/custom_404.html)
 class ErrorPage : public Directives
 {
 public:
@@ -126,7 +125,6 @@ public:
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 
-// [CHANGED] Parses autoindex on/off directive for directory listing support
 class Autoindex : public Directives
 {
 public:
@@ -134,7 +132,6 @@ public:
 	bool areArgsValid(const std::vector<std::string>&, std::string&) const;
 };
 
-// [CHANGED] Parses return <code> [url] directive for config-based HTTP redirects
 class ReturnDirective : public Directives
 {
 public:

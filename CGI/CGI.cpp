@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/19 14:57:03 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:28:48 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,6 @@ CGI::~CGI()
 
     removePipesFromPoll(m_fds, m_fdtype);
     closeFDS();
-    // [CHANGED] Free write buffer allocated in writeCGI(file) — was missing, caused memory leak
     delete[](m_write_buff);
     m_write_buff = NULL;
     deleteEnvp();
@@ -38,7 +37,6 @@ CGI::CGI(std::string binary, std::string script, std::map<std::string, std::stri
     , s_query*& client, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
     : m_wrote(0), m_total(0), m_executed(false), m_fd_client(client->fd)
         , m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType), m_client(client)
-        // [CHANGED] Per-instance write state — was static (shared across all CGI instances), caused data corruption with 20 concurrent clients
         , m_write_buff(NULL), m_write_i(0), m_write_maxSize(CGIBUFFERSIZE)
         , m_write_chunk_idx(0), m_write_chunk_off(0)
 {
@@ -63,7 +61,6 @@ CGI::CGI(std::string binary, std::map<std::string, std::string>& env
     , s_query*& client, std::vector<pollfd>& pollfd, std::vector<fdType>& pipeType)
     : m_wrote(0), m_total(0), m_executed(false), m_fd_client(client->fd)
         , m_envp(NULL), m_id_cgi(-1), m_fds(pollfd), m_fdtype(pipeType), m_client(client)
-        // [CHANGED] Per-instance write state — was static (shared across all CGI instances), caused data corruption with 20 concurrent clients
         , m_write_buff(NULL), m_write_i(0), m_write_maxSize(CGIBUFFERSIZE)
         , m_write_chunk_idx(0), m_write_chunk_off(0)
 {
@@ -243,8 +240,6 @@ int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
         if (!m_total)
             return (close(m_pipe_out[1]), m_pipe_out[1] = -1, -2);
     }
-    // [CHANGED] Replaced static buff/i/maxSize (shared across all CGI instances) with per-instance members
-    // — static state caused data corruption when 20 concurrent CGI clients shared the same buffer
     n = 0;
     while (m_wrote < m_total && m_write_chunk_idx < chunks.size())
     {
@@ -385,7 +380,6 @@ int CGI::readCGI()
         oss << "READ CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
         logErrMessage(oss);
     }
-    // [CHANGED] n==0 means EOF (CGI exited, pipe closed) — signal caller to clean up; old logic used length comparison which was unreliable
     else if (n == 0)
     {
         n = -2;
@@ -398,8 +392,7 @@ int CGI::buildCGI()
 {
     std::ostringstream oss;
     
-    // [CHANGED] Enable SIGPIPE ignore so write() returns EPIPE instead of killing the process when CGI pipe closes
-    signal(SIGPIPE, SIG_IGN);
+    //signal(SIGPIPE, SIG_IGN);
     //signal(SIGTERM, SIG_IGN);
     if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
@@ -438,7 +431,6 @@ int CGI::runCGI()
         deleteEnvp();
         return (1);
     }
-    // [CHANGED] Mark parent's unused ends as -1 so closeFDS() won't double-close them
     close(m_pipe_in[1]);
     m_pipe_in[1] = -1;
     close(m_pipe_out[0]);
@@ -459,34 +451,25 @@ void CGI::cgi(char* argv[], char* envp[])
     dup2(m_pipe_out[0], STDIN_FILENO);
     closeFDS();
     initFDS();
-    // [CHANGED] Close all inherited fds from the server (sockets, pipes of other CGIs, temp files...)
-    // Without this, other CGI children hold write-ends of our stdout pipes open,
-    // preventing EOF from being delivered → server deadlocks waiting for readCGI() to return -2.
-    {
-        int max_fd = (int)sysconf(_SC_OPEN_MAX);
-        if (max_fd < 0) max_fd = 1024;
-        for (int fd = 3; fd < max_fd; fd++)
-            close(fd);
-    }
+    int max_fd = (int)sysconf(_SC_OPEN_MAX);
+    if (max_fd < 0) max_fd = 1024;
+    for (int fd = 3; fd < max_fd; fd++)
+        close(fd);
     fileName = argv[0];
-    // [CHANGED] Resolve binary to absolute path before any chdir (chdir would make relative paths wrong)
     if (realpath(fileName.c_str(), absBin))
         fileName = std::string(absBin);
     // Set argv[0] to basename (process name)
     m_binary = getFilename(fileName);
     argv[0] = const_cast<char*>(m_binary.c_str());
-    // [CHANGED] Change to script directory so CGI scripts can open relative files (e.g. templates, DB files)
+    const char* scriptPath = (argv[1] != NULL) ? argv[1] : fileName.c_str();
+    if (realpath(scriptPath, absScript))
     {
-        const char* scriptPath = (argv[1] != NULL) ? argv[1] : fileName.c_str();
-        if (realpath(scriptPath, absScript))
-        {
-            std::string abs(absScript);
-            size_t pos = abs.find_last_of('/');
-            if (pos != std::string::npos)
-                chdir(abs.substr(0, pos).c_str());
-            if (argv[1] != NULL)
-                argv[1] = absScript;
-        }
+        std::string abs(absScript);
+        size_t pos = abs.find_last_of('/');
+        if (pos != std::string::npos)
+            chdir(abs.substr(0, pos).c_str());
+        if (argv[1] != NULL)
+            argv[1] = absScript;
     }
     execve(fileName.data(), argv, envp);
     oss << fileName << ": " << std::strerror(errno) << std::endl;

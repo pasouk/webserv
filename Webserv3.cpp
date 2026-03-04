@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 13:10:03 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/18 15:21:31 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:20:22 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,12 +42,8 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
             {
                 l = s.locations[i];
                 fileName = getFilename(l.concatOrReplace.c_str());
-                //if (part == path)
-                //    std::cout << "LOCATION " << i << ": " << l.concatOrReplace << std::endl;
-                //std::cout << "PART: " << part << std::endl;
                 if (fileName.empty())
                 {
-                    // [CHANGED] Added prefix check: prevents matching a location whose prefix doesn't match the path
                     if (part == path && l.concatOrReplace.length() > len
                         && path.substr(0, l.concatOrReplace.length()) == l.concatOrReplace)
                     {

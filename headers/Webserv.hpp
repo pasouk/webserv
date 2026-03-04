@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:27:47 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/21 13:49:02 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:33:37 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@
 # include "CGI.hpp"
 
 # define HEADER_BUFFER_SIZE 1024
-# define BODY_BUFFER_SIZE 65536  // [CHANGED] Raised from 8192 → 65536 to match CGIBUFFERSIZE and reduce read() syscalls on large bodies
+# define BODY_BUFFER_SIZE 65536
 # define KEEPALIVE_TIMEOUT 65
 # define MAX_BODY_SIZE 8192
 

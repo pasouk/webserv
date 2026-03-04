@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 13:06:40 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/01/24 12:22:10 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:31:32 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,6 @@ ConfigParser::ConfigParser(const std::string& file) : m_line(1), m_file(file)
 	m_directives.push_back(new ClientMaxBodySize());
 	m_directives.push_back(new Deny());
 	m_directives.push_back(new CgiPass());
-	// [CHANGED] Registered 3 new directives: error_page, autoindex, return
 	m_directives.push_back(new ErrorPage());
 	m_directives.push_back(new Autoindex());
 	m_directives.push_back(new ReturnDirective());

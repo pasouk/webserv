@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/24 09:32:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/12 11:16:58 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:32:23 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -295,7 +295,6 @@ bool CgiPass::areArgsValid(const std::vector<std::string>& args, std::string& er
 	return (regfree(&regex), true);
 }
 
-// [CHANGED] New directive: autoindex on/off — enables directory listing when no index file is found
 Autoindex::Autoindex() : Directives(false, 1, 1, "autoindex")
 {
 	m_memberships.push_back("location");
@@ -308,7 +307,6 @@ bool Autoindex::areArgsValid(const std::vector<std::string>& args, std::string& 
 	return (err = "autoindex: invalid argument '" + args[0] + "' (must be on or off)", false);
 }
 
-// [CHANGED] New directive: return <code> [url] — emits a redirect response from the config
 ReturnDirective::ReturnDirective() : Directives(false, 1, 2, "return")
 {
 	m_memberships.push_back("location");
@@ -322,7 +320,6 @@ bool ReturnDirective::areArgsValid(const std::vector<std::string>& args, std::st
 	return (true);
 }
 
-// [CHANGED] New directive: error_page <code>... <path> — maps HTTP error codes to custom HTML pages
 ErrorPage::ErrorPage() : Directives(false, 2, MAX_ARGS, "error_page")
 {
 	m_memberships.push_back("http");

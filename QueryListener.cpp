@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 11:52:16 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/14 15:53:29 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:30:38 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,6 @@ void QueryListener::initListener(uint16_t port, const std::string& host)
 	}
 
     //5. socket accepts incoming connections
-    // [CHANGED] Backlog raised from 5 to 128 to handle bursts of concurrent connections (siege/tester)
     if (listen(m_listenFD, 128) < 0)
 	{
 		close(m_listenFD);

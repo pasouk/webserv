@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/14 11:48:08 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:31:22 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,16 +23,16 @@
 # include <sys/wait.h>
 # include <cerrno>
 # include <stdlib.h>
-# include <limits.h>    // [CHANGED] PATH_MAX for realpath() in cgi() child process
+# include <limits.h> 
 # include <map>
 # include <fcntl.h>
 # include <poll.h>
 # include <vector>
-# include <fstream>     // [CHANGED] std::ifstream for per-instance file-write state (m_write_ifs)
+# include <fstream>
 # include "utils.hpp"
 # include "headers.hpp"
 
-# define CGIBUFFERSIZE 65536  // [CHANGED] Raised from 8192 → 65536 for better write throughput on large POST bodies
+# define CGIBUFFERSIZE 65536
 
 enum fdType
 {
@@ -99,7 +99,6 @@ private:
     std::string m_binary;
     std::string m_script;
     std::string m_response;
-    // [CHANGED] Per-instance write state (replaces static locals in writeCGI — static was shared across all CGI instances, causing corruption)
     char*           m_write_buff;
     int             m_write_i;
     ssize_t         m_write_maxSize;

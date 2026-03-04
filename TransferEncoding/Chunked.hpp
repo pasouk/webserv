@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:31:16 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/04 10:55:24 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:35:16 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,6 @@ private:
 	bool m_bItsHead;
 	std::string m_header;
 	std::string m_data;
-	// [CHANGED] Per-instance ofstream pointer + chunk (were static in loadBody2, caused cross-client data corruption)
 	std::ofstream* m_ofs;
 	std::pair<char*, ssize_t> m_chunk;
 };

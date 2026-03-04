@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/10 09:26:33 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/21 17:47:47 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:30:20 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,7 +144,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		}
 		else
 		{
-				// [CHANGED] Properly parse CGI output: split headers/body, support Status header, handle \r\n and \n separators
 			const std::string& cgiOut = cgi->getResponse();
 			size_t sep = cgiOut.find("\r\n\r\n");
 			if (sep == std::string::npos)
@@ -208,7 +207,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		} 
 		resolvePath(r, s, root, path, foundLoc);
 
-		// [CHANGED] Handle return directive: emit redirect response before building HttpResponse
 		if (foundLoc.redirect_code != 0)
 		{
 			std::string reason = "Redirect";
@@ -231,7 +229,6 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 		response1.setRoot(root);
 		response1.setMatchedLocation(foundLoc);
 		response1.setLocations(s.locations);
-		// [CHANGED] Pass server error_pages map so HttpResponseError() can serve custom pages (e.g. custom_404.html)
 		response1.setServerErrorPages(s.error_pages);
 		//response1.setServerMethods(s.httpMethodsAllowed);
 		response1.HttpResponseManager();

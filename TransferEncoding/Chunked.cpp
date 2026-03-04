@@ -6,13 +6,12 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/29 14:31:14 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/15 14:29:10 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/04 10:35:07 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Chunked.hpp"
 
-// [CHANGED] Moved cpt to file scope (was static inside loadBody2) so both loadBody1 and loadBody2 share the unique counter
 static int cpt = 0;
 
 Chunked::Chunked(ssize_t body_size, const std::string& temp_path)
@@ -28,8 +27,6 @@ Chunked::~Chunked()
     }
 }
 
-// [CHANGED] loadBody1 was a no-op — the outer while(i<n) loop in tcpStream appended every body byte to q->httpRequest
-// — for 20 clients × 100MB POST, that was 2GB of strings in memory causing timeout. Now processes the full buffer here.
 loadType Chunked::loadBody1(char* buffer, ssize_t& n, s_query*& q, ssize_t& i, bool& bDelete)
 {
     (void)bDelete;
@@ -122,8 +119,6 @@ loadType Chunked::loadBody1(char* buffer, ssize_t& n, s_query*& q, ssize_t& i, b
     return (lType);
 }
 
-// [CHANGED] static ofstream ofs + static pair<char*,ssize_t> chunk → per-instance m_ofs/m_chunk
-// — statics were shared across ALL concurrent Chunked instances, causing data corruption under load
 loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
 {
     (void)n;
@@ -162,7 +157,6 @@ loadType Chunked::loadBody2(char* buffer, ssize_t& n, s_query*& q, ssize_t& i)
                         }
                 }
             }
-            // [CHANGED] Commented out verbose per-chunk log — 2M+ log lines per test run caused extreme slowdown
             //oss << "client fd:" << q->fd << ", chunk n°:" << ++numChunk << " added";
             //if (!q->bodyFile.empty())
             //    oss << " to " << q->bodyFile;
