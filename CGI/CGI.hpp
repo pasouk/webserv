@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:39:32 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/14 11:48:08 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/24 13:58:20 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,8 @@ enum fdType
 {
 	SOCKET,
 	ACCEPT,
-	PIPE
+	PIPE,
+    NOTUSED
 };
 
 struct s_cursor

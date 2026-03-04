@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:38:11 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/19 14:57:03 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/02/28 14:10:16 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,6 +112,7 @@ void CGI::setEnvp(std::map<std::string, std::string> env)
     m_envp = new (std::nothrow)char*[env.size() + 1];
     if (m_envp == NULL)
     {
+        removePipesFromPoll(m_fds, m_fdtype);
         closeFDS();
         throw std::bad_alloc();
     }
@@ -234,13 +235,13 @@ int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
     if (!m_total)
         m_total = getChunksSize(0, chunks);
     if (!m_total)
-        return (close (m_pipe_out[1]), m_pipe_out[1] = -1, -2);
+        return (-2);
     if (buff == NULL)
     {
         maxSize = CGIBUFFERSIZE;
         buff = createBuff(m_wrote, m_total, maxSize, chunks);
         if (buff == NULL)
-            return (close (m_pipe_out[1]), -1);
+            return (removePipesFromPoll(m_fds, m_fdtype), close (m_pipe_out[1]), -1);
     }
     n = 0;
     while (m_wrote < m_total)
@@ -259,8 +260,6 @@ int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
             i = 0;
             delete [](buff);
             buff = NULL;
-            close (m_pipe_out[1]);
-            m_pipe_out[1] = -1;
             n = -2;
             break;
         }
@@ -272,7 +271,7 @@ int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
             maxSize = CGIBUFFERSIZE;
             buff = createBuff(m_wrote, m_total, maxSize, chunks);
             if (buff == NULL)
-                return (close (m_pipe_out[1]), m_pipe_out[1] = -1, -1);
+                return (removePipesFromPoll(m_fds, m_fdtype), close (m_pipe_out[1]), m_pipe_out[1] = -1, -1);
         }
     }
     return (n);
@@ -302,7 +301,7 @@ int CGI::writeCGI(const std::string& body_file)
             m_total = static_cast<ssize_t>(ifs.tellg());
             ifs.seekg (0, ifs.beg);
             if (!m_total)
-                return (close (m_pipe_out[1]), m_pipe_out[1] = -1, ifs.close(), -2);
+                return (removePipesFromPoll(m_fds, m_fdtype), close (m_pipe_out[1]), m_pipe_out[1] = -1, ifs.close(), -2);
         }
     }
     if (buff == NULL)
@@ -330,8 +329,6 @@ int CGI::writeCGI(const std::string& body_file)
             i = 0;
             delete [](buff);
             buff = NULL;
-            close (m_pipe_out[1]);
-            m_pipe_out[1] = -1;
             n = -2;
             ifs.close();
             if (remove(body_file.c_str()) != 0)
@@ -351,7 +348,7 @@ int CGI::writeCGI(const std::string& body_file)
             delete [](buff);
             buff = new (std::nothrow)char[CGIBUFFERSIZE];
             if (buff == NULL)
-                return (close (m_pipe_out[1]), m_pipe_out[1] = -1, -1);
+                return (removePipesFromPoll(m_fds, m_fdtype), close(m_pipe_out[1]), m_pipe_out[1] = -1, -1);
             ifs.read(buff, CGIBUFFERSIZE);
             maxSize = static_cast<ssize_t>(ifs.gcount());
        }
@@ -389,9 +386,7 @@ int CGI::readCGI()
 int CGI::buildCGI()
 {
     std::ostringstream oss;
-    
-    //signal(SIGPIPE, SIG_IGN);
-    //signal(SIGTERM, SIG_IGN);
+
     if (pipe(m_pipe_in) == -1 || pipe(m_pipe_out) == -1)
         return  (1);
     if (fcntl(m_pipe_in[0], F_SETFL, O_NONBLOCK) == -1 || fcntl(m_pipe_out[1], F_SETFL, O_NONBLOCK) == -1)
@@ -429,8 +424,6 @@ int CGI::runCGI()
         deleteEnvp();
         return (1);
     }
-    close(m_pipe_in[1]);
-    close(m_pipe_out[0]);
     oss << "client fd:" << m_fd_client << ", pid: " << m_id_cgi << " is started";
     logOutMessage(oss);
     return (0);    
@@ -440,33 +433,14 @@ void CGI::cgi(char* argv[], char* envp[])
 {
     std::ostringstream oss;
     std::string fileName;
-//    glob_t g;
-//    int i;
 
     dup2(m_pipe_in[1], STDOUT_FILENO);
     dup2(m_pipe_out[0], STDIN_FILENO);
+    removePipesFromPoll(m_fds, m_fdtype);   
     closeFDS();
     initFDS();
-/*    i = 1;
-    if (argv[i] == NULL)
-        i = 0;
-    if (!glob(argv[i], 0, NULL, &g) && g.gl_pathc >= 1) //get the first file of the list
-        argv[i] = g.gl_pathv[0];
-    else
-    {
-        oss << argv[i] << ": " << std::strerror(errno) << std::endl;
-        logErrMessage(oss);           
-    }*/
     fileName = argv[0];
-    argv[0] = const_cast<char*>(getFilename(fileName).data());
-
-    /*std::cerr << "FILENAME: " << fileName << std::endl;
-    for (int i = 0; argv[i] != NULL; ++i)
-        std::cerr << argv[i] << std::endl;
-    std::cerr << std::endl;
-    for (int i = 0; envp[i] != NULL; ++i)
-        std::cerr << envp[i] << std::endl;*/
-        
+    argv[0] = const_cast<char*>(getFilename(fileName).data());        
     execve(fileName.data(), argv, envp);
     oss << fileName << ": " << std::strerror(errno) << std::endl;
     logErrMessage(oss);

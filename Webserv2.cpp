@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/22 10:50:25 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/22 14:54:36 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/02 14:08:42 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@
 //GET
 curl "http://localhost:8080/cgi-bin/python/add.py?a=5&b=3"
 curl "http://localhost:8080/cgi-bin/sub.py?a=5&b=3"
+curl "http://localhost:8080/directory/nop/"
+curl "http://localhost:8080/directory/nop"
 
 //POST
 curl -X POST "http://localhost:8080/directory/youpi.bla?zozo=2" -d "yoyo"
@@ -85,18 +87,23 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 			ret = 1;
 		}
 	}
-	q->formatedResponse = "";
+	q->byteSent = 0;
 	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
+
+
+	static int numr;
+	std::cerr << "NUM QUERY: " << ++numr << "\n";
+
 	m_queries.push_back(*q);
 	//printQuery(*q);
-	q->bodyFile = "";
 	q->httpRequest.clear();
 	q->bodySize = 0;
-	q->byteSent = 0;
 	q->httpParser = NULL;
 	q->encoding = NULL;
 	q->cgi = NULL;
 	q->bodyChunks.clear();
+	q->bodyFile = "";
+	q->formatedResponse = "";
 	return (ret);
 }
 
@@ -179,30 +186,14 @@ bool Webserv::releaseQuery(size_t j)
 		delete (m_queries[j].encoding);
 		m_queries[j].encoding = NULL;
 	}
-	if (m_queries[j].cgi)
-	{
-		delete (m_queries[j].cgi);
-		m_queries[j].cgi = NULL;
-	}
 	m_queries.erase(m_queries.begin() + j);
 	return (true);
 }
 
 bool Webserv::destroyClient(int fd)
 {
-	close(fd);
 	if (!releaseQueries(fd))
 		return (false);
-	for (size_t j = 0; j < m_clients.size(); ++j)
-	{
-		if (fd == m_clients[j].fd)
-		{
-			if (!m_clients[j].bodyFile.empty())
-				remove(m_clients[j].bodyFile.c_str());
-			m_clients.erase(m_clients.begin() + j);
-			break ;
-		}
-	}
 	for (size_t i = 0; i < m_fds.size(); ++i)
 	{
 		if (fd == m_fds[i].fd)
@@ -210,6 +201,14 @@ bool Webserv::destroyClient(int fd)
 			close(m_fds[i].fd);
 			m_fds.erase(m_fds.begin() + i);
 			m_fdType.erase(m_fdType.begin() + i);
+			break ;
+		}
+	}
+	for (size_t j = 0; j < m_clients.size(); ++j)
+	{
+		if (fd == m_clients[j].fd)
+		{
+			m_clients.erase(m_clients.begin() + j);
 			break ;
 		}
 	}

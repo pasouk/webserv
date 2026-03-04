@@ -52,12 +52,12 @@ bool HttpResponse::checkServerMethods(HttpMethod method)
 
 void HttpResponse::buildFullPathGet() 
 {
-    std::cout << "[DEBUG buildFullPathGet] START - root='" << _root << "' path='" << _ParsedRequest.getPath() << "'" << std::endl;
+    //std::cout << "[DEBUG buildFullPathGet] START - root='" << _root << "' path='" << _ParsedRequest.getPath() << "'" << std::endl;
     
     if (_root.empty()) 
     {
         _fullPath = _ParsedRequest.getPath();
-        std::cout << "[DEBUG buildFullPathGet] Empty root, using path directly: '" << _fullPath << "'" << std::endl;
+        //std::cout << "[DEBUG buildFullPathGet] Empty root, using path directly: '" << _fullPath << "'" << std::endl;
         return;
     }
 
@@ -68,14 +68,14 @@ void HttpResponse::buildFullPathGet()
         if (!fullPath.empty() && fullPath[fullPath.size() - 1] == '/' &&
             !_ParsedRequest.getPath().empty() && _ParsedRequest.getPath()[0] == '/')
         {
-            std::cout << "[DEBUG buildFullPathGet] Removing duplicate '/' from root" << std::endl;
+            //std::cout << "[DEBUG buildFullPathGet] Removing duplicate '/' from root" << std::endl;
             fullPath.erase(fullPath.size() - 1);
         }
     }
 
     fullPath += _ParsedRequest.getPath();
     _fullPath = fullPath;
-    std::cout << "[DEBUG buildFullPathGet] Final fullPath='" << _fullPath << "'" << std::endl;
+    //std::cout << "[DEBUG buildFullPathGet] Final fullPath='" << _fullPath << "'" << std::endl;
     {
         std::ostringstream oss;
         oss << " -> root:'" << _root << "' path:'" << _ParsedRequest.getPath() << "' full:'" << _fullPath << "'";
@@ -158,11 +158,11 @@ s_location HttpResponse::matchLocation()
     {
         const s_location& loc = _locations[i];
 
-        std::cout << Colors::GREEN
+        /*std::cout << Colors::GREEN
                   << "rawPath: " << rawPath
                   << "\nconcatOrReplace: " << loc.concatOrReplace
                   << "\nby: " << loc.by
-                  << Colors::RESET << std::endl << std::endl;
+                  << Colors::RESET << std::endl << std::endl;*/
 
         if (rawPath.compare(0, loc.concatOrReplace.size(), loc.concatOrReplace) == 0)
         {

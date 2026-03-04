@@ -6,13 +6,12 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/26 09:57:41 by fabrice           #+#    #+#             */
-/*   Updated: 2026/02/22 14:05:34 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/02 11:40:13 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef HEADERS_HPP
 # define HEADERS_HPP
-//# include "CGI.hpp"
 # include "ParserHttp.hpp"
 # include <stdint.h>
 

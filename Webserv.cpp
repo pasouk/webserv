@@ -6,7 +6,7 @@
 /*   By: fabrice <fabrice@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/27 09:29:06 by fabricebuyl       #+#    #+#             */
-/*   Updated: 2026/02/22 14:51:01 by fabrice          ###   ########.fr       */
+/*   Updated: 2026/03/03 14:55:07 by fabrice          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,8 +73,9 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 	pollfd pfd;
 	rlimit limit;
 	s_query* q;
-	int fd, n;
+	int n, fd;
 	std::ostringstream oss;
+	std::vector<int> fds;
 
 	//check system queue size
 	if (getrlimit(RLIMIT_NOFILE, &limit) == -1)
@@ -96,29 +97,56 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 	{
 		if (poll(reinterpret_cast<pollfd*>(m_fds.data()), m_fds.size(), 200) < 0)
 		{
+			oss << std::strerror(errno);
+			logErrMessage(oss);
 			g_listening = false;
 			break ;
 		}
 		for (size_t i = 0; i < m_fds.size(); ++i)
 		{
-			fd = m_fds[i].fd;
-			if (m_fdType[i] == SOCKET && (m_fds[i].revents & POLLIN))
+			if (m_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL))
 			{
-				addClient(fd);
+				if (m_fds[i].revents & POLLERR)
+					std::cerr << "POLLERR ";
+				if (m_fds[i].revents & POLLHUP)
+					std::cerr << "POLLHUP ";
+				if (m_fds[i].revents & POLLNVAL)
+					std::cerr << "POLLNVAL ";				
+				std::cerr << "ERROR ON " << m_fds[i].fd << " fd\n";
+				switch (m_fdType[i])
+				{
+					case SOCKET:
+						std::cerr << "SOCKET FD\n";
+						break ;
+					case ACCEPT:
+						std::cerr << "ACCEPT FD\n";
+						break ;
+					case PIPE:
+						std::cerr << "PIPE FD\n";
+						break ;
+					case NOTUSED:
+						std::cerr << "NOTUSED FD\n";
+				}
+				g_listening = false;
+				break ;				
+			}
+			else if (m_fdType[i] == SOCKET && (m_fds[i].revents & POLLIN))
+			{
+				addClient(m_fds[i].fd);
 				break ;
 			}
-			else if (m_fdType[i] == PIPE && getCgiQuery(fd, q))
+			else if (m_fdType[i] == PIPE && getCgiQuery(m_fds[i].fd, q))
 			{
 				if (m_fds[i].revents & POLLIN)
 				{
 					n = q->cgi->readCGI();
 					if (n == -2)
 					{
-						onResponse(q->formatedResponse, q->cgi, *q->httpParser, getRightServer(q));						
+						onResponse(q->formatedResponse, q->cgi, *q->httpParser, getRightServer(q));
 						delete (q->cgi);
 						q->cgi = NULL;
-						break ;
 					}
+					break ;
 				}
 				else if (m_fds[i].revents & POLLOUT)
 				{
@@ -127,63 +155,53 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 					else
 						n = q->cgi->writeCGI(q->bodyFile);
 					if (n == -2)
-					{
 						m_fds[i].events &= ~POLLOUT;
-						break;			
-					}
+					break ;			
 				}
 			}
 			else if (m_fdType[i] == ACCEPT)
 			{
 				if (m_fds[i].revents & POLLOUT)
 				{
-					n = sendQuery(fd);
+					n = sendQuery(m_fds[i].fd);
 					if (n <= 0)
-					{
 						m_fds[i].events &= ~POLLOUT;
-						/*if (n == -1)
-						{
-							if (destroyClient(fd))
-							{
-								oss << "Deconnected client fd:" << m_fds[i].fd;
-								logOutMessage(oss);
-							}
-						}*/
-						break ;
-					}
 				}
 				if (m_fds[i].revents & POLLIN)
 				{
-					if (readQuery(fd, onResponse) == -2)
+					n = readQuery(m_fds[i].fd, onResponse);
+					if (n == -2)
 					{
 						g_listening = false;
 						break ;
 					}
+					else if (n == -1)
+						break ;
 				}
-				if (keepAlive(fd))
+				if (!timeOut(m_fds[i].fd, m_keepalive_timeout))
+				{
+					fd = m_fds[i].fd;
+					if (destroyClient(fd))
+					{
+						oss << "Deconnected client fd:" << fd;
+						logOutMessage(oss);
+						break ;
+					}
+				}
+				if (keepAlive(m_fds[i].fd))
 					m_fds[i].events |= POLLOUT;
 				else
 				{
-					std::cout << "CLOSE CLIENT\n";
+					m_fds[i].events &= ~POLLOUT;
+					fd = m_fds[i].fd;
 					if (destroyClient(fd))
 					{
-						m_fds[i].events &= ~POLLOUT;
-						oss << "Deconnected client fd:" << m_fds[i].fd;
+						oss << "Deconnected client fd:" << fd;
 						logOutMessage(oss);
+						break ;
 					}
-					break ;
 				}
-				if (!timeOut(fd, m_keepalive_timeout))
-				{
-					if (destroyClient(fd))
-					{
-						oss << "Deconnected client fd:" << m_fds[i].fd;
-						logOutMessage(oss);
 
-						std::cout << "NUM CLIENT: " << m_clients.size() << ", NUM QUERIES: " << m_queries.size() << std::endl;
-					}
-					break ;
-				}
 			}
 		}
 	}
@@ -209,22 +227,18 @@ void Webserv::addClient(int fd)
 		pfd.fd = accept(fd, (struct sockaddr*)&serverAddress, &serverlen);
 		if (pfd.fd < 0) 
 			continue;
-		if (fcntl(pfd.fd, F_SETFL, O_NONBLOCK) == -1)
-		{
-			oss << std::strerror(errno);
-			logErrMessage(oss);
-		}
 		pfd.events = POLLIN;
 		pfd.revents = 0;
-		for (j = 0; j < m_fds.size(); ++j)
+		for (j = m_listeners.size(); j < m_fds.size(); ++j)
 			if (m_fds[j].fd == pfd.fd)
-			{
-				for (j = 0; j < m_fds.size(); ++j)
-					std::cout << m_fds[j].fd << ", ";
 				break;
-			}
 		if (j == m_fds.size())
 		{
+			if (fcntl(pfd.fd, F_SETFL, O_NONBLOCK) == -1)
+			{
+				oss << std::strerror(errno);
+				logErrMessage(oss);
+			}
 			m_fds.push_back(pfd);
 			m_fdType.push_back(ACCEPT);
 			getsockname(fd, (struct sockaddr*)&serverAddress, &serverlen);
@@ -287,7 +301,8 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 					buffers = NULL;
 				}
 			}
-		} while(n > 0);
+		}
+		while(n > 0);
 		if (n == -1)
 		{
 			oss << "client fd:" << client->fd << ", " << std::strerror(errno);
@@ -307,7 +322,7 @@ int Webserv::sendQuery(int fd)
 	n = 0;
 	for (std::vector<s_query>::iterator it = m_queries.begin(); it != m_queries.end(); ++it)
 	{
-		if ((*it).fd == fd)
+		if ((*it).fd == fd && (*it).formatedResponse.size())
 		{
 			do
 			{
@@ -340,6 +355,7 @@ int Webserv::sendQuery(int fd)
 bool Webserv::keepAlive(int fd)
 {
 	bool bKeepClient, bClose;
+	static int cpt;
 
 	bKeepClient = false;
 	for (std::vector<s_query>::iterator it = m_queries.begin(); it != m_queries.end();)
@@ -353,7 +369,7 @@ bool Webserv::keepAlive(int fd)
 			}
 			if ((*it).formatedResponse.empty() && (*it).cgi == NULL && !(*it).closeconnection)
 			{
-				std::cout << "RELEASE QUERY\n";
+				std::cout << "RELEASE QUERY: " << ++cpt << std::endl;
 				releaseQuery(static_cast<ssize_t>((it - m_queries.begin())));
 			}
 			else
@@ -369,7 +385,7 @@ bool Webserv::keepAlive(int fd)
 			if ((*it).fd == fd && (*it).closeconnection)
 			{
 				bClose = true;
-				break;
+				break ;
 			}
 		if (bClose == false)
 			bKeepClient = true;
@@ -532,10 +548,6 @@ const std::vector<std::string> Webserv::getDiretiveValue(const Node* server, con
 
 void Webserv::cleanWebserv()
 {
-	std::cout << "IN NUM CLIENT: " << m_clients.size() << ", NUM QUERIES: " << m_queries.size() << std::endl;
-
-
-
 	stopListening();
 	for (size_t g = 0; g < m_clients.size(); ++g)
 	{
@@ -545,6 +557,8 @@ void Webserv::cleanWebserv()
 		m_clients[g].httpParser= NULL;
 		delete(m_clients[g].encoding);
 		m_clients[g].encoding = NULL;
+		delete(m_clients[g].cgi);
+		m_clients[g].cgi = NULL;
 	}
 	for (size_t g = 0; g < m_queries.size(); ++g)
 	{
@@ -562,11 +576,6 @@ void Webserv::cleanWebserv()
 	for (std::vector<const QueryListener*>::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
 		delete (*it);
 	m_listeners.clear();
-
-
-
-	std::cout << "OUT NUM CLIENT: " << m_clients.size() << ", NUM QUERIES: " << m_queries.size() << std::endl;
-
 }
 
 void Webserv::stopListening()

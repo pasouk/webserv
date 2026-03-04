@@ -233,8 +233,8 @@ void ParserHttpRequest::setBodyLine(const std::deque<std::pair<char*, ssize_t> >
 
 int ParserHttpRequest::parseRequest()
 {
-    std::cout << Colors::GREEN << "raw request initaly:  " << _rawRequest << Colors::RESET ;
-    std::cout << Colors::GREEN << "\nbodyLine intialy:  " << _bodyLine << Colors::RESET ;
+    //std::cout << Colors::GREEN << "raw request initaly:  " << _rawRequest << Colors::RESET ;
+    //std::cout << Colors::GREEN << "\nbodyLine intialy:  " << _bodyLine << Colors::RESET ;
 
     int ret;
     ret = basicChecks();
