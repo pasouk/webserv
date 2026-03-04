@@ -35,9 +35,6 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
         return;
     }
 
-    // --------------------------
-    // 1) Find LONGEST matching prefix
-    // --------------------------
     int bestIndex = -1;
     size_t bestLen = 0;
 
@@ -58,24 +55,20 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
     if (bestIndex == -1)
     {
         //std::cout << "[DEBUG resolvePath] No matching location, using default root='" << root << "'" << std::endl;
-        foundLocation = s_location();  // Initialize with empty location
+        foundLocation = s_location();
         return;
     }
 
     const s_location &loc = s.locations[bestIndex];
-    foundLocation = loc;  // Store the found location
+    foundLocation = loc;
     //std::cout << "[DEBUG resolvePath] Matched location " << bestIndex << " with prefix='" << loc.concatOrReplace << "'" << std::endl;
 
-    // Remainder after removing prefix
     size_t prefix_len = loc.concatOrReplace.size();
     std::string remainder;
 
     if (mappedPath.size() > prefix_len)
         remainder = mappedPath.substr(prefix_len);
 
-    // --------------------------
-    // 2) TYPE ROOT
-    // --------------------------
     if (loc.type == LOCATION_ROOT)
     {
         root = loc.by;
@@ -93,17 +86,12 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
         mappedPath = newReqPath;
     }
 
-    // --------------------------
-    // 3) TYPE ALIAS
-    // --------------------------
     else if (loc.type == LOCATION_ALIAS)
     {
         std::string newReqPath = loc.by;
         
-        // Concatenate remainder to alias path
         if (!remainder.empty())
         {
-            // Ensure proper path separator
             if (!newReqPath.empty() && newReqPath[newReqPath.size()-1] != '/')
                 newReqPath += "/";
             if (!remainder.empty() && remainder[0] == '/')
@@ -111,7 +99,6 @@ void resolvePath(ParserHttpRequest& r, s_server& s, std::string& root, std::stri
             newReqPath += remainder;
         }
         
-        // With alias, the path IS the complete path (no root concatenation)
         root = "";
         
         //std::cout << "[DEBUG resolvePath] ALIAS location - new path='" << newReqPath << "' root='" << root << "'" << std::endl;
@@ -183,11 +170,9 @@ void onResponse(std::string& response, CGI* cgi, ParserHttpRequest& r, s_server&
 	}
 	else
 	{
-		// Check if we need to redirect to add trailing slash for directories
 		std::string requestedPath = r.getPath();
 		if (!requestedPath.empty() && requestedPath[requestedPath.size() - 1] != '/')
 		{
-			// Check if there's a location with trailing slash
 			std::string pathWithSlash = requestedPath + "/";
 			for (size_t i = 0; i < s.locations.size(); ++i)
 			{

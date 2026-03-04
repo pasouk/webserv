@@ -37,11 +37,9 @@ void HttpResponse::buildGet()
     buildFullPathGet();
     //std::cout << "DEBUG buildGet: fullPath = '" << _fullPath << "'" << std::endl;
 
-    // Check if we need to redirect to add trailing slash for directories
     std::string requestedPath = _ParsedRequest.getPath();
     if (!requestedPath.empty() && requestedPath[requestedPath.size() - 1] != '/')
     {
-        // Check if there's a location with trailing slash
         std::string pathWithSlash = requestedPath + "/";
         for (size_t i = 0; i < _locations.size(); ++i)
         {
@@ -72,7 +70,6 @@ void HttpResponse::buildGet()
     {
         struct stat temp;
         std::string indexPath = _fullPath;
-        // Add trailing slash if not present
         if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
             indexPath += "/";
         indexPath += _locationIndex;
@@ -86,13 +83,11 @@ void HttpResponse::buildGet()
         else
         {
             //std::cout << "[DEBUG buildGet] Index '" << _locationIndex << "' NOT found at '" << indexPath << "'" << std::endl;
-            // [CHANGED] If autoindex is on and no index file exists, generate a directory listing instead of 404
             if (_matchedLocation.autoindex)
             {
                 buildAutoIndex(_fullPath, _matchedLocation.concatOrReplace);
                 return;
             }
-            // Directory exists but configured index is missing -> behave as not found
             this->HttpResponseError(404, "Not Found here");
             return;
         }
@@ -117,7 +112,6 @@ void HttpResponse::buildGet()
     serialize();
 }
 
-// [CHANGED] New function: generates an HTML page listing directory contents (autoindex directive)
 void HttpResponse::buildAutoIndex(const std::string& dirPath, const std::string& urlPath)
 {
     DIR* dir = opendir(dirPath.c_str());

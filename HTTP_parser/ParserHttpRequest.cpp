@@ -1,8 +1,6 @@
 #include "ParserHttpRequest.hpp"
 #include <sstream>
 
-
-
 ParserHttpRequest::ParserHttpRequest(std::string rawRequest) : _rawRequest(rawRequest)
 {
     _error = parseRequest();
@@ -231,7 +229,6 @@ void ParserHttpRequest::setBodyLine(const std::deque<std::pair<char*, ssize_t> >
     }
 }
 
-// [CHANGED] New function: releases body memory after response is built — prevents accumulation across keep-alive requests
 void ParserHttpRequest::clearBody()
 {
     std::string().swap(_bodyLine);
@@ -240,7 +237,6 @@ void ParserHttpRequest::clearBody()
 
 int ParserHttpRequest::parseRequest()
 {
-    // [CHANGED] Commented out debug logs — were printing full raw request on every parse, causing massive slowdown
     //std::cout << Colors::GREEN << "raw request initaly:  " << _rawRequest << Colors::RESET ;
     //std::cout << Colors::GREEN << "\nbodyLine intialy:  " << _bodyLine << Colors::RESET ;
 
@@ -256,6 +252,8 @@ int ParserHttpRequest::parseRequest()
     ret = parseHeaderLine();
     if (ret)
         return ret;
+    if (_version == "HTTP/1.1" && _headers.find("Host") == _headers.end())
+        return 400;
     sanitize();
     _rawPath = _path;
     return 0;

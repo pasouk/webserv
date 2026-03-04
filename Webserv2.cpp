@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
+#include <sys/stat.h>
 
 //CGI TESTS
 
@@ -53,48 +54,78 @@ int Webserv::responseHook(s_query*& q, void (*onResponse)(std::string&, CGI*, Pa
 	q->httpParser->setBodyLine(q->bodyChunks);
 	s = getRightServer(q);
 	httpPath = getLocationFromServer(s, *q->httpParser);
-	if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))
+	if (httpPath.method_not_allowed)
+		q->formatedResponse = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\nAllow: GET, POST, DELETE\r\nConnection: close\r\n\r\n";
+	else
 	{
-		addEnvMetaVariables(q->httpParser->getHeaders(), env);
-		env["SCRIPT_FILENAME"] = httpPath.path_updated;
-        env["PATH_INFO"] = httpPath.path_info;
-		if (env["PATH_INFO"].empty())
-			env["PATH_INFO"] = httpPath.path_updated;
-		env["QUERY_STRING"] = httpPath.query_string;
-		env["SERVER_PROTOCOL"] = q->httpParser->getVersion();
-		ss << q->port;
-		env["SERVER_PORT"] = ss.str();
-		env["REQUEST_METHOD"] = methods_map[q->httpParser->getMethod()].name;
-		env["SERVER_NAME"] = q->hostName;
-		env["CONTENT_LENGTH"] = "0";		
-		headers = q->httpParser->getHeaders();
-		header = headers["Content-Length"]; 
-		if (!header.empty())
-			env["CONTENT_LENGTH"] = header;
+		bool scriptMissing = false;
+		if (q->cgi == NULL && (httpPath.location && httpPath.location->is_cgi))
+		{
+			if (httpPath.location->by != "none")
+			{
+				std::string oPath = q->httpParser->getPath();
+				std::string sRoot = httpPath.location->by;
+				if (sRoot[sRoot.size() - 1] != '/')
+					sRoot += "/";
+				if (!oPath.empty() && oPath[0] == '/')
+					oPath = oPath.substr(1);
+				struct stat _sst;
+				bool ok1 = (stat((sRoot + oPath).c_str(), &_sst) == 0 && S_ISREG(_sst.st_mode));
+				bool ok2 = (stat(httpPath.path_updated.c_str(), &_sst) == 0 && S_ISREG(_sst.st_mode));
+				if (!ok1 && !ok2)
+					scriptMissing = true;
+			}
+			if (!scriptMissing)
+			{
+				addEnvMetaVariables(q->httpParser->getHeaders(), env);
+				env["SCRIPT_FILENAME"] = httpPath.path_updated;
+				env["PATH_INFO"] = httpPath.path_info;
+				if (env["PATH_INFO"].empty())
+					env["PATH_INFO"] = httpPath.path_updated;
+				env["QUERY_STRING"] = httpPath.query_string;
+				env["SERVER_PROTOCOL"] = q->httpParser->getVersion();
+				ss << q->port;
+				env["SERVER_PORT"] = ss.str();
+				env["REQUEST_METHOD"] = methods_map[q->httpParser->getMethod()].name;
+				env["SERVER_NAME"] = q->hostName;
+				env["CONTENT_LENGTH"] = "0";
+				headers = q->httpParser->getHeaders();
+				header = headers["Content-Length"];
+				if (!header.empty())
+					env["CONTENT_LENGTH"] = header;
+				else
+				{
+					ss.clear();
+					ss.str("");
+					ss << q->encoding->getBodySize();
+					env["CONTENT_LENGTH"] = ss.str();
+				}
+				if (createCGI(httpPath.path_updated, env, q, httpPath.location->cgi_pass))
+				{
+					oss << "CGI can't be build.:";
+					logErrMessage(oss);
+					ret = 1;
+				}
+			}
+		}
+		if (scriptMissing)
+			q->formatedResponse = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
 		else
 		{
-			ss.clear();
-			ss.str("");
-			ss << q->encoding->getBodySize();
-			env["CONTENT_LENGTH"] = ss.str();
-		}
-		if (createCGI(httpPath.path_updated, env, q, httpPath.location->cgi_pass))
-		{
-			oss << "CGI can't be build.:";
-			logErrMessage(oss);
-			ret = 1;
+			q->formatedResponse = "";
+			onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
 		}
 	}
-	q->formatedResponse = "";
-	onResponse(q->formatedResponse, q->cgi, *(q->httpParser), s);
-	std::string status = "-";
-	if (q->formatedResponse.size() >= 12)
-		status = q->formatedResponse.substr(9, 3);
-	oss << "\033[34m" << q->host << " fd:" << q->fd << " \""
-		<< methods_map[q->httpParser->getMethod()].name << " "
-		<< q->httpParser->getPath() << " "
-		<< q->httpParser->getVersion() << "\" -> " << status << "\033[0m";
-	logOutMessage(oss);
+	{
+		std::string status = "-";
+		if (q->formatedResponse.size() >= 12)
+			status = q->formatedResponse.substr(9, 3);
+		oss << "\033[34m" << q->host << " fd:" << q->fd << " \""
+			<< methods_map[q->httpParser->getMethod()].name << " "
+			<< q->httpParser->getPath() << " "
+			<< q->httpParser->getVersion() << "\" -> " << status << "\033[0m";
+		logOutMessage(oss);
+	}
 	q->httpParser->clearBody();
 	m_queries.push_back(*q);
 	//printQuery(*q);

@@ -42,7 +42,6 @@ void HttpResponse::setMatchedLocation(const s_location& loc)
     _matchedLocation = loc;
 }
 
-// [CHANGED] New setter: forwards server-level error_page map so HttpResponseError() can serve custom pages
 void HttpResponse::setServerErrorPages(const std::map<int, std::string>& errorPages)
 {
     _serverErrorPages = errorPages;
@@ -58,12 +57,10 @@ std::string HttpResponse::getFullPathGet()
     return _fullPath;
 }
 
-// Main function for building the HTTP response
 void HttpResponse::HttpResponseManager() 
 {
-    if (_ParserExitCode != 0) 
+    if (_ParserExitCode != 0)
     {
-        // Check if it's a 413 error (Request Entity Too Large)
         if (_ParserExitCode == 413)
         {
             this->HttpResponseError(413, "Request Entity Too Large");
@@ -82,12 +79,10 @@ void HttpResponse::HttpResponseManager()
         return;
     }
     
-    // ========== APPLY MATCHED LOCATION CONFIG ==========
     applyLocationConfig(_matchedLocation);
     
     //std::cout << "[DEBUG HttpResponseManager] Using matched location with " << _matchedLocation.httpMethodsAllowed.size() << " allowed methods" << std::endl;
     
-    // Check location methods if location has specific methods defined
     if (!_matchedLocation.httpMethodsAllowed.empty())
     {
         bool methodAllowed = false;
@@ -111,7 +106,6 @@ void HttpResponse::HttpResponseManager()
             return;
         }
     }
-    // Otherwise check server methods
     else if(!checkServerMethods(_ParsedRequest.getMethod()))
     {
         //std::cout << "[DEBUG HttpResponseManager] Method " << _ParsedRequest.getMethod()

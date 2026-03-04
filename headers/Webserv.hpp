@@ -34,12 +34,13 @@ extern bool g_listening;
 
 struct s_http_path
 {
-	s_http_path() : location(NULL) {}
+	s_http_path() : location(NULL), method_not_allowed(false) {}
 
 	s_location* location;
 	std::string	path_updated;
 	std::string query_string;
 	std::string path_info;
+	bool method_not_allowed;
 };
 
 class Webserv

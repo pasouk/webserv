@@ -88,7 +88,10 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
                     fileName = part;
                     part = path.substr(0, j);
                     fileName = fileName.substr(part.size() + 1);
-                    if (fnmatch(s.locations[i].concatOrReplace.c_str(), fileName.c_str(), FNM_PATHNAME) == 0)
+                    std::string locPat = s.locations[i].concatOrReplace;
+                    if (!locPat.empty() && locPat[0] == '/')
+                        locPat = locPat.substr(1);
+                    if (fnmatch(locPat.c_str(), fileName.c_str(), FNM_PATHNAME) == 0)
                     {
                         httppath.location = &s.locations[i];
                         httppath.path_updated = httppath.path_updated.substr(0,
@@ -117,6 +120,9 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
 			oss << "method: " << methods_map[http.getMethod()].name << " not allowed with "
                 << httppath.location->concatOrReplace << " location";
 		    logOutMessage(oss);
+            struct stat _mst;
+            if (stat(httppath.path_updated.c_str(), &_mst) != 0)
+                httppath.method_not_allowed = true;
             httppath.location = NULL;
         }
     }  

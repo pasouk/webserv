@@ -5,7 +5,7 @@
 #include "../HTTP_parser/ParserHttpRequest.hpp"
 #include "HttpMultipartRequest.hpp"
 #include <sys/stat.h>
-#include <dirent.h>  // [CHANGED] Needed for opendir/readdir/closedir in buildAutoIndex()
+#include <dirent.h> 
 #include <fstream>
 #include <sstream>
 #include <ctime>
@@ -38,7 +38,6 @@ class   HttpResponse
         std::vector<HttpMethod>                     _LocationMethodsAllowed;
         std::string                                 _locationIndex;
         size_t _serverMaxBodySize;
-        // [CHANGED] Stores server-level error pages passed via setServerErrorPages(), used in HttpResponseError()
         std::map<int, std::string>                  _serverErrorPages;
 
     public:
@@ -56,7 +55,6 @@ class   HttpResponse
         void            setServerMethods(const std::vector<HttpMethod> &serverMethods);
         void            setLocations(const std::vector<s_location> &locations);
         void            setMatchedLocation(const s_location& loc);
-        // [CHANGED] New setter: passes server-level error_page map so HttpResponseError() can serve custom pages
         void            setServerErrorPages(const std::map<int, std::string>& errorPages);
 
         //Main
@@ -64,7 +62,6 @@ class   HttpResponse
 
         //GET Method
         void    buildGet();
-        // [CHANGED] New: generates an HTML directory listing when autoindex is on and no index file exists
         void    buildAutoIndex(const std::string& dirPath, const std::string& urlPath);
         void manageGetHeaders();
         void buildHead();

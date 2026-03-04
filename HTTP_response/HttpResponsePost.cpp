@@ -20,18 +20,15 @@ std::string HttpResponse::extractFileName(const std::string &str)
 
 bool HttpResponse::writeUploadedFile(std::string name) 
 {
-    // Construction du chemin complet
     std::string fullName;
     if (!_uploads_dir.empty() && _uploads_dir[_uploads_dir.size()-1] != '/')
         fullName = _uploads_dir + "/" + name;
     else
         fullName = _uploads_dir + name;
 
-    // Décodage du body
     std::string body = urlDecode(_ParsedRequest.getBodyLine());
 
 
-    // Création / ouverture du fichier
     int fd = open(fullName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1) {
         HttpResponseError(500, "Internal Server Error (opening/creating file)");
@@ -41,7 +38,6 @@ bool HttpResponse::writeUploadedFile(std::string name)
         return false;
     }
 
-    // Écriture dans le fichier
     if (write(fd, body.c_str(), body.size()) == -1) {
         close(fd);
         HttpResponseError(500, "Internal Server Error (writing file)");
@@ -51,10 +47,8 @@ bool HttpResponse::writeUploadedFile(std::string name)
 
     close(fd);
 
-    // Mettre à jour la réponse HTTP
-    _status_code = 201;           // Created
+    _status_code = 201;
     _reason_phrase = "Created";
-
     return true;
 }
 
@@ -80,7 +74,6 @@ void HttpResponse::managePostHeaders()
 
 void HttpResponse::handleFileSubPart(const SubPartRequest &sub, const std::string &cd)
 {
-    // Récupération du nom du fichier
     size_t start = cd.find("filename=\"");
     if (start == std::string::npos)
     {
@@ -212,7 +205,6 @@ void HttpResponse::buildPost()
 
     //std::cout << Colors::RED << "contentlen: " << contentLen << std::endl << "contentval:" <<  contentVal << Colors::RESET << std::endl;
 
-    //pour l'instant, a changer pllus tard
     setUploadDir("uploads/");
 
     size_t declaredLen = 0;

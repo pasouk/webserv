@@ -22,7 +22,6 @@ void HttpResponse::serialize()
 {
     std::ostringstream oss;
 
-    // [CHANGED] Added Date (RFC 7231) + Server headers — required by browser evaluation
     time_t _now = time(0);
     char _dateBuf[80];
     struct tm *_tm = gmtime(&_now);
@@ -97,7 +96,6 @@ void HttpResponse::HttpResponseError(int code, const std::string& reason)
     _status_code = code;
     _reason_phrase = reason;
 
-    // [CHANGED] Look up custom error page: first in location, then in server — replaces hardcoded fallback HTML
     std::string errorPagePath;
     std::map<int, std::string>::const_iterator locErr = _matchedLocation.error_pages.find(code);
     if (locErr != _matchedLocation.error_pages.end())
@@ -219,25 +217,23 @@ s_location HttpResponse::matchLocation()
 void HttpResponse::applyLocationConfig(const s_location& loc)
 {
     // max_body_size
-    if (!loc.max_body_size.empty())
+    if (!loc.max_body_size.empty() && loc.max_body_size != "not define")
     {
         std::stringstream ss(loc.max_body_size);
         ss >> _LocationMaxBodySize;
     }
     else
     {
-        _LocationMaxBodySize = _serverMaxBodySize; // valeur par défaut du serveur
+        _LocationMaxBodySize = _serverMaxBodySize;
     }
 
-    // allowed methods
     _LocationMethodsAllowed = loc.httpMethodsAllowed;
 
     // index file
     if (!loc.index.empty())
         _locationIndex = loc.index;
     else
-        _locationIndex = "index.html";  // default
+        _locationIndex = "index.html";
 
-    // garder la location trouvée pour logs/debug
     _matchedLocation = loc;
 }
