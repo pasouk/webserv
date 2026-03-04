@@ -458,7 +458,6 @@ void CGI::cgi(char* argv[], char* envp[])
     fileName = argv[0];
     if (realpath(fileName.c_str(), absBin))
         fileName = std::string(absBin);
-    // Set argv[0] to basename (process name)
     m_binary = getFilename(fileName);
     argv[0] = const_cast<char*>(m_binary.c_str());
     const char* scriptPath = (argv[1] != NULL) ? argv[1] : fileName.c_str();

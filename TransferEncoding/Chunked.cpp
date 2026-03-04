@@ -39,7 +39,6 @@ loadType Chunked::loadBody1(char* buffer, ssize_t& n, s_query*& q, ssize_t& i, b
     {
         if (m_bItsHead)
         {
-            // Header phase: byte-by-byte (headers are ~6 bytes, negligible)
             m_header += buffer[i];
             if (m_header.find("\r\n") != std::string::npos)
             {
@@ -76,7 +75,6 @@ loadType Chunked::loadBody1(char* buffer, ssize_t& n, s_query*& q, ssize_t& i, b
         }
         else
         {
-            // Data phase: bulk copy — we know the chunk size, no need for byte-by-byte
             ssize_t chunk_total = m_chunk.second + 2;  // data + trailing \r\n
             ssize_t have = (ssize_t)m_data.size();
             ssize_t need = chunk_total - have;
@@ -113,7 +111,6 @@ loadType Chunked::loadBody1(char* buffer, ssize_t& n, s_query*& q, ssize_t& i, b
                     m_bItsHead = true;
                 }
             }
-            // No ++i: i already advanced by take
         }
     }
     return (lType);
