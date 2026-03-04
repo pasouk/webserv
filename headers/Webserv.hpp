@@ -63,7 +63,7 @@ private:
 	size_t m_client_buffers_size[2];	//0: header, 1: body
 	std::string m_client_body_temp_path;
 	std::vector<s_server> m_servers;	//servers list
-	std::vector<s_query> m_clients;		//connected clients
+	std::deque<s_query> m_clients;		//connected clients (deque: pointers stay valid on push_back)
 	std::vector<s_query> m_queries;
 	std::vector<pollfd> m_fds;
 	std::vector<fdType> m_fdType;

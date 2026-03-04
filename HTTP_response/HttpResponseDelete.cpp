@@ -11,8 +11,9 @@ void HttpResponse::buildDelete()
     //    return;
    // }
 
-    _fullPath = "uploads" + path; // ou .
-    std::cout << Colors::RED << "path : " << path << "fullpath" << _fullPath <<  Colors::RESET << std::endl;
+    _fullPath = path;
+    if (!resourceExists(_fullPath) && !path.empty() && path[0] == '/')
+        _fullPath = "uploads" + path;
     if (!resourceExists(_fullPath))
         return HttpResponseError(404, "Not Found");
 

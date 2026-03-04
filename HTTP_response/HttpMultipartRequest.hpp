@@ -14,6 +14,7 @@ class SubPartRequest
 
     public:
         SubPartRequest(std::string rawRequest);
+        ~SubPartRequest();
 
         std::string getHeaderLine();
         std::string getBodyLine();

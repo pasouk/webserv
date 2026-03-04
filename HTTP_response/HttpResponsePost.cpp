@@ -29,23 +29,19 @@ bool HttpResponse::writeUploadedFile(std::string name)
     std::string body = urlDecode(_ParsedRequest.getBodyLine());
 
 
-    int fd = open(fullName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd == -1) {
+    std::ofstream ofs(fullName.c_str(), std::ios::out | std::ios::trunc);
+    if (!ofs.is_open())
+    {
         HttpResponseError(500, "Internal Server Error (opening/creating file)");
-      //  std::cout << Colors::RED << fullName << "doesnt exist\n" << Colors::RESET;
-        perror("Open failed");
-        
         return false;
     }
-
-    if (write(fd, body.c_str(), body.size()) == -1) {
-        close(fd);
+    ofs.write(body.c_str(), body.size());
+    if (!ofs)
+    {
         HttpResponseError(500, "Internal Server Error (writing file)");
-        perror("write failed");
         return false;
     }
-
-    close(fd);
+    ofs.close();
 
     _status_code = 201;
     _reason_phrase = "Created";
@@ -86,10 +82,9 @@ void HttpResponse::handleFileSubPart(const SubPartRequest &sub, const std::strin
 
     _uploads_dir = "uploads";
     std::string fullName = _uploads_dir + "/" + filename;
-    int fd = open(fullName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd == -1)
+    std::ofstream ofs(fullName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!ofs.is_open())
     {
-        perror("open");
         return;
     }
 
@@ -101,7 +96,9 @@ void HttpResponse::handleFileSubPart(const SubPartRequest &sub, const std::strin
         std::string body = sub.getBodyLine();
         if (body.size() >= 2 && body.substr(body.size() - 2) == "\r\n")
             body = body.substr(0, body.size() - 2);
-        write(fd, body.c_str(), body.size());
+        ofs.write(body.c_str(), body.size());
+        if (!ofs)
+            return ;
     }
     else
     {
@@ -111,10 +108,14 @@ void HttpResponse::handleFileSubPart(const SubPartRequest &sub, const std::strin
              it != chunks.end(); ++it)
         {
             if (it->first && it->second > 0)
-                write(fd, it->first, it->second);
+            {
+                ofs.write(it->first, it->second);
+                if (!ofs)
+                    return ;
+            }
         }
     }
-    close(fd);
+    ofs.close();
     _status_code = 201;
     _reason_phrase = "Created";
     _body = "File uploaded successfully";

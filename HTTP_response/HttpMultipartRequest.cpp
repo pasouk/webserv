@@ -2,7 +2,12 @@
 
 SubPartRequest::SubPartRequest(std::string rawRequest ): _rawRequest(rawRequest)
 {
-    
+}
+
+SubPartRequest::~SubPartRequest()
+{
+    for (std::deque<std::pair<char*, ssize_t> >::iterator it = _bodyBuffer.begin(); it != _bodyBuffer.end(); ++it)
+        delete[](it->first);
 }
 
 const std::deque<std::pair<char*, ssize_t> >& SubPartRequest::getBodyBuffer() const 

@@ -142,12 +142,15 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 				if (m_fds[i].revents & POLLOUT)
 				{
 					n = sendQuery(fd);
-					if (n <= 0)
+					if (n == -1)
 					{
 						m_fds[i].events &= ~POLLOUT;
-						if (n == -1)
-							break ;
+						destroyClient(fd);
+						break ;
 					}
+					else if (n == 0)
+						m_fds[i].events &= ~POLLOUT;
+					continue ;
 				}
 				if (m_fds[i].revents & POLLIN)
 				{
@@ -310,31 +313,33 @@ int Webserv::sendQuery(int fd)
 	{
 		if ((*it).fd == fd)
 		{
-			do
+			if ((*it).formatedResponse.empty())
+				return (0);
+			if(getClient(fd, client) && (*it).byteSent)
+				client->lifeTime = std::time(NULL);
+			n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
+				, (*it).formatedResponse.size() - (*it).byteSent,  MSG_NOSIGNAL);
+			if (n > 0)
 			{
-				if(getClient(fd, client) && (*it).byteSent)
-					client->lifeTime = std::time(NULL);
-				n = send((*it).fd, (*it).formatedResponse.data() + (*it).byteSent
-					, (*it).formatedResponse.size() - (*it).byteSent,  MSG_NOSIGNAL);
-				if (n > 0)
+				(*it).byteSent += n;
+				if ((*it).byteSent == (*it).formatedResponse.size())
 				{
-					(*it).byteSent += n;
-					if ((*it).byteSent == (*it).formatedResponse.size())
-					{
-						(*it).formatedResponse = "";
-						(*it).byteSent = 0;
-						if (getClient(fd, client))
-							client->lifeTime = std::time(NULL);
-						break ;
-					}
-				}
-				else if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
-				{
-					oss << "client fd:" << (*it).fd << ", " << std::strerror(errno);
-					logErrMessage(oss);
+					(*it).formatedResponse = "";
+					(*it).byteSent = 0;
+					if (getClient(fd, client))
+						client->lifeTime = std::time(NULL);
 				}
 			}
-			while (n > 0 && g_listening);
+			else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			{
+				n = 0;
+			}
+			else if (n <= 0)
+			{
+				oss << "client fd:" << (*it).fd << ", send error";
+				logErrMessage(oss);
+				n = -1;
+			}
 		}
 	}
 	return (n);
@@ -620,6 +625,8 @@ void Webserv::cleanWebserv()
 	}
 	for (size_t g = 0; g < m_queries.size(); ++g)
 	{
+		delete(m_queries[g].cgi);
+		m_queries[g].cgi = NULL;
 		delete(m_queries[g].httpParser);
 		m_queries[g].httpParser = NULL;
 		delete(m_queries[g].encoding);
@@ -648,12 +655,15 @@ void Webserv::stopListening()
 
 QueryListener* Webserv::createListener(u_int16_t port, const std::string& host)
 {
+	std::ostringstream oss;
 	try
 	{
 		return (new QueryListener(port, host));
 	}
 	catch(const std::exception& e)
 	{
+		oss << "conflicting port " << port << " on " << host << ", server ignored" ;
+		logErrMessage(oss);
 		return (NULL);
-	}	
+	}
 }

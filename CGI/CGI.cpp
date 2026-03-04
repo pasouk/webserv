@@ -377,7 +377,7 @@ int CGI::readCGI()
     }
     if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
     {
-        oss << "READ CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        oss << "READ CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", read error";
         logErrMessage(oss);
     }
     else if (n == 0)

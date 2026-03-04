@@ -29,7 +29,10 @@ void HttpResponse::serialize()
     _headers["Date"] = _dateBuf;
     _headers["Server"] = "webserv/1.0";
 
-    oss <<  _ParsedRequest.getVersion() << " "
+    std::string version = _ParsedRequest.getVersion();
+    if (version != "HTTP/1.0" && version != "HTTP/1.1")
+        version = "HTTP/1.1";
+    oss << version << " "
         << _status_code << " "
         << _reason_phrase << "\r\n";
 

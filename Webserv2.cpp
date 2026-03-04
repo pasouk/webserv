@@ -292,14 +292,18 @@ s_server& Webserv::getRightServer(s_query*& q)
 	std::ostringstream oss;
 	s_server* ret = &m_servers[0];
 	bool bFind = false;
+	bool bDefault = false;
 
 	for (std::vector<s_server>::iterator s = m_servers.begin(); s != m_servers.end(); ++s)
 	{
 		for (size_t i = 0; i < (*s).hosts.size(); ++i)
 			if ((*s).hosts[i] == q->host && (*s).ports[i] == q->port)
 			{
-				if (!bFind)
+				if (!bFind && !bDefault)
+				{
 					ret = &*s;
+					bDefault = true;
+				}
 				for (std::vector<std::string>::iterator ser_name = (*s).server_names.begin()
 					; ser_name != (*s).server_names.end(); ++ser_name)
 				{

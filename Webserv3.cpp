@@ -91,7 +91,7 @@ s_http_path Webserv::getLocationFromServer(s_server& s, const ParserHttpRequest&
                     std::string locPat = s.locations[i].concatOrReplace;
                     if (!locPat.empty() && locPat[0] == '/')
                         locPat = locPat.substr(1);
-                    if (fnmatch(locPat.c_str(), fileName.c_str(), FNM_PATHNAME) == 0)
+                    if (!fileName.empty() && fnmatch(locPat.c_str(), fileName.c_str(), FNM_PATHNAME) == 0)
                     {
                         httppath.location = &s.locations[i];
                         httppath.path_updated = httppath.path_updated.substr(0,
