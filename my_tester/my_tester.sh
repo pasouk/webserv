@@ -1,17 +1,14 @@
 #!/bin/bash
 
-##vars de config
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/confs/tester.conf"
 LOG_FILE="$SCRIPT_DIR/server.log"
 
-# Couleurs pour affichage
 GREEN="\033[0;32m"
 RED="\033[0;31m"
 NC="\033[0m" # reset color
 
-#compteurs
 TOTAL_TESTS=0
 PASSED_TESTS=0
 
@@ -19,7 +16,6 @@ PASSED_TESTS=0
 pkill -f "webserv" 2>/dev/null
 sleep 0.3
 
-#redir logs serv dans fichier log
 "$PROJECT_DIR/webserv" $CONFIG_FILE > $LOG_FILE 2>&1 &
 SERVER_PID=$! #$! recupere pid du dernier process  lance en background
 
@@ -29,7 +25,6 @@ printf "Serveur lancé sur le PID : %d\n" "$SERVER_PID"
 
 sleep 1
 
-# Fonction run_test : vérifie uniquement le code de statut HTTP
 run_test() {
     local DESCRIPTION="$1"
     local REQ="$2"
@@ -43,7 +38,6 @@ run_test() {
     # On récupère  la première ligne (status)
     STATUS=$(echo "$RESPONSE" | head -n 1 | tr -d '\r')
 
-    # Vérification du code attendu
     if echo "$STATUS" | grep -q "$EXPECT"; then
         PASSED_TESTS=$((PASSED_TESTS + 1))
         echo -e "${GREEN}Test $TOTAL_TESTS OK:${NC} $DESCRIPTION → $STATUS"
@@ -77,6 +71,11 @@ run_test_body() {
     fi
 }
 
+
+
+
+
+
 #TESTS GET
 
 # Accès simple à la racine, cas normal
@@ -106,6 +105,11 @@ run_test "GET /directory/Yeah/" "GET /directory/Yeah/ HTTP/1.1\r\nHost: localhos
 # Méthode HTTP inconnue : le serveur ne doit pas crasher
 run_test "FABRICE /" "FABRICE / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" "400"
 
+
+
+
+
+
 #TESTS POST
 
 # POST sur une route GET/HEAD only : méthode refusée
@@ -126,6 +130,11 @@ run_test "POST /directory/" "POST /directory/ HTTP/1.1\r\nHost: localhost\r\nCon
 #TEST HEAD (PAS DEMANDE DANS LE SUJET)
 #run_test "HEAD /" "HEAD / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" "200 OK"
 #run_test "HEAD /nope" "HEAD /nope HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" "404"
+
+
+
+
+
 
 #TESTS DELETE
 
@@ -163,6 +172,10 @@ run_test "DELETE /$TESTFILE (deja supprime)" "DELETE /$TESTFILE HTTP/1.1\r\nHost
 # DELETE d'un fichier qui n'a jamais existe---> 404
 run_test "DELETE /inexistant.txt" "DELETE /inexistant.txt HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" "404"
 
+
+
+
+
 #TESTS METHODES HTTP NON IMPLEMENTEES
 # PUT, PATCH, OPTIONS sont des méthodes HTTP valides mais non requises par le sujet
 # Le serveur doit répondre 4xx (405 Method Not Allowed idéalement), jamais 200
@@ -175,6 +188,10 @@ run_test "PATCH /" "PATCH / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 0\r\n
 
 # OPTIONS : liste des méthodes disponibles, non implémenté
 run_test "OPTIONS /" "OPTIONS / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" "40"
+
+
+
+
 
 #TESTS PROTOCOLE HTTP
 # HTTP/1.1 oblige le client à envoyer un header Host → son absence doit retourner 400
@@ -210,12 +227,17 @@ run_test "POST /inexistant.bla (script absent)" \
     "404"
 
 
+
+
+
+
+
 #TESTS STRESS (siege)
 # siege -q -b -c N -r R URL : N clients , R répétitions chacun, sans délai
-#   -q : quiet, sortie JSON uniquement (pas de progress bar)
-#   -b : benchmark mode, pas de délai entre les requêtes
-#   -c : concurrency, nombre de clients simultanés
-#   -r : reps, nombre de requêtes par client
+#-q : quiet, sortie JSON uniquement (pas de progress bar)
+#-b : benchmark mode, pas de délai entre les requêtes
+# c : concurrency, nombre de clients simultanés
+# -r : reps, nombre de requêtes par client
 # Critère : failed_transactions = 0 (availability 100%)
 
 # Fonction run_siege : parse le JSON que siege -q produit sur stdout
@@ -252,7 +274,6 @@ run_siege "Stress GET 404 (100 req)" "http://127.0.0.1:8080/nope" 5 20
 run_test "Serveur alive apres stress" \
     "GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" "200"
 
-# Résumé
 echo -e "\nTests réussis : $PASSED_TESTS / $TOTAL_TESTS"
 
 kill $SERVER_PID
