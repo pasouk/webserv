@@ -231,7 +231,6 @@ char* CGI::createBuff(ssize_t wrote, ssize_t total, ssize_t &maxSize, const std:
 
 int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
 {
-    std::ostringstream oss;
     ssize_t n;
 
     if (!m_total)
@@ -247,19 +246,10 @@ int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
         const char* data = chunks[m_write_chunk_idx].first + m_write_chunk_off;
         ssize_t avail = chunks[m_write_chunk_idx].second - m_write_chunk_off;
         n = write(m_pipe_out[1], data, avail);
-        if (n == -1)
+        if (n <= 0)
         {
-            if (errno == EPIPE)
-            {
-                close(m_pipe_out[1]);
-                m_pipe_out[1] = -1;
-                return (-2);
-            }
-            if (errno != EAGAIN && errno != EWOULDBLOCK)
-            {
-                oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
-                logErrMessage(oss);
-            }
+            if (n == -1)
+                n = 0;
             break;
         }
         m_wrote += n;
@@ -314,22 +304,10 @@ int CGI::writeCGI(const std::string& body_file)
     {
         m_client->lifeTime = std::time(NULL);
         n = write(m_pipe_out[1], &m_write_buff[m_write_i], m_write_maxSize - m_write_i);
-        if (n == -1)
+        if (n <= 0)
         {
-            if (errno == EPIPE)
-            {
-                delete[](m_write_buff);
-                m_write_buff = NULL;
-                close(m_pipe_out[1]);
-                m_pipe_out[1] = -1;
-                m_write_ifs.close();
-                return (-2);
-            }
-            if (errno != EAGAIN && errno != EWOULDBLOCK)
-            {
-                oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
-                logErrMessage(oss);
-            }
+            if (n == -1)
+                n = 0;
             break;
         }
         m_wrote += n;
@@ -366,7 +344,6 @@ int CGI::writeCGI(const std::string& body_file)
 int CGI::readCGI()
 {
     static char buff[CGIBUFFERSIZE];
-    std::ostringstream oss;
     int n;
     
     while ((n = read(m_pipe_in[0], buff, CGIBUFFERSIZE)) > 0)
@@ -375,11 +352,8 @@ int CGI::readCGI()
         m_response.append(buff, n);
         m_executed = true;
     }
-    if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
-    {
-        oss << "READ CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", read error";
-        logErrMessage(oss);
-    }
+    if (n == -1)
+        n = 0;
     else if (n == 0)
     {
         n = -2;

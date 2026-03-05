@@ -256,7 +256,6 @@ void Webserv::addClient(int fd)
 
 int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttpRequest&, s_server&))
 {
-	std::ostringstream oss;
 	char *buffers;
 	bool bBody;
 	s_query *client;
@@ -291,11 +290,8 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 				return (-2);
 			}
 		}
-		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
-		{
-			oss << "client fd:" << client->fd << ", " << std::strerror(errno);
-			logErrMessage(oss);
-		}
+		if (n == -1)
+			n = 0;
 		if (bDelete)
 			delete [](buffers);
 	}
@@ -330,10 +326,8 @@ int Webserv::sendQuery(int fd)
 						client->lifeTime = std::time(NULL);
 				}
 			}
-			else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
-			{
-				n = 0;
-			}
+			else if (n == -1)
+				n = -1;
 			else if (n <= 0)
 			{
 				oss << "client fd:" << (*it).fd << ", send error";
