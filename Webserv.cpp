@@ -220,8 +220,12 @@ void Webserv::addClient(int fd)
 		serverAddress = (*it)->getServerAddress();
 		serverlen = sizeof(serverAddress);
 		pfd.fd = accept(fd, (struct sockaddr*)&serverAddress, &serverlen);
-		if (pfd.fd < 0) 
+		if (pfd.fd < 0)
+		{
+			oss << std::strerror(errno);
+			logErrMessage(oss);
 			continue;
+		}
 		if (fcntl(pfd.fd, F_SETFL, O_NONBLOCK) == -1)
 		{
 			oss << std::strerror(errno);
@@ -231,11 +235,7 @@ void Webserv::addClient(int fd)
 		pfd.revents = 0;
 		for (j = 0; j < m_fds.size(); ++j)
 			if (m_fds[j].fd == pfd.fd)
-			{
-				for (j = 0; j < m_fds.size(); ++j)
-					std::cout << m_fds[j].fd << ", ";
 				break;
-			}
 		if (j == m_fds.size())
 		{
 			m_fds.push_back(pfd);
