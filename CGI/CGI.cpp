@@ -248,14 +248,9 @@ int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
         ssize_t avail = chunks[m_write_chunk_idx].second - m_write_chunk_off;
         n = write(m_pipe_out[1], data, avail);
         if (n == -1)
-        {
-            oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
-            logErrMessage(oss);
-            /*close(m_pipe_out[1]);
-            m_pipe_out[1] = -1;
-            return (-2);*/
             break;
-        }
+        oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        logErrMessage(oss);
         m_wrote += n;
         m_write_chunk_off += n;
         if (m_write_chunk_off >= chunks[m_write_chunk_idx].second)
