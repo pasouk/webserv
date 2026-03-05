@@ -251,7 +251,8 @@ int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
             if (n == -1)
                 n = 0;
             break;
-        }
+        oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        logErrMessage(oss);
         m_wrote += n;
         m_write_chunk_off += n;
         if (m_write_chunk_off >= chunks[m_write_chunk_idx].second)
@@ -309,7 +310,8 @@ int CGI::writeCGI(const std::string& body_file)
             if (n == -1)
                 n = 0;
             break;
-        }
+        oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        logErrMessage(oss);
         m_wrote += n;
         if (m_wrote >= m_total)
         {
