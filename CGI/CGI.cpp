@@ -249,17 +249,11 @@ int CGI::writeCGI(const std::deque<std::pair<char*, ssize_t> >& chunks)
         n = write(m_pipe_out[1], data, avail);
         if (n == -1)
         {
-            if (errno == EPIPE)
-            {
-                close(m_pipe_out[1]);
-                m_pipe_out[1] = -1;
-                return (-2);
-            }
-            if (errno != EAGAIN && errno != EWOULDBLOCK)
-            {
-                oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
-                logErrMessage(oss);
-            }
+            oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+            logErrMessage(oss);
+            /*close(m_pipe_out[1]);
+            m_pipe_out[1] = -1;
+            return (-2);*/
             break;
         }
         m_wrote += n;

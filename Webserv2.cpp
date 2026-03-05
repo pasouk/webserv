@@ -230,7 +230,6 @@ bool Webserv::releaseQuery(size_t j)
 
 bool Webserv::destroyClient(int fd)
 {
-	close(fd);
 	if (!releaseQueries(fd))
 		return (false);
 	for (size_t j = 0; j < m_clients.size(); ++j)
@@ -247,6 +246,7 @@ bool Webserv::destroyClient(int fd)
 	{
 		if (fd == m_fds[i].fd)
 		{
+			close(fd);
 			m_fds.erase(m_fds.begin() + i);
 			m_fdType.erase(m_fdType.begin() + i);
 			break ;

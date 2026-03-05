@@ -135,7 +135,7 @@ void Webserv::startListening(void (*onResponse)(std::string&, CGI*, ParserHttpRe
 						m_fdType.erase(m_fdType.begin() + i);
 						break;
 					}
-			}
+				}
 			}
 			else if (m_fdType[i] == ACCEPT)
 			{
@@ -291,7 +291,7 @@ int Webserv::readQuery(int fd, void (*onResponse)(std::string&, CGI*, ParserHttp
 				return (-2);
 			}
 		}
-		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
+		if (n == -1)
 		{
 			oss << "client fd:" << client->fd << ", " << std::strerror(errno);
 			logErrMessage(oss);
@@ -330,7 +330,7 @@ int Webserv::sendQuery(int fd)
 						client->lifeTime = std::time(NULL);
 				}
 			}
-			else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			else if (n == -1)
 			{
 				n = 0;
 			}
