@@ -309,23 +309,9 @@ int CGI::writeCGI(const std::string& body_file)
         m_client->lifeTime = std::time(NULL);
         n = write(m_pipe_out[1], &m_write_buff[m_write_i], m_write_maxSize - m_write_i);
         if (n == -1)
-        {
-            if (errno == EPIPE)
-            {
-                delete[](m_write_buff);
-                m_write_buff = NULL;
-                close(m_pipe_out[1]);
-                m_pipe_out[1] = -1;
-                m_write_ifs.close();
-                return (-2);
-            }
-            if (errno != EAGAIN && errno != EWOULDBLOCK)
-            {
-                oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
-                logErrMessage(oss);
-            }
             break;
-        }
+        oss << "WRITE CGI [cgi:" << m_id_cgi << "] client fd:" << m_fd_client << ", " << std::strerror(errno);
+        logErrMessage(oss);
         m_wrote += n;
         if (m_wrote >= m_total)
         {
